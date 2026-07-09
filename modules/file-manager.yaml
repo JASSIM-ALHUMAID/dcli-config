@@ -1,0 +1,15 @@
+description: File managers
+
+packages:
+  - thunar
+  - thunar-archive-plugin
+  - thunar-volman
+  - tumbler
+  - yazi
+  - dolphin
+  - file-roller
+  - gvfs
+
+dotfiles:
+  - source: yazi
+    target: ~/.config/yazi

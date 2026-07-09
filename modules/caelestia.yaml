@@ -1,0 +1,11 @@
+description: Caelestia Shell - Material Design 3 Hyprland rice
+
+packages:
+  - quickshell
+  - caelestia-cli
+  - caelestia-meta
+  - caelestia-shell
+
+# No dotfiles entry: ~/.config/caelestia is a symlink into the
+# ~/Projects/shell/real fork (the source of truth) — a dcli dotfiles
+# sync must not replace it.

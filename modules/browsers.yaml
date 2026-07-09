@@ -1,0 +1,12 @@
+description: Web browsers and communication
+
+packages:
+  - zen-browser-bin
+  - brave-nightly-bin
+  - github-desktop
+
+dotfiles:
+  - source: zen
+    target: ~/.config/zen
+  - source: brave
+    target: ~/.config/BraveSoftware

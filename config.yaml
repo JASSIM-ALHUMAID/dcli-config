@@ -1,0 +1,8 @@
+# dcli configuration pointer
+# This file points to the active host configuration
+
+# Active host
+host: cachyos-desktop
+
+# Package manager
+package_manager: pacman

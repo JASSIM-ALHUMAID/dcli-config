@@ -1,0 +1,21 @@
+description: Neovim and text editors
+
+packages:
+  - neovim
+  - vim
+  - vim-runtime
+  - micro
+  - cachyos-micro-settings
+  - ripgrep
+  - fd
+  - tree-sitter
+  - tree-sitter-c
+  - tree-sitter-lua
+  - tree-sitter-markdown
+  - tree-sitter-query
+  - tree-sitter-vim
+  - tree-sitter-vimdoc
+
+dotfiles:
+  - source: nvim
+    target: ~/.config/nvim

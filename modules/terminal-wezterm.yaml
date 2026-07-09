@@ -1,0 +1,8 @@
+description: WezTerm terminal emulator
+
+packages:
+  - wezterm-nightly-bin
+
+dotfiles:
+  - source: wezterm
+    target: ~/.config/wezterm

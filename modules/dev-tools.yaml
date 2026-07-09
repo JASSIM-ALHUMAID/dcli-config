@@ -1,0 +1,25 @@
+description: Development tools and languages
+
+packages:
+  - git
+  - github-cli
+  - lazygit
+  - rust
+  - go
+  - python
+  - python-pipx
+  - nodejs-lts-krypton
+  - npm
+  - pnpm
+  - cmake
+  - gemini-cli
+  - tmux
+  - clang
+  - lld
+  - llvm
+
+dotfiles:
+  - source: lazygit
+    target: ~/.config/lazygit
+  - source: git
+    target: ~/.config/git

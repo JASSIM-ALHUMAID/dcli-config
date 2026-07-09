@@ -1,0 +1,5 @@
+description: Hyprland entry point and color scheme
+
+dotfiles:
+  - source: hypr
+    target: ~/.config/hypr

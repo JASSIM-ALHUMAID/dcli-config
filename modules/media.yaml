@@ -1,0 +1,15 @@
+description: Media players and audio
+
+packages:
+  - vlc
+  - vlc-plugins-all
+  - mpv
+  - mpvpaper
+  - cava
+  - easyeffects
+  - ffmpegthumbnailer
+  - libdvdcss
+
+dotfiles:
+  - source: cava
+    target: ~/.config/cava

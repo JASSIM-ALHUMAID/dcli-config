@@ -1,0 +1,34 @@
+description: System utilities and monitoring
+
+packages:
+  - btop
+  - fastfetch
+  - fuzzel
+  - nvtop
+  - glances
+  - sniffnet
+  - duf
+  - tty-clock
+  - zoxide
+  - plocate
+  - reflector
+  - snapper
+  - btrfs-assistant
+  - rebuild-detector
+  - downgrade
+  - pacman-contrib
+  - pkgfile
+  - localsend
+  - rustdesk
+  - tailscale
+  - inxi
+  - tealdeer
+  - eza
+  - bat
+  - trash-cli
+
+dotfiles:
+  - source: fuzzel
+    target: ~/.config/fuzzel
+
+# btop and fastfetch managed by Caelestia module

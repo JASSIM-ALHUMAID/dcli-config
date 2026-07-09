@@ -1,0 +1,7 @@
+description: AMBXst Hyprland shell environment
+
+packages: []
+
+dotfiles:
+  - source: ambxst
+    target: ~/.config/ambxst

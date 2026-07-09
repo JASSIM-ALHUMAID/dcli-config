@@ -1,0 +1,11 @@
+description: Fish shell with Starship prompt
+
+packages:
+  - fish
+  - fish-autopair
+  - fisher
+  - fish-pure-prompt
+  - starship
+  - zoxide
+
+# Dotfiles managed by Caelestia module (symlinks to ~/.local/share/caelestia/)
