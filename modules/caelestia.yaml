@@ -9,7 +9,7 @@ packages:
 # The caelestia-shell package installs the STOCK shell into
 # /etc/xdg/quickshell/caelestia. My fork overrides it at
 # ~/.config/quickshell/caelestia (quickshell prefers ~/.config over /etc/xdg).
-# The hook clones the fork to ~/Projects/shell/real, builds/installs the
+# The hook clones the fork to ~/.local/share/my-caelestia, builds/installs the
 # custom shell, and symlinks ~/.config/caelestia -> fork/caelestia-configs.
 #
 # No dotfiles entry: ~/.config/caelestia is a symlink into the fork

@@ -21,14 +21,20 @@ The `caelestia-shell` pacman package installs the *stock* shell into
 `/etc/xdg/quickshell/caelestia`. My fork **overrides** it because quickshell
 prefers the user path:
 
-- `~/Projects/shell/real` — clone of [JASSIM-ALHUMAID/my-caelestia](https://github.com/JASSIM-ALHUMAID/my-caelestia) (source of truth)
+- `~/.local/share/my-caelestia` — **production** clone of [JASSIM-ALHUMAID/my-caelestia](https://github.com/JASSIM-ALHUMAID/my-caelestia); the session shell is built from here
 - `~/.config/quickshell/caelestia` — the built fork QML (overrides `/etc/xdg`)
-- `~/.config/caelestia` — symlink → `~/Projects/shell/real/caelestia-configs`
+- `~/.config/caelestia` — symlink → `~/.local/share/my-caelestia/caelestia-configs` (live config writes land in prod)
+- `~/Projects/shell/real` — **testing** checkout (optional, dev machines only); hack here, run with `run-worktree.fish`
 
 `scripts/setup-caelestia.sh` (the caelestia module's post-install hook)
-produces exactly that layout. Because `~/.config/caelestia` is a symlink into
-the fork, the caelestia module deliberately has **no dotfiles entry** — dcli
-must not replace that symlink.
+produces the production layout. Because `~/.config/caelestia` is a symlink
+into the fork, the caelestia module deliberately has **no dotfiles entry** —
+dcli must not replace that symlink.
+
+`scripts/caelestia-sync.sh` (also on PATH as `caelestia-sync`) promotes
+tested changes: it pulls live-edited configs prod → dev (so git commits in
+dev include current state), deploys code dev → prod, and with `--install`
+rebuilds + installs the shell from prod (restarts qs). `--dry-run` previews.
 
 WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).

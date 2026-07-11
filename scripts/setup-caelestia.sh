@@ -7,7 +7,7 @@
 # /etc/xdg), built and installed by the fork's own installer.
 #
 # Layout this script produces:
-#   ~/Projects/shell/real                  — the fork checkout (source of truth)
+#   ~/.local/share/my-caelestia                  — the fork checkout (source of truth)
 #   ~/.config/quickshell/caelestia         — built QML config (overrides /etc/xdg)
 #   ~/.config/caelestia                    — symlink -> fork/caelestia-configs
 #
@@ -21,7 +21,7 @@ REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
 REPO_URL="https://github.com/JASSIM-ALHUMAID/my-caelestia.git"
-REPO_DIR="$REAL_HOME/Projects/shell/real"
+REPO_DIR="$REAL_HOME/.local/share/my-caelestia"
 QS_CONF="$REAL_HOME/.config/quickshell/caelestia"
 CAEL_CONF="$REAL_HOME/.config/caelestia"
 
