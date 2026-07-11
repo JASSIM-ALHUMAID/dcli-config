@@ -1,5 +1,10 @@
 description: Core Hyprland compositor and essential desktop tools
 
+# Links ~/.config/<dir> -> dotfiles/<dir> (dcli's YAML modules ignore
+# `dotfiles:` keys, so this script is the real dotfiles mechanism).
+post_install_hook: scripts/link-dotfiles.sh
+hook_behavior: once
+
 packages:
   - hyprland
   - hyprpolkitagent

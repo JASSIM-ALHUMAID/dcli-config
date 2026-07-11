@@ -66,11 +66,16 @@ so the last-used shell survives replication.
    ```sh
    git clone https://github.com/JASSIM-ALHUMAID/dcli-config.git ~/.config/dcli
    ```
-3. Sync everything (installs packages, symlinks `dotfiles/` into `~/.config`,
-   enables services, runs the caelestia/ambxst hooks):
+3. Sync everything (installs packages, enables services, runs the module
+   hooks — including `link-dotfiles.sh`, which symlinks `~/.config/<dir>` →
+   `dotfiles/<dir>`; dcli's own YAML `dotfiles:` keys are ignored by dcli
+   and kept as documentation):
    ```sh
-   dcli sync --force-dotfiles
+   dcli sync
    ```
+   Day-to-day updates after that: configs edit themselves in-repo through
+   the symlinks, so publishing is just
+   `cd ~/.config/dcli && git add -A && git commit -m "..." && git push`.
 4. Log out and back in once so the shell env (`QML2_IMPORT_PATH`,
    `CAELESTIA_LIB_DIR`) applies, then pick a shell with
    `scripts/switch-shell.sh [caelestia|ambxst]`.

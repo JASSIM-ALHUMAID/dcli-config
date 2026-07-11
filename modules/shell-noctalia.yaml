@@ -10,7 +10,6 @@ packages: []
 # launcher wrapper.
 post_install_hook: scripts/setup-noctalia.sh
 hook_behavior: once
-run_hooks_as_user: true
 
 dotfiles:
   - source: noctalia

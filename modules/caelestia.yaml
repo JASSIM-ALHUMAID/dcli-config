@@ -16,4 +16,3 @@ packages:
 # (the source of truth) — a dcli dotfiles sync must not replace it.
 post_install_hook: scripts/setup-caelestia.sh
 hook_behavior: once
-run_hooks_as_user: true

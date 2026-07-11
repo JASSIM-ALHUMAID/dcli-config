@@ -43,7 +43,7 @@
         "autoHideDelay": 500,
         "autoShowDelay": 150,
         "backgroundOpacity": 0.93,
-        "barType": "framed",
+        "barType": "floating",
         "capsuleColorKey": "none",
         "capsuleOpacity": 1,
         "contentPadding": 2,
@@ -61,7 +61,7 @@
         "middleClickFollowMouse": false,
         "monitors": [
         ],
-        "mouseWheelAction": "none",
+        "mouseWheelAction": "workspace",
         "mouseWheelWrap": true,
         "outerCorners": true,
         "position": "left",
@@ -71,7 +71,7 @@
         "rightClickFollowMouse": true,
         "screenOverrides": [
         ],
-        "showCapsule": true,
+        "showCapsule": false,
         "showOnWorkspaceSwitch": true,
         "showOutline": false,
         "useSeparateOpacity": false,
@@ -222,6 +222,9 @@
                     "icon": "noctalia",
                     "id": "ControlCenter",
                     "useDistroLogo": false
+                },
+                {
+                    "id": "plugin:video-wallpaper"
                 }
             ]
         }
@@ -244,13 +247,13 @@
                 "id": "calendar-month-card"
             },
             {
-                "enabled": true,
+                "enabled": false,
                 "id": "weather-card"
             }
         ]
     },
     "colorSchemes": {
-        "darkMode": false,
+        "darkMode": true,
         "generationMethod": "tonal-spot",
         "manualSunrise": "06:30",
         "manualSunset": "18:30",
@@ -335,10 +338,11 @@
                         "format": "HH:mm\\nd MMMM yyyy",
                         "id": "Clock",
                         "roundedCorners": true,
+                        "scale": 0.9693402919094896,
                         "showBackground": true,
                         "useCustomFont": false,
-                        "x": 50,
-                        "y": 50
+                        "x": 1760,
+                        "y": 1040
                     },
                     {
                         "colorName": "primary",
@@ -346,11 +350,12 @@
                         "hideWhenIdle": false,
                         "id": "AudioVisualizer",
                         "roundedCorners": true,
+                        "scale": 1.3720818565356763,
                         "showBackground": true,
                         "visualizerType": "wave",
                         "width": 320,
-                        "x": 120,
-                        "y": 280
+                        "x": 1300,
+                        "y": 1080
                     },
                     {
                         "diskPath": "/",
@@ -359,8 +364,8 @@
                         "roundedCorners": true,
                         "showBackground": true,
                         "statType": "CPU",
-                        "x": 150,
-                        "y": 150
+                        "x": 1660,
+                        "y": 20
                     }
                 ]
             }
@@ -376,14 +381,14 @@
         "dockType": "floating",
         "enabled": true,
         "floatingRatio": 1,
-        "groupApps": false,
+        "groupApps": true,
         "groupClickAction": "cycle",
         "groupContextMenuMode": "extended",
         "groupIndicatorStyle": "dots",
         "inactiveIndicators": false,
         "indicatorColor": "primary",
         "indicatorOpacity": 0.6,
-        "indicatorThickness": 3,
+        "indicatorThickness": 6,
         "launcherIcon": "",
         "launcherIconColor": "none",
         "launcherPosition": "end",
@@ -392,11 +397,13 @@
         ],
         "onlySameOutput": true,
         "pinnedApps": [
+            "org.wezfurlong.wezterm",
+            "zen"
         ],
-        "pinnedStatic": false,
-        "position": "bottom",
-        "showDockIndicator": false,
-        "showLauncherIcon": false,
+        "pinnedStatic": true,
+        "position": "right",
+        "showDockIndicator": true,
+        "showLauncherIcon": true,
         "sitOnFrame": false,
         "size": 1
     },
@@ -409,7 +416,7 @@
         "avatarImage": "/home/awhss/.face",
         "boxRadiusRatio": 1,
         "clockFormat": "h:mm AP ",
-        "clockStyle": "custom",
+        "clockStyle": "analog",
         "compactLockScreen": false,
         "dimmerOpacity": 0.2,
         "enableBlurBehind": true,
@@ -452,7 +459,7 @@
         "lockScreenTint": 0,
         "passwordChars": true,
         "radiusRatio": 1,
-        "reverseScroll": false,
+        "reverseScroll": true,
         "scaleRatio": 1,
         "screenRadiusRatio": 1,
         "shadowDirection": "bottom_right",
@@ -501,9 +508,9 @@
         "showCalendarEvents": true,
         "showCalendarWeather": true,
         "showWeekNumberInCalendar": false,
-        "use12hourFormat": false,
+        "use12hourFormat": true,
         "useFahrenheit": false,
-        "weatherEnabled": true,
+        "weatherEnabled": false,
         "weatherShowEffects": true,
         "weatherTaliaMascotAlways": false
     },

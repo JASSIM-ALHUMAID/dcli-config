@@ -6,7 +6,6 @@ packages: []
 # (launcher lands in /usr/local/bin/ambxst). My settings are dcli-managed.
 post_install_hook: scripts/setup-ambxst.sh
 hook_behavior: once
-run_hooks_as_user: true
 
 dotfiles:
   - source: ambxst
