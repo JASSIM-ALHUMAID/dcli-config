@@ -1,15 +1,20 @@
-description: Noctalia shell - alternate quickshell-based shell
+description: Noctalia shell - alternate shell (runs on its own quickshell fork)
 
-packages:
-  - noctalia-shell
+packages: []
 
-# NOTE: an old unowned source dump at /etc/xdg/quickshell/noctalia-shell
-# (from a manual install) conflicts with this package's files — remove it
-# before the first sync on a machine that has it:
-#   sudo rm -rf /etc/xdg/quickshell/noctalia-shell && dcli sync
-#
-# No dotfiles yet: noctalia writes ~/.config/noctalia once configured;
-# add a mapping here after first use.
-#
-# Launched per-session via ~/.config/hypr/shells/noctalia.conf
-# (`qs -c noctalia-shell`). Switch with scripts/switch-shell.sh noctalia
+# Do NOT declare the noctalia-shell package: it depends on noctalia-qs,
+# whose Conflicts=quickshell would REMOVE the stock quickshell that
+# caelestia and dms need. The hook instead clones the noctalia QML to
+# ~/.config/quickshell/noctalia-shell and extracts the noctalia-qs fork
+# (unpackaged) to ~/.local/opt/noctalia-qs with a ~/.local/bin/noctalia
+# launcher wrapper.
+post_install_hook: scripts/setup-noctalia.sh
+hook_behavior: once
+run_hooks_as_user: true
+
+dotfiles:
+  - source: noctalia
+    target: ~/.config/noctalia
+
+# Launched per-session via ~/.config/hypr/shells/noctalia.conf (`noctalia`).
+# Switch with scripts/switch-shell.sh noctalia

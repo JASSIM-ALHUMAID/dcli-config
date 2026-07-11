@@ -46,6 +46,14 @@ one of `shells/{caelestia,ambxst,dms,noctalia}.conf`:
   Super+D — Super+Space is taken by the us/ara layout toggle). Edit each
   freely; they are fully independent of caelestia/ambxst and of each other.
 
+**Noctalia runs on its own quickshell fork.** The `noctalia-shell` package
+depends on `noctalia-qs`, which *Conflicts=quickshell* and would remove the
+stock quickshell that caelestia and dms need. So `scripts/setup-noctalia.sh`
+instead clones the noctalia QML to `~/.config/quickshell/noctalia-shell` and
+extracts the `noctalia-qs` package (never pacman-installed, so no conflict)
+to `~/.local/opt/noctalia-qs`, with a `~/.local/bin/noctalia` wrapper that
+launches/IPCs noctalia using the fork binary.
+
 Switch with `scripts/switch-shell.sh <name>` — no argument opens a fuzzel
 picker. The script kills every shell's processes, rewrites `active.conf`,
 reloads hyprland, and launches the chosen shell. `active.conf` is committed,

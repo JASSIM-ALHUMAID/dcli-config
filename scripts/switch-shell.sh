@@ -65,11 +65,11 @@ kill_matching() {
 kill_all_shells() {
     # Ask nicely via each shell's own IPC first
     qs -c caelestia kill 2>/dev/null
-    qs -c noctalia-shell kill 2>/dev/null
+    "$HOME/.local/bin/noctalia" kill 2>/dev/null
     dms kill 2>/dev/null
     # Caelestia / generic quickshell stragglers
     kill_matching -f "qs -c caelestia"
-    kill_matching -f "qs -c noctalia-shell"
+    kill_matching -f "bin/quickshell -c noctalia-shell"
     kill_matching -f "dms run"
     kill_matching -x "quickshell"
     kill_matching -f "caelestia shell"
@@ -109,7 +109,7 @@ case "$SHELL_NAME" in
         pgrep -f "dms run" >/dev/null 2>&1 || { dms run & disown; }
         ;;
     noctalia)
-        pgrep -f "qs -c noctalia-shell" >/dev/null 2>&1 || { qs -c noctalia-shell & disown; }
+        pgrep -f "bin/quickshell -c noctalia-shell" >/dev/null 2>&1 || { "$HOME/.local/bin/noctalia" & disown; }
         ;;
 esac
 
