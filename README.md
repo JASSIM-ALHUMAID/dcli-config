@@ -2,8 +2,8 @@
 
 Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v0.2.2):
 packages, services, default apps, dotfiles, and bootstrap hooks for my
-CachyOS + Hyprland setup running my **custom Caelestia shell fork** with
-**AMBXst** as the alternate shell.
+CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
+**AMBXst**, **DankMaterialShell**, and **Noctalia** as alternate shells.
 
 ## What's in here
 
@@ -13,7 +13,7 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork** with
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | synced to `~/.config/*` by `dcli sync` |
 | Hooks | `scripts/setup-caelestia.sh`, `scripts/setup-ambxst.sh` | clone + install the two shells |
-| Shell toggle | `scripts/switch-shell.sh` | flips `~/.config/hypr/hyprland.conf` between Caelestia/AMBXst |
+| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia |
 
 ### The custom Caelestia setup (important)
 
@@ -32,6 +32,23 @@ must not replace that symlink.
 
 WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).
+
+### Shell switching
+
+`~/.config/hypr/hyprland.conf` sources `shells/active.conf`, which points at
+one of `shells/{caelestia,ambxst,dms,noctalia}.conf`:
+
+- **caelestia** / **ambxst** ship their own full hyprland configs and are
+  sourced directly.
+- **dms** / **noctalia** don't, so their confs reuse caelestia's hyprland
+  base (env, input, binds, my `hypr-user.conf`) plus an `exec-once` for the
+  shell and replacement binds for launcher/lock (the caelestia-IPC binds in
+  the base are no-ops when caelestia isn't running).
+
+Switch with `scripts/switch-shell.sh <name>` — no argument opens a fuzzel
+picker. The script kills every shell's processes, rewrites `active.conf`,
+reloads hyprland, and launches the chosen shell. `active.conf` is committed,
+so the last-used shell survives replication.
 
 ## New machine bootstrap
 

@@ -1,0 +1,15 @@
+description: Noctalia shell - alternate quickshell-based shell
+
+packages:
+  - noctalia-shell
+
+# NOTE: an old unowned source dump at /etc/xdg/quickshell/noctalia-shell
+# (from a manual install) conflicts with this package's files — remove it
+# before the first sync on a machine that has it:
+#   sudo rm -rf /etc/xdg/quickshell/noctalia-shell && dcli sync
+#
+# No dotfiles yet: noctalia writes ~/.config/noctalia once configured;
+# add a mapping here after first use.
+#
+# Launched per-session via ~/.config/hypr/shells/noctalia.conf
+# (`qs -c noctalia-shell`). Switch with scripts/switch-shell.sh noctalia

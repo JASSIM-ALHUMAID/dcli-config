@@ -6,6 +6,8 @@ enabled_modules:
 - hyprland-entry
 - caelestia
 - ambxst
+- shell-dms
+- shell-noctalia
 - shell-fish
 - terminal-wezterm
 - editor-neovim

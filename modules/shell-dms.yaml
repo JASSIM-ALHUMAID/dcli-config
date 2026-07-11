@@ -1,0 +1,12 @@
+description: DankMaterialShell (dms) - alternate quickshell-based shell
+
+packages:
+  - dms-shell
+  - dgop
+
+dotfiles:
+  - source: DankMaterialShell
+    target: ~/.config/DankMaterialShell
+
+# Launched per-session via ~/.config/hypr/shells/dms.conf (`dms run`).
+# Switch with scripts/switch-shell.sh dms
