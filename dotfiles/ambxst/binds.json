@@ -2413,29 +2413,6 @@
             "actions": [
                 {
                     "args": {
-                        "command": "/home/awhss/.config/dcli/scripts/switch-shell.sh caelestia"
-                    },
-                    "id": "command.run",
-                    "layouts": [
-                    ]
-                }
-            ],
-            "enabled": true,
-            "keys": [
-                {
-                    "key": "o",
-                    "modifiers": [
-                        "SUPER",
-                        "SHIFT"
-                    ]
-                }
-            ],
-            "name": "switch to caelestia shell"
-        },
-        {
-            "actions": [
-                {
-                    "args": {
                         "command": "wezterm-gui"
                     },
                     "id": "command.run",
@@ -2564,6 +2541,29 @@
                 }
             ],
             "name": "kill hyprsunset"
+        },
+        {
+            "actions": [
+                {
+                    "args": {
+                        "command": "~/.config/dcli/scripts/switch-shell.sh "
+                    },
+                    "id": "command.run",
+                    "layouts": [
+                    ]
+                }
+            ],
+            "enabled": true,
+            "keys": [
+                {
+                    "key": "o",
+                    "modifiers": [
+                        "SUPER",
+                        "SHIFT"
+                    ]
+                }
+            ],
+            "name": "switch shell"
         }
     ],
     "defaultAmbxstBinds": {
