@@ -1,6 +1,12 @@
-description: AMBXst Hyprland shell environment
+description: AMBXst Hyprland shell (Axenide/Ambxst) + my settings
 
 packages: []
+
+# The hook clones AMBXst to ~/.local/src/ambxst and runs its installer
+# (launcher lands in /usr/local/bin/ambxst). My settings are dcli-managed.
+post_install_hook: scripts/setup-ambxst.sh
+hook_behavior: once
+run_hooks_as_user: true
 
 dotfiles:
   - source: ambxst

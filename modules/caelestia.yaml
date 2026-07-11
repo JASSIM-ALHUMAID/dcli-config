@@ -1,4 +1,4 @@
-description: Caelestia Shell - Material Design 3 Hyprland rice
+description: Caelestia Shell - my custom fork (JASSIM-ALHUMAID/my-caelestia)
 
 packages:
   - quickshell
@@ -6,6 +6,14 @@ packages:
   - caelestia-meta
   - caelestia-shell
 
-# No dotfiles entry: ~/.config/caelestia is a symlink into the
-# ~/Projects/shell/real fork (the source of truth) — a dcli dotfiles
-# sync must not replace it.
+# The caelestia-shell package installs the STOCK shell into
+# /etc/xdg/quickshell/caelestia. My fork overrides it at
+# ~/.config/quickshell/caelestia (quickshell prefers ~/.config over /etc/xdg).
+# The hook clones the fork to ~/Projects/shell/real, builds/installs the
+# custom shell, and symlinks ~/.config/caelestia -> fork/caelestia-configs.
+#
+# No dotfiles entry: ~/.config/caelestia is a symlink into the fork
+# (the source of truth) — a dcli dotfiles sync must not replace it.
+post_install_hook: scripts/setup-caelestia.sh
+hook_behavior: once
+run_hooks_as_user: true

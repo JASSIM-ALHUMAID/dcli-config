@@ -1,0 +1,53 @@
+# dcli config — cachyos-desktop
+
+Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v0.2.2):
+packages, services, default apps, dotfiles, and bootstrap hooks for my
+CachyOS + Hyprland setup running my **custom Caelestia shell fork** with
+**AMBXst** as the alternate shell.
+
+## What's in here
+
+| Piece | Where | Notes |
+|---|---|---|
+| Host config | `hosts/cachyos-desktop.yaml` | enabled modules, services, default apps |
+| Modules | `modules/*.yaml` | packages + dotfile mappings per area |
+| Dotfiles | `dotfiles/` | synced to `~/.config/*` by `dcli sync` |
+| Hooks | `scripts/setup-caelestia.sh`, `scripts/setup-ambxst.sh` | clone + install the two shells |
+| Shell toggle | `scripts/switch-shell.sh` | flips `~/.config/hypr/hyprland.conf` between Caelestia/AMBXst |
+
+### The custom Caelestia setup (important)
+
+The `caelestia-shell` pacman package installs the *stock* shell into
+`/etc/xdg/quickshell/caelestia`. My fork **overrides** it because quickshell
+prefers the user path:
+
+- `~/Projects/shell/real` — clone of [JASSIM-ALHUMAID/my-caelestia](https://github.com/JASSIM-ALHUMAID/my-caelestia) (source of truth)
+- `~/.config/quickshell/caelestia` — the built fork QML (overrides `/etc/xdg`)
+- `~/.config/caelestia` — symlink → `~/Projects/shell/real/caelestia-configs`
+
+`scripts/setup-caelestia.sh` (the caelestia module's post-install hook)
+produces exactly that layout. Because `~/.config/caelestia` is a symlink into
+the fork, the caelestia module deliberately has **no dotfiles entry** — dcli
+must not replace that symlink.
+
+WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
+[JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).
+
+## New machine bootstrap
+
+1. Install [dcli](https://gitlab.com/theblackdon) (build from source → `~/.local/bin/dcli`).
+2. Clone this repo:
+   ```sh
+   git clone https://github.com/JASSIM-ALHUMAID/dcli-config.git ~/.config/dcli
+   ```
+3. Sync everything (installs packages, symlinks `dotfiles/` into `~/.config`,
+   enables services, runs the caelestia/ambxst hooks):
+   ```sh
+   dcli sync --force-dotfiles
+   ```
+4. Log out and back in once so the shell env (`QML2_IMPORT_PATH`,
+   `CAELESTIA_LIB_DIR`) applies, then pick a shell with
+   `scripts/switch-shell.sh [caelestia|ambxst]`.
+
+AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,
+brave-nightly-bin, caelestia-*) come from AUR/chaotic.

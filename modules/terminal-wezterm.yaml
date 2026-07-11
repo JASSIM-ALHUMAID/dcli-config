@@ -1,4 +1,4 @@
-description: WezTerm terminal emulator
+description: WezTerm terminal emulator + my config (mirror of JASSIM-ALHUMAID/wezterm)
 
 packages:
   - wezterm-nightly-bin

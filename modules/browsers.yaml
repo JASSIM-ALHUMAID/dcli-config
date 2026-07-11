@@ -5,8 +5,5 @@ packages:
   - brave-nightly-bin
   - github-desktop
 
-dotfiles:
-  - source: zen
-    target: ~/.config/zen
-  - source: brave
-    target: ~/.config/BraveSoftware
+# No dotfiles: browser profiles (~/.config/zen, ~/.config/BraveSoftware) are
+# hundreds of MB of per-machine/private data — use each browser's own sync.
