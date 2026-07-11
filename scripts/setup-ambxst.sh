@@ -5,8 +5,12 @@
 # presets/) are managed by dcli dotfiles -> ~/.config/ambxst.
 set -euo pipefail
 
+# dcli may run hooks as root — always operate on the real user's home.
+REAL_USER="${SUDO_USER:-$USER}"
+REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+
 REPO_URL="https://github.com/Axenide/Ambxst.git"
-INSTALL_PATH="$HOME/.local/src/ambxst"
+INSTALL_PATH="$REAL_HOME/.local/src/ambxst"
 
 if [ -d "$INSTALL_PATH/.git" ]; then
     echo ":: AMBXst already installed at $INSTALL_PATH"

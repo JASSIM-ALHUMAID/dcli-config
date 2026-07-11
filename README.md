@@ -40,10 +40,11 @@ one of `shells/{caelestia,ambxst,dms,noctalia}.conf`:
 
 - **caelestia** / **ambxst** ship their own full hyprland configs and are
   sourced directly.
-- **dms** / **noctalia** don't, so their confs reuse caelestia's hyprland
-  base (env, input, binds, my `hypr-user.conf`) plus an `exec-once` for the
-  shell and replacement binds for launcher/lock (the caelestia-IPC binds in
-  the base are no-ops when caelestia isn't running).
+- **dms** / **noctalia** don't, so each gets its own **standalone** config
+  in `shells/dms/` and `shells/noctalia/` — seeded with my input/layout
+  preferences and app binds, plus each shell's own IPC binds (launcher on
+  Super+D — Super+Space is taken by the us/ara layout toggle). Edit each
+  freely; they are fully independent of caelestia/ambxst and of each other.
 
 Switch with `scripts/switch-shell.sh <name>` — no argument opens a fuzzel
 picker. The script kills every shell's processes, rewrites `active.conf`,
