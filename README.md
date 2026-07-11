@@ -13,7 +13,7 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | synced to `~/.config/*` by `dcli sync` |
 | Hooks | `scripts/setup-caelestia.sh`, `scripts/setup-ambxst.sh` | clone + install the two shells |
-| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia |
+| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 |
 
 ### The custom Caelestia setup (important)
 
@@ -42,12 +42,12 @@ WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 ### Shell switching
 
 `~/.config/hypr/hyprland.conf` sources `shells/active.conf`, which points at
-one of `shells/{caelestia,ambxst,dms,noctalia}.conf`:
+one of `shells/{caelestia,ambxst,dms,noctalia,end4}.conf`:
 
 - **caelestia** / **ambxst** ship their own full hyprland configs and are
   sourced directly.
-- **dms** / **noctalia** don't, so each gets its own **standalone** config
-  in `shells/dms/` and `shells/noctalia/` — seeded with my input/layout
+- **dms** / **noctalia** / **end4** don't, so each gets its own **standalone** config
+  in `shells/dms/`, `shells/noctalia/`, and `shells/end4/` — seeded with my input/layout
   preferences and app binds, plus each shell's own IPC binds (launcher on
   Super+D — Super+Space is taken by the us/ara layout toggle). Edit each
   freely; they are fully independent of caelestia/ambxst and of each other.
@@ -59,6 +59,15 @@ instead clones the noctalia QML to `~/.config/quickshell/noctalia-shell` and
 extracts the `noctalia-qs` package (never pacman-installed, so no conflict)
 to `~/.local/opt/noctalia-qs`, with a `~/.local/bin/noctalia` wrapper that
 launches/IPCs noctalia using the fork binary.
+
+**end-4's illogical-impulse** uses a quickshell config launched with
+`qs -c ii`. The `illogical-impulse-quickshell-git` package likewise
+*Conflicts=quickshell*, so `scripts/setup-end4.sh` runs the ii config on
+stock quickshell with its extra qt6 deps installed separately, and symlinks
+`~/.config/quickshell/ii` into the `~/.local/share/dots-hyprland` checkout.
+Like noctalia, end4's upstream Hyprland config is Lua-based and assumes it
+owns `~/.config/hypr`, so `shells/end4/` provides a standalone wrapper
+config.
 
 Switch with `scripts/switch-shell.sh <name>` — no argument opens a fuzzel
 picker. The script kills every shell's processes, rewrites `active.conf`,
@@ -84,7 +93,7 @@ so the last-used shell survives replication.
    `cd ~/.config/dcli && git add -A && git commit -m "..." && git push`.
 4. Log out and back in once so the shell env (`QML2_IMPORT_PATH`,
    `CAELESTIA_LIB_DIR`) applies, then pick a shell with
-   `scripts/switch-shell.sh [caelestia|ambxst]`.
+   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4]`.
 
 AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,
 brave-nightly-bin, caelestia-*) come from AUR/chaotic.

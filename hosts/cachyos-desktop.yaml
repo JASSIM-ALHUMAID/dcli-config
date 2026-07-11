@@ -8,6 +8,7 @@ enabled_modules:
 - ambxst
 - shell-dms
 - shell-noctalia
+- shell-end4
 - shell-fish
 - terminal-wezterm
 - editor-neovim

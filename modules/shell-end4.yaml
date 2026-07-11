@@ -1,0 +1,17 @@
+description: end-4 dots-hyprland (illogical-impulse) shell - alternate shell (quickshell config "ii")
+
+packages: []
+
+# Do NOT declare the illogical-impulse-quickshell-git package: its
+# Conflicts=quickshell would REMOVE the stock quickshell that caelestia and
+# dms need (same trap as noctalia-qs — see README.md).
+# The hook installs the fork's extra deps as regular packages instead.
+post_install_hook: scripts/setup-end4.sh
+hook_behavior: once
+
+# No dotfiles entry: ~/.config/quickshell/ii and ~/.config/matugen are
+# symlinks into the ~/.local/share/dots-hyprland checkout (source of truth) —
+# a dcli dotfiles sync must not replace them.
+
+# Launched per-session via ~/.config/hypr/shells/end4.conf; switch with
+# scripts/switch-shell.sh end4

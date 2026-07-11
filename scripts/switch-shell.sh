@@ -1,5 +1,5 @@
 #!/bin/bash
-# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia
+# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
@@ -12,7 +12,7 @@ set -u
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia)
+KNOWN=(caelestia ambxst dms noctalia end4)
 
 current_shell() {
     [ -f "$ACTIVE" ] || { echo none; return; }
@@ -23,18 +23,36 @@ current_shell() {
 
 SHELL_NAME="${1:-}"
 
-# No argument: fuzzel picker (marks the current shell)
+# No argument: fuzzel picker (marks and preselects the current shell)
 if [ -z "$SHELL_NAME" ]; then
     if command -v fuzzel >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
         cur=$(current_shell)
+        # Icon + blurb per shell, index-aligned with KNOWN
+        icons=(󰓎 󰆧 󰍹 󰖔 󰣇)
+        blurbs=("Material 3 · quickshell"
+                "Axenide · Astal"
+                "DankMaterialShell"
+                "minimal · quickshell"
+                "illogical-impulse")
         menu=""
-        for s in "${KNOWN[@]}"; do
-            if [ "$s" = "$cur" ]; then menu+="$s   (current)"$'\n'; else menu+="$s"$'\n'; fi
+        args=(--dmenu --index)
+        picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
+        [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
+        for i in "${!KNOWN[@]}"; do
+            s=${KNOWN[$i]}
+            line=$(printf '%s  %-10s  %s' "${icons[$i]}" "$s" "${blurbs[$i]}")
+            if [ "$s" = "$cur" ]; then
+                line+="  ●"
+                args+=(--select-index "$i")
+            fi
+            menu+="$line"$'\n'
         done
-        SHELL_NAME=$(printf '%s' "$menu" | fuzzel --dmenu --prompt="shell> " | awk '{print $1}')
+        idx=$(printf '%s' "$menu" | fuzzel "${args[@]}")
+        case "$idx" in *[!0-9]*|"") exit 0 ;; esac
+        SHELL_NAME=${KNOWN[$idx]:-}
         [ -z "$SHELL_NAME" ] && exit 0
     else
-        echo "Usage: switch-shell.sh [caelestia|ambxst|dms|noctalia]  (current: $(current_shell))"
+        echo "Usage: switch-shell.sh [caelestia|ambxst|dms|noctalia|end4]  (current: $(current_shell))"
         exit 1
     fi
 fi
@@ -67,10 +85,12 @@ kill_all_shells() {
     qs -c caelestia kill 2>/dev/null
     "$HOME/.local/bin/noctalia" kill 2>/dev/null
     dms kill 2>/dev/null
+    qs -c ii kill 2>/dev/null
     # Caelestia / generic quickshell stragglers
     kill_matching -f "qs -c caelestia"
     kill_matching -f "bin/quickshell -c noctalia-shell"
     kill_matching -f "dms run"
+    kill_matching -f "qs -c ii"
     kill_matching -x "quickshell"
     kill_matching -f "caelestia shell"
     kill_matching -f "caelestia resizer"
@@ -93,6 +113,12 @@ printf '# Written by switch-shell.sh — current shell: %s\nsource = ~/.config/h
 hyprctl reload
 sleep 2
 
+# end4 keeps all its binds in a permanently-active "global" submap (required
+# for its catchall launcher-interrupt bind). Make sure that submap isn't left
+# active when switching to a shell whose config doesn't define it — their
+# binds would all go dead.
+[ "$SHELL_NAME" != "end4" ] && hyprctl dispatch submap reset
+
 # Launch. dms and noctalia are exec-once'd from their shell conf, but
 # exec-once does not re-fire on `hyprctl reload`, so start them here too
 # (guarded so a fresh login doesn't double-start them).
@@ -110,6 +136,9 @@ case "$SHELL_NAME" in
         ;;
     noctalia)
         pgrep -f "bin/quickshell -c noctalia-shell" >/dev/null 2>&1 || { "$HOME/.local/bin/noctalia" & disown; }
+        ;;
+    end4)
+        pgrep -f "qs -c ii" >/dev/null 2>&1 || { qs -c ii & disown; }
         ;;
 esac
 
