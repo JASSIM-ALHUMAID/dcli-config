@@ -1,27 +1,23 @@
 #!/bin/bash
 # Bootstrap my custom Caelestia shell (fork of caelestia-dots/shell).
 #
-# The caelestia-shell pacman package installs the stock QML config into
-# /etc/xdg/quickshell/caelestia. My fork overrides it via the user config
-# path ~/.config/quickshell/caelestia (quickshell prefers ~/.config over
-# /etc/xdg), built and installed by the fork's own installer.
-#
 # Layout this script produces:
-#   ~/.local/share/my-caelestia                  — the fork checkout (source of truth)
-#   ~/.config/quickshell/caelestia         — built QML config (overrides /etc/xdg)
-#   ~/.config/caelestia                    — symlink -> fork/caelestia-configs
+#   ~/Projects/shell/real              — the fork checkout (source of truth)
+#   ~/.config/quickshell/caelestia     — built QML config (overrides /etc/xdg)
+#   ~/.config/caelestia                — symlink -> fork/caelestia-configs
 #
-# Safe to re-run: it never clones over or rebuilds an existing setup, and it
-# ASKS before cloning (the fork is a private repo; cloning also makes no
-# sense on a machine where I'm actively developing in that path already).
+# After setup, use the repo's own scripts:
+#   ./scripts/sync-live.sh             — sync QML + restart shell
+#   scripts/install.sh --skip-sddm    — rebuild C++ plugin
+#
+# Safe to re-run: it never clones over or rebuilds an existing setup.
 set -euo pipefail
 
-# dcli may run hooks as root — always operate on the real user's home.
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
 REPO_URL="https://github.com/JASSIM-ALHUMAID/my-caelestia.git"
-REPO_DIR="$REAL_HOME/.local/share/my-caelestia"
+REPO_DIR="${CAELESTIA_DEV:-$REAL_HOME/Projects/shell/real}"
 QS_CONF="$REAL_HOME/.config/quickshell/caelestia"
 CAEL_CONF="$REAL_HOME/.config/caelestia"
 
@@ -33,14 +29,13 @@ as_user() {
     fi
 }
 
-# Already fully set up? Then this hook has nothing to do.
+# Already fully set up?
 if [ -d "$REPO_DIR/.git" ] && [ -e "$QS_CONF/shell.qml" ] && [ -L "$CAEL_CONF" ]; then
     echo ":: Caelestia fork already set up ($REPO_DIR) — nothing to do."
     exit 0
 fi
 
-# 1) Clone — only with explicit consent (private repo, needs gh/ssh auth,
-#    and must never touch an existing working tree).
+# 1) Clone
 if [ ! -d "$REPO_DIR/.git" ]; then
     if [ -e "$REPO_DIR" ]; then
         echo "!! $REPO_DIR exists but is not a git repo — refusing to touch it." >&2
@@ -54,12 +49,11 @@ if [ ! -d "$REPO_DIR/.git" ]; then
         y|Y|yes|YES) ;;
         *)
             echo ":: Skipping caelestia fork setup (no clone). Re-run later with:"
-            echo "     dcli hooks reset caelestia && dcli module run-hook caelestia"
+            echo "     dcli module run-hook caelestia"
             exit 0
             ;;
     esac
     as_user mkdir -p "$(dirname "$REPO_DIR")"
-    # Private repo: prefer gh (uses its auth), fall back to plain git.
     if as_user gh auth status >/dev/null 2>&1; then
         as_user gh repo clone "$REPO_URL" "$REPO_DIR"
     else
@@ -67,9 +61,7 @@ if [ ! -d "$REPO_DIR/.git" ]; then
     fi
 fi
 
-# 2) Build + install the shell into ~/.config/quickshell/caelestia — only if
-#    not already installed (a dev machine manages this itself via the repo's
-#    install/run scripts).
+# 2) Build + install the shell (only if not already installed)
 if [ ! -e "$QS_CONF/shell.qml" ]; then
     cd "$REPO_DIR"
     if as_user git -C "$REPO_DIR" describe --tags --abbrev=0 >/dev/null 2>&1; then
@@ -96,4 +88,6 @@ else
     echo ":: Symlinked $CAEL_CONF -> $SRC"
 fi
 
-echo ":: Caelestia fork setup complete. Log out/in once so QML2_IMPORT_PATH is picked up."
+echo ":: Caelestia fork setup complete."
+echo ":: Day-to-day workflow: edit files in $REPO_DIR, then run:"
+echo "     ./scripts/sync-live.sh"
