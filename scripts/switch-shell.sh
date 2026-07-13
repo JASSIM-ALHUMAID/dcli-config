@@ -124,12 +124,16 @@ sleep 2
 # (guarded so a fresh login doesn't double-start them).
 case "$SHELL_NAME" in
     caelestia)
-        caelestia shell -d & disown
+        pgrep -f "qs -c caelestia" >/dev/null 2>&1 || {
+            caelestia shell -d & disown
+        }
         ;;
     ambxst)
-        ambxst & disown
-        sleep 2
-        hyprctl keyword monitor ", preferred, auto, 1"
+        pgrep -x "ambxst" >/dev/null 2>&1 || {
+            ambxst & disown
+            sleep 2
+            hyprctl keyword monitor ", preferred, auto, 1"
+        }
         ;;
     dms)
         pgrep -f "dms run" >/dev/null 2>&1 || { dms run & disown; }
