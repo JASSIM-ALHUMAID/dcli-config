@@ -94,13 +94,13 @@ kill_all_shells() {
     kill_matching -x "quickshell"
     kill_matching -f "caelestia shell"
     kill_matching -f "caelestia resizer"
-    # AMBXst (loginlock.sh / sleep_monitor.sh are old helpers; -x matches
-    # comm, which the kernel truncates to 15 chars)
-    kill_matching -x "ambxst"
-    kill_matching -x "axctl"
-    kill_matching -x "ambxst_ipc"
-    kill_matching -x "loginlock.sh"
-    kill_matching -x "sleep_monitor.s"
+    # AMBXst — use -f (command-line match) because the helper scripts
+    # run as bash/tail, so their comm field is bash/tail, not the script name
+    kill_matching -f "ambxst"
+    kill_matching -f "axctl"
+    kill_matching -f "ambxst_ipc"
+    kill_matching -f "loginlock.sh"
+    kill_matching -f "sleep_monitor.sh"
     sleep 1
 }
 
