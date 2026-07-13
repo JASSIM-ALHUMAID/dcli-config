@@ -86,6 +86,10 @@ kill_all_shells() {
     "$HOME/.local/bin/noctalia" kill 2>/dev/null
     dms kill 2>/dev/null
     qs -c ii kill 2>/dev/null
+    # Only ask ambxst to quit if it's actually running: its CLI trusts a
+    # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
+    # whatever unrelated process now owns that recycled PID.
+    pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null
     # Caelestia / generic quickshell stragglers
     kill_matching -f "qs -c caelestia"
     kill_matching -f "bin/quickshell -c noctalia-shell"
@@ -94,13 +98,18 @@ kill_all_shells() {
     kill_matching -x "quickshell"
     kill_matching -f "caelestia shell"
     kill_matching -f "caelestia resizer"
-    # AMBXst — use -f (command-line match) because the helper scripts
-    # run as bash/tail, so their comm field is bash/tail, not the script name
-    kill_matching -f "ambxst"
-    kill_matching -f "axctl"
+    # AMBXst — the launcher execs into `qs -p .../ambxst/shell.qml`, so the
+    # main process must be matched by command line (-f); -x ambxst/axctl only
+    # catches the wrapper scripts pre-exec. Helpers (comm=bash/tail) need -f
+    # with a distinctive phrase.
+    kill_matching -f "ambxst/shell.qml"
+    kill_matching -x "ambxst"
+    kill_matching -x "axctl"
     kill_matching -f "ambxst_ipc"
     kill_matching -f "loginlock.sh"
     kill_matching -f "sleep_monitor.sh"
+    # Catch-all: no quickshell instance from any previous shell may linger
+    killall -q qs quickshell 2>/dev/null
     sleep 1
 }
 
@@ -110,14 +119,24 @@ kill_all_shells
 printf '# Written by switch-shell.sh — current shell: %s\nsource = ~/.config/hypr/shells/%s.conf\n' \
     "$SHELL_NAME" "$SHELL_NAME" > "$ACTIVE"
 
+# Clear any leaked config-parser submap state before reloading: caelestia's
+# KeybindApplier applies its JSON binds via `hyprctl keyword submap global;
+# keyword bind ...` and that parser state persists, so without this reset the
+# reload parses the ENTIRE new shell's binds into the "global" submap and
+# they all go dead.
+hyprctl keyword submap reset
 hyprctl reload
 sleep 2
 
-# end4 keeps all its binds in a permanently-active "global" submap (required
-# for its catchall launcher-interrupt bind). Make sure that submap isn't left
-# active when switching to a shell whose config doesn't define it — their
-# binds would all go dead.
-[ "$SHELL_NAME" != "end4" ] && hyprctl dispatch submap reset
+# caelestia and end4 keep ALL their static binds in a permanently-active
+# "global" submap (required for their catchall launcher-interrupt binds); the
+# other shells' binds are root-level and go dead if a submap is left active.
+# Detect from the loaded binds instead of hardcoding shell names.
+if hyprctl binds -j | jq -e 'any(.[]; .submap == "global")' >/dev/null 2>&1; then
+    hyprctl dispatch submap global
+else
+    hyprctl dispatch submap reset
+fi
 
 # Launch. dms and noctalia are exec-once'd from their shell conf, but
 # exec-once does not re-fire on `hyprctl reload`, so start them here too
@@ -129,7 +148,7 @@ case "$SHELL_NAME" in
         }
         ;;
     ambxst)
-        pgrep -x "ambxst" >/dev/null 2>&1 || {
+        pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 || {
             ambxst & disown
             sleep 2
             hyprctl keyword monitor ", preferred, auto, 1"
