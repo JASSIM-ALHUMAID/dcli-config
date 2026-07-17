@@ -96,11 +96,11 @@ kill_matching() {
 }
 
 kill_all_shells() {
-  # Ask nicely via each shell's own IPC first
-  qs -c caelestia kill 2>/dev/null
-  "$HOME/.local/bin/noctalia" kill 2>/dev/null
-  dms kill 2>/dev/null
-  qs -c ii kill 2>/dev/null
+  # Ask nicely via each shell's own IPC first (skip if binary not installed)
+  command -v qs >/dev/null 2>&1 && qs -c caelestia kill 2>/dev/null
+  [ -x "$HOME/.local/bin/noctalia" ] && "$HOME/.local/bin/noctalia" kill 2>/dev/null
+  command -v dms >/dev/null 2>&1 && dms kill 2>/dev/null
+  command -v qs >/dev/null 2>&1 && qs -c ii kill 2>/dev/null
   # Only ask ambxst to quit if it's actually running: its CLI trusts a
   # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
   # whatever unrelated process now owns that recycled PID.
