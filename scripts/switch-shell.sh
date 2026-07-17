@@ -109,11 +109,14 @@ kill_all_shells() {
   # catches the wrapper scripts pre-exec. Helpers (comm=bash/tail) need -f
   # with a distinctive phrase.
   kill_matching -f "ambxst/shell.qml"
+  kill_matching -f "ambxst/cli.sh"
   kill_matching -x "ambxst"
   kill_matching -x "axctl"
   kill_matching -f "ambxst_ipc"
   kill_matching -f "loginlock.sh"
   kill_matching -f "sleep_monitor.sh"
+  # Old quickshell wallpaper scripts from previous configs
+  kill_matching -f "switchwall.sh"
   # Catch-all: no quickshell instance from any previous shell may linger
   killall -q qs quickshell 2>/dev/null
   sleep 0.5
