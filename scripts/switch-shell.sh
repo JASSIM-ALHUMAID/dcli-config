@@ -10,6 +10,11 @@
 
 set -u
 
+# Prevent concurrent runs — only one switch-shell at a time
+LOCKFILE="/tmp/switch-shell.lock"
+exec 200>"$LOCKFILE"
+flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
+
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
 KNOWN=(caelestia ambxst dms noctalia end4)
