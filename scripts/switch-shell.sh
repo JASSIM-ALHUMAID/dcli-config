@@ -123,7 +123,12 @@ kill_all_shells() {
   kill_matching -f "switchwall.sh"
   # Catch-all: no quickshell instance from any previous shell may linger
   killall -q qs quickshell 2>/dev/null
-  sleep 0.5
+  # Wait briefly for OS to reclaim resources from killed processes
+  local i=0
+  while [ $i -lt 5 ] && pgrep -f "qs -c|quickshell|ambxst|noctalia|dms run" >/dev/null 2>&1; do
+    sleep 0.1
+    i=$((i + 1))
+  done
 }
 
 kill_all_shells
@@ -139,7 +144,7 @@ printf '# Written by switch-shell.sh — current shell: %s\nsource = ~/.config/h
 # they all go dead.
 hyprctl keyword submap reset
 hyprctl reload
-sleep 0.5
+sleep 0.2
 
 # caelestia and end4 keep ALL their static binds in a permanently-active
 # "global" submap (required for their catchall launcher-interrupt binds); the
