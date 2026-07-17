@@ -79,10 +79,14 @@ fi
 kill_matching() {
   local flag="$1" pattern="$2"
   pkill "$flag" "$pattern" 2>/dev/null || return 0
-  for _ in 1 2 3 4 5; do
+  # Poll up to 1s, bail immediately when process exits
+  local i=0
+  while [ $i -lt 10 ]; do
     pgrep "$flag" "$pattern" >/dev/null 2>&1 || return 0
-    sleep 0.2
+    sleep 0.1
+    i=$((i + 1))
   done
+  # Still alive after 1s — escalate to KILL
   pkill -9 "$flag" "$pattern" 2>/dev/null
 }
 
