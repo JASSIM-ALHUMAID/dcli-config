@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "theme": "default",
-  "position": "bottom",
+  "position": "right",
   "height": 48,
   "iconSize": 24,
   "spacing": 4,
@@ -12,7 +12,7 @@
   "availableOnFullscreen": true,
   "showRunningIndicators": true,
   "showPinButton": true,
-  "showOverviewButton": true,
+  "showOverviewButton": false,
   "ignoredAppRegexes": [
     "quickshell.*",
     "xdg-desktop-portal.*"

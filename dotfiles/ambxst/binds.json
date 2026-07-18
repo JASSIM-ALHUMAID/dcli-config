@@ -71,12 +71,13 @@
                 "action": {
                     "args": {
                     },
-                    "id": "ambxst.config"
+                    "id": "ambxst.config",
+                    "layouts": [
+                    ]
                 },
-                "key": "C",
+                "key": "i",
                 "modifiers": [
-                    "SUPER",
-                    "SHIFT"
+                    "SUPER"
                 ]
             },
             "lens": {
@@ -106,11 +107,14 @@
                 "action": {
                     "args": {
                     },
-                    "id": "ambxst.overview"
+                    "id": "ambxst.overview",
+                    "layouts": [
+                    ]
                 },
                 "key": "TAB",
                 "modifiers": [
-                    "SUPER"
+                    "SUPER",
+                    "CTRL"
                 ]
             },
             "powermenu": {
@@ -2435,6 +2439,29 @@
             "actions": [
                 {
                     "args": {
+                        "command": "qs ipc -p ~/.local/src/ambxst call wallpaper random ~/Pictures/Wallpapers"
+                    },
+                    "id": "command.run",
+                    "layouts": [
+                    ]
+                }
+            ],
+            "enabled": true,
+            "keys": [
+                {
+                    "key": "w",
+                    "modifiers": [
+                        "SUPER",
+                        "SHIFT"
+                    ]
+                }
+            ],
+            "name": "random wallpaper"
+        },
+        {
+            "actions": [
+                {
+                    "args": {
                         "command": "zen-browser"
                     },
                     "id": "command.run",
@@ -2511,8 +2538,9 @@
             "enabled": true,
             "keys": [
                 {
-                    "key": "\\",
+                    "key": "s",
                     "modifiers": [
+                        "CTRL",
                         "SUPER"
                     ]
                 }
@@ -2533,10 +2561,10 @@
             "enabled": true,
             "keys": [
                 {
-                    "key": "|",
+                    "key": "s",
                     "modifiers": [
-                        "SUPER",
-                        "SHIFT"
+                        "CTRL",
+                        "ALT"
                     ]
                 }
             ],
@@ -2564,6 +2592,96 @@
                 }
             ],
             "name": "switch shell"
+        },
+        {
+            "actions": [
+                {
+                    "args": {
+                        "command": "hyprctl dispatch workspace e+1\n"
+                    },
+                    "id": "command.run",
+                    "layouts": [
+                    ]
+                }
+            ],
+            "enabled": true,
+            "keys": [
+                {
+                    "key": "tab",
+                    "modifiers": [
+                        "SUPER"
+                    ]
+                }
+            ],
+            "name": "switch-tab+1"
+        },
+        {
+            "actions": [
+                {
+                    "args": {
+                        "command": "hyprctl dispatch workspace e-1\n"
+                    },
+                    "id": "command.run",
+                    "layouts": [
+                    ]
+                }
+            ],
+            "enabled": true,
+            "keys": [
+                {
+                    "key": "tab",
+                    "modifiers": [
+                        "SUPER",
+                        "SHIFT"
+                    ]
+                }
+            ],
+            "name": "switch-tab-1"
+        },
+        {
+            "actions": [
+                {
+                    "args": {
+                        "command": "hyprctl dispatch fullscreen 0"
+                    },
+                    "id": "command.run",
+                    "layouts": [
+                    ]
+                }
+            ],
+            "enabled": true,
+            "keys": [
+                {
+                    "key": "f",
+                    "modifiers": [
+                        "SUPER"
+                    ]
+                }
+            ],
+            "name": "Toggle Fullscreen"
+        },
+        {
+            "actions": [
+                {
+                    "args": {
+                        "command": "hyprctl dispatch fullscreen 1"
+                    },
+                    "id": "command.run",
+                    "layouts": [
+                    ]
+                }
+            ],
+            "enabled": true,
+            "keys": [
+                {
+                    "key": "f",
+                    "modifiers": [
+                        "SUPER",
+                        "SHIFT"
+                    ]
+                }
+            ],
+            "name": "Toggle Fake FullscreenF"
         }
     ],
     "defaultAmbxstBinds": {
