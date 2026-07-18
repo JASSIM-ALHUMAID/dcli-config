@@ -8,7 +8,8 @@
 # the fork's extra deps installed as regular packages.
 #
 # Layout this script produces:
-#   ~/.local/share/dots-hyprland   — the end-4/dots-hyprland checkout (source of truth)
+#   ~/.local/share/dots-hyprland   — my-ii fork checkout on branch my-ii (source of truth)
+#                                    origin = JASSIM-ALHUMAID/my-ii, upstream = end-4/dots-hyprland
 #   ~/.config/quickshell/ii        — symlink -> dots-hyprland/dots/.config/quickshell/ii
 #   ~/.config/matugen              — symlink -> dots-hyprland/dots/.config/matugen
 #
@@ -23,7 +24,9 @@ set -euo pipefail
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
-REPO_URL="https://github.com/end-4/dots-hyprland.git"
+REPO_URL="https://github.com/JASSIM-ALHUMAID/my-ii.git"
+UPSTREAM_URL="https://github.com/end-4/dots-hyprland.git"
+REPO_BRANCH="my-ii"
 REPO_DIR="$REAL_HOME/.local/share/dots-hyprland"
 II_QS="$REAL_HOME/.config/quickshell/ii"
 MATUGEN_CONF="$REAL_HOME/.config/matugen"
@@ -36,7 +39,8 @@ as_user() {
     fi
 }
 
-# 1) Clone end-4/dots-hyprland (shallow, with submodules — the ii shell's
+# 1) Clone the my-ii fork on its custom branch (full clone — the fork's
+#    branch history matters; submodules stay shallow. The ii shell's
 #    modules/common/widgets/shapes is a submodule and the shell fails to
 #    load without it: "module qs.modules.common.widgets.shapes is not installed").
 if [ -d "$REPO_DIR/.git" ]; then
@@ -46,9 +50,10 @@ else
         echo "!! $REPO_DIR exists but is not a git repo — refusing to touch it." >&2
         exit 1
     fi
-    echo ":: Cloning end-4/dots-hyprland (shallow)"
+    echo ":: Cloning my-ii fork (branch $REPO_BRANCH)"
     as_user mkdir -p "$(dirname "$REPO_DIR")"
-    as_user git clone --depth 1 --recurse-submodules --shallow-submodules "$REPO_URL" "$REPO_DIR"
+    as_user git clone --branch "$REPO_BRANCH" --recurse-submodules --shallow-submodules "$REPO_URL" "$REPO_DIR"
+    as_user git -C "$REPO_DIR" remote add upstream "$UPSTREAM_URL"
 fi
 # Ensure submodules exist even on a pre-existing clone.
 as_user git -C "$REPO_DIR" submodule update --init --recursive --depth 1
