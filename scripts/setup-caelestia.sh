@@ -1,5 +1,6 @@
 #!/bin/bash
 # Bootstrap my custom Caelestia shell (fork of caelestia-dots/shell).
+# origin = plusdrag11/caelestia, upstream = caelestia-dots/shell
 #
 # Layout this script produces:
 #   ~/Projects/shell/real              — the fork checkout (source of truth)
@@ -16,7 +17,8 @@ set -euo pipefail
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
-REPO_URL="https://github.com/JASSIM-ALHUMAID/my-caelestia.git"
+REPO_URL="https://github.com/plusdrag11/caelestia.git"
+UPSTREAM_URL="https://github.com/caelestia-dots/shell.git"
 REPO_DIR="${CAELESTIA_DEV:-$REAL_HOME/Projects/shell/real}"
 QS_CONF="$REAL_HOME/.config/quickshell/caelestia"
 CAEL_CONF="$REAL_HOME/.config/caelestia"
@@ -75,6 +77,7 @@ if [ ! -d "$REPO_DIR/.git" ]; then
     else
         as_user git clone "$REPO_URL" "$REPO_DIR"
     fi
+    as_user git -C "$REPO_DIR" remote add upstream "$UPSTREAM_URL"
 fi
 
 # 2) Build + install the shell (only if not already installed)

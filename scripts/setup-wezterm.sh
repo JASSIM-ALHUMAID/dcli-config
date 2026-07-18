@@ -1,5 +1,6 @@
 #!/bin/bash
 # Bootstrap my WezTerm config (JASSIM-ALHUMAID/wezterm).
+# origin = JASSIM-ALHUMAID/wezterm, plusdrag11 = plusdrag11/wezterm
 #
 # ~/.config/wezterm is that repo's own checkout (the source of truth);
 # dcli/dotfiles/wezterm is only a fallback snapshot, used when the clone
@@ -12,6 +13,7 @@ REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
 REPO_URL="https://github.com/JASSIM-ALHUMAID/wezterm.git"
+PLUSDRAG_URL="https://github.com/plusdrag11/wezterm.git"
 WEZ_CONF="$REAL_HOME/.config/wezterm"
 SNAPSHOT="$REAL_HOME/.config/dcli/dotfiles/wezterm"
 
@@ -41,5 +43,7 @@ else
     echo "!! Clone failed and no snapshot available at $SNAPSHOT." >&2
     exit 1
 fi
+
+as_user git -C "$WEZ_CONF" remote add plusdrag11 "$PLUSDRAG_URL" 2>/dev/null || true
 
 echo ":: WezTerm config setup complete."

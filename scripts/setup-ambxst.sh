@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bootstrap AMBXst from my fork (JASSIM-ALHUMAID/my-ambxst, branch my-ambxst;
+# Bootstrap AMBXst from my fork (plusdrag11/Ambxst, branch my-ambxst;
 # upstream Axenide/Ambxst kept as second remote) — clones to ~/.local/src/ambxst
 # and runs its installer, which sets up a launcher at /usr/local/bin/ambxst
 # (it sudos where needed). My AMBXst settings (binds.json, config/,
@@ -10,7 +10,7 @@ set -euo pipefail
 REAL_USER="${SUDO_USER:-$USER}"
 REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
-REPO_URL="https://github.com/JASSIM-ALHUMAID/my-ambxst.git"
+REPO_URL="https://github.com/plusdrag11/Ambxst.git"
 UPSTREAM_URL="https://github.com/Axenide/Ambxst.git"
 REPO_BRANCH="my-ambxst"
 INSTALL_PATH="$REAL_HOME/.local/src/ambxst"
