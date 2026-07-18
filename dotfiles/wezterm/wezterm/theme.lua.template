@@ -1,0 +1,59 @@
+-- =====================================================================
+--  theme.lua  --  SINGLE SOURCE of all themed WezTerm colors.
+--
+--  Generated from theme.lua.template by ~/.config/yasb/colorScheme.ps1 on
+--  every wallpaper change. EDIT THE .template, never theme.lua directly.
+--
+--  Token syntax (write each wrapped in curly braces in the values below):
+--    colorN              -> pywal hex (#rrggbb), N = 0..15
+--    background/foreground/cursor -> pywal special hex
+--    LD:lightCol,darkCol -> lightCol on LIGHT wallpapers, darkCol on DARK
+--                           (no spaces inside the braces)
+-- =====================================================================
+return {
+	-- Terminal/tab accent palette.
+	custom_colors = {
+		red     = "{color1}",
+		cyan    = "{color6}",
+		magenta = "{color5}",
+		yellow  = "{color3}",
+		green   = "{color2}",
+	},
+
+	-- Status-bar accents (events.lua). Hues stay fixed across light/dark
+	-- because pywal already contrasts them with the wallpaper. To force a
+	-- per-brightness color on an item, use the LD token, e.g. color1 for
+	-- light and color9 for dark.
+	status = {
+		workspace = "{LD:color1,color4}", -- "main" label: dark accent on light bars, bright on dark
+		mode      = "{color6}",
+		leader    = "{color5}",            -- leader pill background (filled, like active tab)
+		leader_fg = "{LD:color0,color15}", -- text on the leader pill
+		cwd       = "{color4}",
+		process   = "{color3}",
+		clock     = "{color6}",
+		battery   = "{color2}",
+	},
+
+	-- Tab/status bar surface. Flips with wallpaper brightness so the bar
+	-- stays readable: LIGHT wallpaper -> light bg + dark text, DARK -> reverse.
+	tab_bar = {
+		bg        = "{LD:color15,color0}", -- bar / inactive / new-tab background
+		fg        = "{LD:color0,color15}", -- text on the bar
+		gray      = "{color8}",            -- dimmed inactive text / hover bg
+		active_bg = "{color6}",            -- selected tab background (accent)
+		active_fg = "{LD:color0,color15}", -- selected tab text
+
+		-- Custom tab bar colors (tab-title.lua)
+		default_bg  = "{LD:color15,color0}", -- inactive tab body (near-black, blends with bar)
+		default_fg  = "{LD:color0,color15}", -- inactive tab text
+		hover_bg    = "{color5}",            -- hovered tab body (magenta/blue)
+		hover_fg    = "{LD:color0,color15}", -- hovered tab text
+		active_bg2  = "{LD:color1,color4}",  -- active tab body (orange, pops)
+		active_fg2  = "{LD:color15,color0}", -- active tab text
+		unseen      = "{color1}",            -- unseen output badge (red)
+		progress_ok = "{color2}",            -- progress success (green)
+		progress_err = "{color1}",           -- progress error (red)
+		progress_ind = "{LD:color0,color15}", -- progress indeterminate (light)
+	},
+}

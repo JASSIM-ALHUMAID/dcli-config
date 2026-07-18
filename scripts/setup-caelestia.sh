@@ -29,8 +29,24 @@ as_user() {
     fi
 }
 
+# Starship: the live config is ~/starship.toml (regenerated from the fork's
+# starship.toml.template by starship-theme.py on every wallpaper/theme change);
+# ~/.config/starship.toml must be a symlink to it. Seed the file from the
+# fork's snapshot so the prompt works before the first theme change.
+ensure_starship() {
+    if [ ! -f "$REAL_HOME/starship.toml" ] && [ -f "$CAEL_CONF/starship.toml" ]; then
+        as_user cp "$CAEL_CONF/starship.toml" "$REAL_HOME/starship.toml"
+        echo ":: Seeded ~/starship.toml from the fork (regenerates on first theme change)"
+    fi
+    if [ ! -e "$REAL_HOME/.config/starship.toml" ] && [ -f "$REAL_HOME/starship.toml" ]; then
+        as_user ln -s "$REAL_HOME/starship.toml" "$REAL_HOME/.config/starship.toml"
+        echo ":: Symlinked ~/.config/starship.toml -> ~/starship.toml"
+    fi
+}
+
 # Already fully set up?
 if [ -d "$REPO_DIR/.git" ] && [ -e "$QS_CONF/shell.qml" ] && [ -L "$CAEL_CONF" ]; then
+    ensure_starship
     echo ":: Caelestia fork already set up ($REPO_DIR) — nothing to do."
     exit 0
 fi
@@ -88,6 +104,12 @@ else
     echo ":: Symlinked $CAEL_CONF -> $SRC"
 fi
 
+ensure_starship
+
 echo ":: Caelestia fork setup complete."
 echo ":: Day-to-day workflow: edit files in $REPO_DIR, then run:"
 echo "     ./scripts/sync-live.sh"
+echo ""
+echo ":: Optional (not automated): the SDDM and GRUB themes live in the fork too."
+echo "   Install them interactively with:"
+echo "     cd $REPO_DIR && ./install.fish   (options 3 = SDDM, 4 = GRUB)"

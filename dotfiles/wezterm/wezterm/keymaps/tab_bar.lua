@@ -3,6 +3,7 @@ local tab_bar = require("wezterm.tab_bar")
 local M = {}
 
 function M.append(keys, wezterm)
+	-- Toggle tab bar visibility (LEADER+t)
 	table.insert(keys, {
 		key = "t",
 		mods = "LEADER",

@@ -25,6 +25,13 @@ function M.append(keys, wezterm, workspaces)
 			workspaces.save_and_close_current_workspace(window, pane)
 		end),
 	})
+	table.insert(keys, {
+		key = "q",
+		mods = "LEADER|CTRL",
+		action = wezterm.action_callback(function(window, pane)
+			workspaces.close_current_workspace(window, pane)
+		end),
+	})
 end
 
 return M

@@ -38,10 +38,12 @@ function M.append(keys, wezterm, constants, helpers)
 		key = "x",
 		mods = "LEADER",
 		action = wezterm.action_callback(function(window, pane)
+			-- Interrupt any foreground process, then force-close the pane.
+			-- Note: do NOT use wezterm.time.call_after here — the window/pane
+			-- objects are only valid during this callback. Using them in a
+			-- deferred timer crashes WezTerm (e.g. when neovim is running).
 			window:perform_action(act.SendKey({ key = "c", mods = "CTRL" }), pane)
-			wezterm.time.call_after(0.05, function()
-				window:perform_action(act.CloseCurrentPane({ confirm = false }), pane)
-			end)
+			window:perform_action(act.CloseCurrentPane({ confirm = false }), pane)
 		end),
 	})
 	table.insert(keys, { key = "r", mods = "LEADER", action = act.ActivateKeyTable({ name = "resize_pane", one_shot = false }) })

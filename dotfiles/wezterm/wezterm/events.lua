@@ -1,5 +1,7 @@
 local helpers = require("wezterm.helpers")
 local tab_bar = require("wezterm.tab_bar")
+local tab_title = require("wezterm.events.tab-title")
+local new_tab_button = require("wezterm.events.new-tab-button")
 
 local M = {}
 
@@ -26,6 +28,9 @@ end
 
 -- Register WezTerm event handlers.
 function M.register(wezterm, workspaces, constants)
+	tab_title.setup({})
+	new_tab_button.setup()
+
 	wezterm.on("update-status", function(window, pane)
 		tab_bar.update(window)
 

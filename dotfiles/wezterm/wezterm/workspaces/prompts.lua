@@ -330,13 +330,17 @@ function Module.attach(M, ctx)
 			pane
 		)
 	end
-	-- Save the active workspace to disk, then close its window(s) and switch
-	-- to the most recently used loaded workspace (or default if none remain).
-	function M.save_and_close_current_workspace(window, pane)
+	-- Close the active workspace and switch to the most recently used loaded
+	-- workspace (or quit wezterm if none remain). When `should_save` is true the
+	-- workspace is persisted to disk first (and the ephemeral default workspace
+	-- is renamed via a prompt so it can be saved); otherwise it's closed as-is.
+	local function close_current_workspace(window, pane, should_save)
 		local name = window:active_workspace()
 
 		local function finalize(name)
-			M.save_workspace_by_name(name)
+			if should_save then
+				M.save_workspace_by_name(name)
+			end
 
 			-- Mirror closing the last pane (see window-close-requested): land on
 			-- the most-recently-used other loaded workspace, or quit wezterm if
@@ -349,18 +353,36 @@ function Module.attach(M, ctx)
 				return
 			end
 
+			-- Collect the closed workspace's pane ids before we switch away.
+			local pane_ids = {}
+			for _, mux_win in ipairs(wezterm.mux.all_windows()) do
+				if mux_win:get_workspace() == name then
+					for _, tab in ipairs(mux_win:tabs()) do
+						for _, p in ipairs(tab:panes()) do
+							table.insert(pane_ids, p:pane_id())
+						end
+					end
+				end
+			end
+
 			-- Switch to the fallback workspace first (this properly materializes
-			-- headless mux windows instead of spawning duplicates), then close
-			-- the current workspace after a brief delay (see window-close-requested).
+			-- headless mux windows instead of spawning duplicates).
 			M.remove_workspace_from_order(name)
 			M.touch_workspace_order(fallback)
 			window:perform_action(act.SwitchToWorkspace({ name = fallback }), pane)
+
+			-- Empty the (now headless) mux window so WezTerm reaps it and the
+			-- workspace leaves the loaded list. gui_window():close() can't help
+			-- once headless (see navigation.lua header), so kill the panes by id
+			-- via the CLI instead.
 			wezterm.time.call_after(0.1, function()
-				M.close_loaded_workspace(name)
+				for _, id in ipairs(pane_ids) do
+					wezterm.background_child_process({ "wezterm", "cli", "kill-pane", "--pane-id", tostring(id) })
+				end
 			end)
 		end
 
-		if name == constants.DEFAULT_WORKSPACE then
+		if should_save and name == constants.DEFAULT_WORKSPACE then
 			window:perform_action(
 				act.PromptInputLine({
 					description = "Name this workspace to save and close it:",
@@ -381,6 +403,16 @@ function Module.attach(M, ctx)
 		end
 
 		finalize(name)
+	end
+
+	function M.save_and_close_current_workspace(window, pane)
+		close_current_workspace(window, pane, true)
+	end
+
+	-- Close the active workspace without persisting it. Same switch/reap
+	-- behavior as save-and-close, just no save step.
+	function M.close_current_workspace(window, pane)
+		close_current_workspace(window, pane, false)
 	end
 
 	function M.new_workspace_same_cwd(window, pane)

@@ -3,7 +3,7 @@ local M = {}
 -- Font stack and related typography.
 function M.apply(config, wezterm)
 	config.font = wezterm.font_with_fallback({
-		{ family = "Maple Mono NF", scale = 1.1 },
+		{ family = "Maple Mono NF", scale = 1.25 },
 		{ family = "JetBrainsMono Nerd Font", scale = 1.1 },
 		{ family = "Fira Code", scale = 1.0 },
 		{ family = "Ubuntu Mono", scale = 1.0 },
