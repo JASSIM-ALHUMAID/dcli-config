@@ -16,7 +16,7 @@
 set -euo pipefail
 
 DOTFILES="$HOME/.config/dcli/dotfiles"
-TARGETS=(hypr ambxst noctalia DankMaterialShell fuzzel cava nvim yazi lazygit git)
+TARGETS=(hypr ambxst noctalia DankMaterialShell fuzzel cava nvim yazi lazygit git environment.d)
 
 ts=$(date +%Y%m%d-%H%M%S)
 for name in "${TARGETS[@]}"; do
