@@ -3,6 +3,7 @@
 
 local terminal     = "wezterm-gui"
 local browser      = "brave-browser-nightly"
+local defaultBrowser = "zen-browser"
 local editor       = "codium"
 local fileExplorer = "thunar"
 
@@ -189,7 +190,7 @@ hl.bind("SUPER + SHIFT + S", hl.dsp.global("quickshell:regionScreenshot"))
 hl.bind("SUPER + RETURN",   hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + T",        hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + B",        hl.dsp.exec_cmd(browser))
-hl.bind("SUPER + W",        hl.dsp.exec_cmd("zen-browser"))
+hl.bind("SUPER + W",        hl.dsp.exec_cmd(defaultBrowser))
 hl.bind("SUPER + E",        hl.dsp.exec_cmd(fileExplorer))
 hl.bind("SUPER + R",        hl.dsp.exec_cmd(fileExplorer))
 hl.bind("SUPER + ALT + K",  hl.dsp.exec_cmd("kitty"))

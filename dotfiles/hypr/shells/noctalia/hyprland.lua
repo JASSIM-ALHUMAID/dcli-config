@@ -3,6 +3,7 @@
 
 local terminal     = "wezterm-gui"
 local browser      = "brave-browser-nightly"
+local defaultBrowser = "zen-browser"
 local editor       = "codium"
 local fileExplorer = "thunar"
 local noctaliaCmd  = os.getenv("HOME") .. "/.local/bin/noctalia ipc call"
@@ -180,5 +181,5 @@ hl.bind("SUPER + ALT + K",  hl.dsp.exec_cmd("kitty"))
 hl.bind("CTRL + ALT + B",   hl.dsp.exec_cmd("blueman-manager"))
 hl.bind("SUPER + BACKSLASH",         hl.dsp.exec_cmd("hyprsunset -t 4500"))
 hl.bind("SUPER + SHIFT + BACKSLASH", hl.dsp.exec_cmd("pkill hyprsunset"))
-hl.bind("SUPER + W",        hl.dsp.exec_cmd("zen-browser"))
+hl.bind("SUPER + W",        hl.dsp.exec_cmd(defaultBrowser))
 hl.bind("SUPER + SHIFT + O", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/dcli/scripts/switch-shell.sh"))
