@@ -92,17 +92,18 @@ hl.config({
 -- Rules
 hl.window_rule({ float = true, match = { class = "blueman-manager" } })
 
--- Exec
-hl.exec_cmd("qs -c ii")
-hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
-hl.exec_cmd("hypridle")
-hl.exec_cmd("dbus-update-activation-environment --all")
-hl.exec_cmd("wl-paste --type text --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'")
-hl.exec_cmd("wl-paste --type image --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'")
-hl.exec_cmd("systemctl --user start hyprpolkitagent")
-
--- Submap
-hl.exec_cmd("hyprctl dispatch submap global")
+-- Exec. hl.exec_cmd at the top level re-runs on every `hyprctl reload`,
+-- which spawned a second shell instance on every switch — hyprland.start
+-- fires once per session, like the old exec-once.
+hl.on("hyprland.start", function()
+    hl.exec_cmd("qs -c ii")
+    hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
+    hl.exec_cmd("hypridle")
+    hl.exec_cmd("dbus-update-activation-environment --all")
+    hl.exec_cmd("wl-paste --type text --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'")
+    hl.exec_cmd("wl-paste --type image --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'")
+    hl.exec_cmd("systemctl --user start hyprpolkitagent")
+end)
 
 -- Keybinds
 -- Shell IPC — the ii shell registers these as hyprland globals. Tap Super
@@ -121,7 +122,7 @@ hl.bind("SUPER + PERIOD",   hl.dsp.global("quickshell:overviewEmojiToggle"))
 hl.bind("SUPER + I",        hl.dsp.exec_cmd("qs -p " .. os.getenv("HOME") .. "/.config/quickshell/ii/settings.qml"))
 hl.bind("CTRL + ALT + DELETE", hl.dsp.global("quickshell:sessionToggle"))
 hl.bind("CTRL + SUPER + T",    hl.dsp.global("quickshell:wallpaperSelectorToggle"))
-hl.bind("SUPER + SHIFT + W",   hl.dsp.global("quickshell:wallpaperSelectorToggle"))
+hl.bind("SUPER + SHIFT + W",   hl.dsp.global("quickshell:wallpaperSelectorRandom"))
 hl.bind("CTRL + SUPER + SHIFT + D", hl.dsp.global("quickshell:toggleLightDark"))
 hl.bind("SUPER + SHIFT + A", hl.dsp.global("quickshell:regionSearch"))
 hl.bind("SUPER + SHIFT + X", hl.dsp.global("quickshell:regionOcr"))

@@ -93,11 +93,15 @@ hl.config({
 -- Rules
 hl.window_rule({ float = true, match = { class = "blueman-manager" } })
 
--- Exec
-hl.exec_cmd(noctaliaCmd)
-hl.exec_cmd("systemctl --user start hyprpolkitagent")
-hl.exec_cmd("wl-paste --type text --watch cliphist store")
-hl.exec_cmd("wl-paste --type image --watch cliphist store")
+-- Exec. hl.exec_cmd at the top level re-runs on every `hyprctl reload`,
+-- which spawned a second shell instance on every switch — hyprland.start
+-- fires once per session, like the old exec-once.
+hl.on("hyprland.start", function()
+    hl.exec_cmd(noctaliaCmd)
+    hl.exec_cmd("systemctl --user start hyprpolkitagent")
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image --watch cliphist store")
+end)
 
 -- Keybinds
 -- Shell IPC. Tap Super alone opens the launcher; Super+Space is the us/ara
