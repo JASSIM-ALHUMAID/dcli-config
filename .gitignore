@@ -4,3 +4,21 @@ system-packages-*.yaml
 # mpvpaper wallpaper thumbnails — regenerated cache, not config
 dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/*
 !dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/.gitkeep
+
+# Theme output, rewritten on every wallpaper/scheme change and recreated from
+# scratch on a new machine — tracking them only produces churn.
+#   caelestia CLI (`caelestia scheme set`): cava, fuzzel.ini
+#   matugen: hypr colours, hyprlock colours
+#   DMS matugen hook: dms/*.lua, zen.css
+#   noctalia: colors.json
+# NOT ignored: fuzzel/fuzzel_theme.ini — shell-picker.ini `include`s it, and
+# fuzzel refuses to parse the config if the include is missing, so a fresh
+# machine needs it committed as a seed.
+dotfiles/cava/config
+dotfiles/fuzzel/fuzzel.ini
+dotfiles/hypr/hyprland/colors.lua
+dotfiles/hypr/hyprlock/colors.conf
+dotfiles/hypr/dms/*.lua
+dotfiles/hypr/scheme/current.lua
+dotfiles/DankMaterialShell/zen.css
+dotfiles/noctalia/colors.json
