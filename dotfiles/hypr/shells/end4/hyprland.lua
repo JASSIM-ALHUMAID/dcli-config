@@ -1,0 +1,168 @@
+-- ~/.config/hypr/shells/end4/hyprland.lua
+-- end4 (illogical-impulse) — Hyprland Lua config
+
+local terminal     = "wezterm-gui"
+local browser      = "brave-browser-nightly"
+local editor       = "codium"
+local fileExplorer = "thunar"
+
+local sensitivity  = 0.3
+local accelProfile = "flat"
+local kbLayout     = "us,ara"
+local kbOptions    = "grp:win_space_toggle, ctrl:nocaps"
+
+local gapsIn     = 4
+local gapsOut    = 8
+local borderSize = 2
+local rounding   = 12
+
+-- Default monitor conf
+hl.monitor({
+    output   = "",
+    mode     = "preferred",
+    position = "auto",
+    scale    = 1,
+})
+
+-- Env
+hl.config({
+    env = {
+        { "GDK_BACKEND", "wayland,x11" },
+        { "QT_QPA_PLATFORM", "wayland;xcb" },
+        { "SDL_VIDEODRIVER", "wayland,x11,windows" },
+        { "CLUTTER_BACKEND", "wayland" },
+        { "ELECTRON_OZONE_PLATFORM_HINT", "auto" },
+        { "XDG_CURRENT_DESKTOP", "Hyprland" },
+        { "XDG_SESSION_TYPE", "wayland" },
+        { "XDG_SESSION_DESKTOP", "Hyprland" },
+    },
+})
+
+-- General
+hl.config({
+    general = {
+        gaps_in = gapsIn,
+        gaps_out = gapsOut,
+        border_size = borderSize,
+        layout = "scrolling",
+    },
+})
+
+-- Input
+hl.config({
+    input = {
+        kb_layout = kbLayout,
+        kb_options = kbOptions,
+        sensitivity = sensitivity,
+        accel_profile = accelProfile,
+    },
+    binds = { scroll_event_delay = 0, drag_threshold = 10 },
+})
+
+-- Scrolling
+hl.config({
+    scrolling = {
+        column_width = 0.85,
+        explicit_column_widths = "0.35, 0.5, 0.65, 0.95, 1.0",
+    },
+})
+
+-- Decoration
+hl.config({
+    decoration = {
+        rounding = rounding,
+        blur = { enabled = true },
+    },
+})
+
+-- Animations
+hl.config({ animations = { enabled = true } })
+hl.curve("standard", { type = "bezier", points = { { 0.2, 0 }, { 0, 1 } } })
+hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "standard", style = "slidevert" })
+
+-- Misc
+hl.config({
+    misc = {
+        disable_hyprland_logo = true,
+        force_default_wallpaper = 0,
+        middle_click_paste = false,
+    },
+})
+
+-- Rules
+hl.window_rule({ float = true, match = { class = "blueman-manager" } })
+
+-- Exec
+hl.exec_cmd("qs -c ii")
+hl.exec_cmd("gnome-keyring-daemon --start --components=secrets")
+hl.exec_cmd("hypridle")
+hl.exec_cmd("dbus-update-activation-environment --all")
+hl.exec_cmd("wl-paste --type text --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'")
+hl.exec_cmd("wl-paste --type image --watch bash -c 'cliphist store && qs -c ii ipc call cliphistService update'")
+hl.exec_cmd("systemctl --user start hyprpolkitagent")
+
+-- Submap
+hl.exec_cmd("hyprctl dispatch submap global")
+
+-- Keybinds — Shell IPC (quickshell globals)
+hl.bind("SUPER + Super_L", function() os.execute("qs -c ii ipc call TEST_ALIVE || pkill fuzzel || fuzzel") end)
+hl.bind("SUPER + Super_L", hl.dsp.exec_cmd("qs -c ii ipc call searchGlobal toggleRelease"), { global = "quickshell:searchToggleRelease" })
+hl.bind("SUPER + D",      hl.dsp.exec_cmd("qs -c ii ipc call searchGlobal toggleRelease"))
+hl.bind("SUPER + N",      hl.dsp.exec_cmd("qs -c ii ipc call sidebar toggle"))
+hl.bind("SUPER + I",      hl.dsp.exec_cmd("qs -c ii ipc call settings toggle"))
+hl.bind("SUPER + L",      hl.dsp.exec_cmd("qs -c ii ipc call session toggle"))
+hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd("qs -c ii ipc call wallpaperSelector toggle"))
+
+-- Window management
+hl.bind("SUPER + Q",      hl.dsp.window.close())
+hl.bind("SUPER + F",      hl.dsp.exec_cmd("hyprctl dispatch fullscreen 0"))
+hl.bind("SUPER + ALT + F", hl.dsp.exec_cmd("hyprctl dispatch fullscreen 1"))
+hl.bind("SUPER + SPACE",  hl.dsp.exec_cmd("hyprctl dispatch togglefloating"))
+
+-- Focus
+hl.bind("SUPER + LEFT",   hl.dsp.focus({ direction = "l" }))
+hl.bind("SUPER + RIGHT",  hl.dsp.focus({ direction = "r" }))
+hl.bind("SUPER + UP",     hl.dsp.focus({ direction = "u" }))
+hl.bind("SUPER + DOWN",   hl.dsp.focus({ direction = "d" }))
+
+-- Move window
+hl.bind("SUPER + SHIFT + LEFT",  hl.dsp.window.move({ direction = "l" }))
+hl.bind("SUPER + SHIFT + RIGHT", hl.dsp.window.move({ direction = "r" }))
+hl.bind("SUPER + SHIFT + UP",    hl.dsp.window.move({ direction = "u" }))
+hl.bind("SUPER + SHIFT + DOWN",  hl.dsp.window.move({ direction = "d" }))
+
+-- Scrolling layout
+hl.bind("SUPER + EQUAL",  hl.dsp.exec_cmd("hyprctl dispatch colresize +0.1"))
+hl.bind("SUPER + MINUS",  hl.dsp.exec_cmd("hyprctl dispatch colresize -0.1"))
+hl.bind("SUPER + CTRL + RIGHT", hl.dsp.exec_cmd("hyprctl dispatch layoutmsg swapcol r"))
+hl.bind("SUPER + CTRL + LEFT",  hl.dsp.exec_cmd("hyprctl dispatch layoutmsg swapcol l"))
+
+-- Workspaces
+for i = 1, 5 do
+    hl.bind("SUPER + " .. i, hl.dsp.focus({ workspace = tostring(i) }))
+    hl.bind("SUPER + ALT + " .. i, hl.dsp.exec_cmd("hyprctl dispatch movetoworkspace " .. i))
+end
+hl.bind("SUPER + Z",  hl.dsp.exec_cmd("hyprctl dispatch workspace -1"))
+hl.bind("SUPER + X",  hl.dsp.exec_cmd("hyprctl dispatch workspace +1"))
+
+-- Mouse
+hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
+hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+-- Media (direct wpctl/brightnessctl)
+hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"))
+hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"))
+hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
+hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"))
+hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl set +5%"))
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightnessctl set 5%-"))
+
+-- Screenshots
+hl.bind("PRINT",              hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy"))
+hl.bind("SUPER + SHIFT + S",  hl.dsp.exec_cmd("grim -g \"$(slurp)\" - | wl-copy && swappy -d -"))
+
+-- Apps
+hl.bind("SUPER + W",         hl.dsp.exec_cmd(browser))
+hl.bind("SUPER + R",         hl.dsp.exec_cmd(fileExplorer))
+hl.bind("SUPER + T",         hl.dsp.exec_cmd(terminal))
+hl.bind("SUPER + SHIFT + O", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/dcli/scripts/switch-shell.sh"))

@@ -7,5 +7,7 @@
   "profile": "default",
   "volume": 1,
   "wallpapersFolder": "~/Pictures/Wallpapers",
-  "thumbCacheReady": true
+  "thumbCacheReady": true,
+  "enabled": true
 }
+

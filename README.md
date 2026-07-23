@@ -12,7 +12,8 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 | Host config | `hosts/cachyos-desktop.yaml` | enabled modules, services, default apps |
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | synced to `~/.config/*` by `dcli sync` |
-| Hooks | `scripts/setup-caelestia.sh`, `scripts/setup-ambxst.sh` | clone + install the two shells |
+| Hooks | `scripts/setup-caelestia.sh`, `scripts/setup-ambxst.sh`, `scripts/setup-end4.sh`, `scripts/setup-noctalia.sh`, `scripts/setup-wezterm.sh` | clone + install each shell |
+| Updates | `scripts/update-noctalia.sh`, `scripts/update-end4.sh` | pull latest QML/fork (noctalia: `--force` to re-download binary) |
 | Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 |
 
 ### The custom Caelestia setup (important)
@@ -31,23 +32,23 @@ produces the production layout. Because `~/.config/caelestia` is a symlink
 into the fork, the caelestia module deliberately has **no dotfiles entry** —
 dcli must not replace that symlink.
 
-`scripts/caelestia-sync.sh` (also on PATH as `caelestia-sync`) promotes
-tested changes: it pulls live-edited configs prod → dev (so git commits in
-dev include current state), deploys code dev → prod, and with `--install`
-rebuilds + installs the shell from prod (restarts qs). `--dry-run` previews.
-
 WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).
 
 ### Shell switching
 
-`~/.config/hypr/hyprland.conf` sources `shells/active.conf`, which points at
-one of `shells/{caelestia,ambxst,dms,noctalia,end4}.conf`:
+`~/.config/hypr/hyprland.lua` reads the shell name from `shells/active.conf`
+and `dofile()`s that shell's Lua config. Hyprland loads either `hyprland.conf`
+or `hyprland.lua`, never both, so everything here is Lua:
 
 - **caelestia** / **ambxst** ship their own full hyprland configs and are
-  sourced directly.
-- **dms** / **noctalia** / **end4** don't, so each gets its own **standalone** config
-  in `shells/dms/`, `shells/noctalia/`, and `shells/end4/` — seeded with my input/layout
+  loaded directly from `~/.local/share/`. Since Hyprland only puts
+  `~/.config/hypr` on `package.path`, the entry point appends the shell's own
+  directory so its internal `require`s resolve. Local tweaks on top of an
+  upstream config go in `shells/<name>-overrides.lua`, loaded afterwards if
+  present (see `shells/ambxst-overrides.lua`).
+- **dms** / **noctalia** / **end4** don't, so each gets its own **standalone**
+  `hyprland.lua` in `shells/dms/`, `shells/noctalia/`, and `shells/end4/` — seeded with my input/layout
   preferences and app binds, plus each shell's own IPC binds (launcher on
   Super+D — Super+Space is taken by the us/ara layout toggle). Edit each
   freely; they are fully independent of caelestia/ambxst and of each other.
@@ -58,7 +59,8 @@ stock quickshell that caelestia and dms need. So `scripts/setup-noctalia.sh`
 instead clones the noctalia QML to `~/.config/quickshell/noctalia-shell` and
 extracts the `noctalia-qs` package (never pacman-installed, so no conflict)
 to `~/.local/opt/noctalia-qs`, with a `~/.local/bin/noctalia` wrapper that
-launches/IPCs noctalia using the fork binary.
+launches/IPCs noctalia using the fork binary. Update with
+`scripts/update-noctalia.sh` (add `--force` to re-download the binary).
 
 **end-4's illogical-impulse** uses a quickshell config launched with
 `qs -c ii`. The `illogical-impulse-quickshell-git` package likewise
@@ -67,7 +69,7 @@ stock quickshell with its extra qt6 deps installed separately, and symlinks
 `~/.config/quickshell/ii` into the `~/.local/share/dots-hyprland` checkout.
 Like noctalia, end4's upstream Hyprland config is Lua-based and assumes it
 owns `~/.config/hypr`, so `shells/end4/` provides a standalone wrapper
-config.
+config. Update with `scripts/update-end4.sh`.
 
 Switch with `scripts/switch-shell.sh <name>` — no argument opens a fuzzel
 picker. The script kills every shell's processes, rewrites `active.conf`,

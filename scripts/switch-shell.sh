@@ -3,10 +3,10 @@
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
-# Mechanism: ~/.config/hypr/hyprland.conf sources shells/active.conf, which
-# this script rewrites to point at shells/<name>.conf, then reloads hyprland
-# and launches the chosen shell. The per-shell confs live in the dcli repo
-# (dotfiles/hypr/shells/).
+# Mechanism: ~/.config/hypr/hyprland.lua reads shells/active.conf, extracts
+# the shell name, and dofile()'s the matching Lua config. This script
+# rewrites active.conf and reloads hyprland. The per-shell Lua configs live
+# in the dcli repo (dotfiles/hypr/shells/).
 
 set -u
 
@@ -19,13 +19,25 @@ SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
 KNOWN=(caelestia ambxst dms noctalia end4)
 
+# Where each shell's Lua config lives — must match hyprland.lua's shell_paths
+config_path() {
+  case "$1" in
+  caelestia) echo "$HOME/.local/share/caelestia/hypr/hyprland.lua" ;;
+  ambxst) echo "$HOME/.local/share/ambxst/hyprland.lua" ;;
+  *) echo "$SHELLS_DIR/$1/hyprland.lua" ;;
+  esac
+}
+
+# active.conf holds a bare shell name; older versions wrote a
+# "source = ~/.config/hypr/shells/<name>.conf" line, still accepted here.
 current_shell() {
   [ -f "$ACTIVE" ] || {
     echo none
     return
   }
   local src
-  src=$(grep -m1 '^source' "$ACTIVE" | sed 's/.*shells\///; s/\.conf.*//')
+  src=$(grep -m1 -v '^[[:space:]]*\(#.*\)\?$' "$ACTIVE" |
+    sed 's/^source[[:space:]]*=[[:space:]]*//; s/.*shells\///; s/\.conf.*//; s/\.lua.*//; s/[[:space:]]*$//')
   echo "${src:-none}"
 }
 
@@ -73,8 +85,9 @@ case " ${KNOWN[*]} " in
   ;;
 esac
 
-if [ ! -f "$SHELLS_DIR/$SHELL_NAME.conf" ]; then
-  echo "Error: $SHELLS_DIR/$SHELL_NAME.conf not found (run dcli sync?)"
+SHELL_CONFIG=$(config_path "$SHELL_NAME")
+if [ ! -f "$SHELL_CONFIG" ]; then
+  echo "Error: $SHELL_CONFIG not found (run dcli sync?)"
   exit 1
 fi
 
@@ -138,28 +151,32 @@ kill_all_shells() {
 
 kill_all_shells
 
-# Point active.conf at the chosen shell
-printf '# Written by switch-shell.sh — current shell: %s\nsource = ~/.config/hypr/shells/%s.conf\n' \
-  "$SHELL_NAME" "$SHELL_NAME" >"$ACTIVE"
+# Point active.conf at the chosen shell (read by ~/.config/hypr/hyprland.lua)
+printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME" >"$ACTIVE"
 
 # Clear any leaked config-parser submap state before reloading: caelestia's
 # KeybindApplier applies its JSON binds via `hyprctl keyword submap global;
 # keyword bind ...` and that parser state persists, so without this reset the
 # reload parses the ENTIRE new shell's binds into the "global" submap and
-# they all go dead.
-hyprctl keyword submap reset
+# they all go dead. Under the Lua config `hyprctl keyword` is rejected outright
+# ("keyword can't work with non-legacy parsers"), so this is best-effort.
+hyprctl keyword submap reset >/dev/null 2>&1
 hyprctl reload
 sleep 0.2
 
-# caelestia and end4 keep ALL their static binds in a permanently-active
-# "global" submap (required for their catchall launcher-interrupt binds); the
-# other shells' binds are root-level and go dead if a submap is left active.
-# Detect from the loaded binds instead of hardcoding shell names.
+# Shells that keep their static binds in a permanently-active "global" submap
+# need it re-entered; root-level binds go dead if a submap is left active.
+# Detect from the loaded binds instead of hardcoding shell names. Dispatchers
+# take Lua syntax under a .lua config and legacy syntax under a .conf one.
 if hyprctl binds -j | jq -e 'any(.[]; .submap == "global")' >/dev/null 2>&1; then
-  hyprctl dispatch submap global
+  hyprctl dispatch 'hl.dsp.submap("global")' >/dev/null 2>&1 || hyprctl dispatch submap global
 else
-  hyprctl dispatch submap reset
+  hyprctl dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1 || hyprctl dispatch submap reset
 fi
+
+# Release the lock before launching background processes — they inherit
+# fd 200 and would hold the lock open after this script exits.
+exec 200>&-
 
 # Launch. dms and noctalia are exec-once'd from their shell conf, but
 # exec-once does not re-fire on `hyprctl reload`, so start them here too
@@ -167,16 +184,25 @@ fi
 case "$SHELL_NAME" in
 caelestia)
   pgrep -f "qs -c caelestia" >/dev/null 2>&1 || {
-    caelestia shell -d &
+    # The fork's QML needs its own Caelestia.Internal plugin (~/.local/lib):
+    # the packaged one in /usr/lib is older and lacks types like
+    # LogindManager, so the shell dies with "Failed to load configuration".
+    # hypr-user.lua exports these too, but hyprland only applies `env` at
+    # startup — set them here so a switch works without a relogin.
+    QML2_IMPORT_PATH="$HOME/.local/lib/qt6/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}" \
+      CAELESTIA_LIB_DIR="$HOME/.local/lib/caelestia" \
+      caelestia shell -d &
     disown
   }
   ;;
 ambxst)
   pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 || {
+    # ambxst rewrites the monitor on startup; shells/ambxst-overrides.lua
+    # puts it back at scale 1 on the next reload.
     ambxst &
     disown
     sleep 1
-    hyprctl keyword monitor ", preferred, auto, 1"
+    hyprctl eval 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })' >/dev/null 2>&1
   }
   ;;
 dms)
@@ -200,5 +226,5 @@ end4)
 esac
 
 echo "Switched to $SHELL_NAME"
-echo "Active shell conf:"
+echo "Active shell:"
 grep '^source' "$ACTIVE"

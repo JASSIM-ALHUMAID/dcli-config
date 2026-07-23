@@ -114,8 +114,8 @@
                 {
                     "clockColor": "none",
                     "customFont": "",
-                    "formatHorizontal": "HH:mm ddd, MMM dd",
-                    "formatVertical": "HH mm - dd MM",
+                    "formatHorizontal": "h:mm AP",
+                    "formatVertical": "h:mm AP MM dd ddd",
                     "id": "Clock",
                     "tooltipFormat": "HH:mm ddd, MMM dd",
                     "useCustomFont": false
@@ -730,10 +730,15 @@
         "skipStartupTransition": false,
         "solidColor": "#1a1a2e",
         "sortOrder": "name",
-        "transitionDuration": 1500,
-        "transitionEdgeSmoothness": 0.05,
+        "transitionDuration": 2500,
+        "transitionEdgeSmoothness": 1,
         "transitionType": [
-            "honeycomb"
+            "honeycomb",
+            "fade",
+            "disc",
+            "stripes",
+            "wipe",
+            "pixelate"
         ],
         "useOriginalImages": false,
         "useSolidColor": false,
