@@ -21,14 +21,14 @@ style = stereo
 # Color gradient for bars using template variables
 gradient = 1
 gradient_count = 8
-gradient_color_1 = '#bfe5ff'
-gradient_color_2 = '#c6e3ff'
-gradient_color_3 = '#c1deff'
-gradient_color_4 = '#9fcbff'
-gradient_color_5 = '#94bfff'
-gradient_color_6 = '#b4cdff'
-gradient_color_7 = '#a7bfff'
-gradient_color_8 = '#b6bbf1'
+gradient_color_1 = '#d7e98b'
+gradient_color_2 = '#cfe9a1'
+gradient_color_3 = '#c2e69e'
+gradient_color_4 = '#a7d489'
+gradient_color_5 = '#75cf9d'
+gradient_color_6 = '#89dcc6'
+gradient_color_7 = '#ffad7f'
+gradient_color_8 = '#d6bd71'
 
 [smoothing]
 # Noise reduction (0-100) - higher = smoother but less responsive
