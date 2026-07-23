@@ -1,2 +1,6 @@
 # System packages merged from host (auto-generated, host-specific)
 system-packages-*.yaml
+
+# mpvpaper wallpaper thumbnails — regenerated cache, not config
+dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/*
+!dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/.gitkeep
