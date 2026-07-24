@@ -1,0 +1,17 @@
+description: end4-pC (pctrade's end-4 dots-hyprland fork) - alternate shell (quickshell config "end4-pC")
+
+packages: []
+
+# Do NOT declare the illogical-impulse-quickshell-git package: its
+# Conflicts=quickshell would REMOVE the stock quickshell that caelestia and
+# dms need (same trap as noctalia-qs / the ii shell — see README.md).
+# The hook installs the fork's extra deps as regular packages instead.
+post_install_hook: scripts/setup-end4pc.sh
+hook_behavior: once
+
+# No dotfiles entry: ~/.config/quickshell/end4-pC is a symlink into the
+# ~/.local/share/end4-pC checkout (source of truth) — a dcli dotfiles sync
+# must not replace it.
+
+# Launched per-session via ~/.config/hypr/shells/end4pc/hyprland.lua; switch
+# with scripts/switch-shell.sh end4pc

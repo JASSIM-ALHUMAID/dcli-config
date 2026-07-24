@@ -3,7 +3,8 @@
 Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v0.2.2):
 packages, services, default apps, dotfiles, and bootstrap hooks for my
 CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
-**AMBXst**, **DankMaterialShell**, **Noctalia** and **end-4** as alternate shells.
+**AMBXst**, **DankMaterialShell**, **Noctalia**, **end-4** and **end4-pC** as
+alternate shells.
 
 ## What's in here
 
@@ -12,16 +13,16 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 | Host config | `hosts/cachyos-desktop.yaml` | enabled modules, services, default apps |
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
-| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-noctalia.sh`, `setup-wezterm.sh` | clone + install each shell |
-| Updates | `scripts/update-noctalia.sh`, `scripts/update-end4.sh` | pull latest QML/fork (noctalia: `--force` to re-download binary) |
-| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 |
+| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-wezterm.sh` | clone + install each shell |
+| Updates | `scripts/update-noctalia.sh`, `scripts/update-end4.sh`, `scripts/update-end4pc.sh` | pull latest QML/fork (noctalia: `--force` to re-download binary) |
+| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc |
 
 WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).
 
 # Shell architecture
 
-Five shells share one Hyprland session. Each owns its QML/UI process and its
+Six shells share one Hyprland session. Each owns its QML/UI process and its
 own Hyprland config; this repo owns the entry point that picks between them.
 
 ## Where everything lives
@@ -41,6 +42,8 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.config/ambxst` → `dcli/dotfiles/ambxst` | AMBXst user config | `link-dotfiles.sh` |
 | `~/.local/share/dots-hyprland` | end-4 fork (`plusdrag11/dots-hyprland`) | `setup-end4.sh` |
 | `~/.config/quickshell/ii` → `dots-hyprland/dots/.config/quickshell/ii` | end-4's quickshell config | `setup-end4.sh` |
+| `~/.local/share/end4-pC` | end4-pC fork (`pctrade/end4-pC`, branch `main`) — the repo root *is* the quickshell config (flat layout) | `setup-end4pc.sh` |
+| `~/.config/quickshell/end4-pC` → `~/.local/share/end4-pC` | end4-pC's quickshell config | `setup-end4pc.sh` |
 | `~/.config/quickshell/noctalia-shell` | Noctalia QML (`noctalia-dev/noctalia-shell`) | `setup-noctalia.sh` |
 | `~/.local/opt/noctalia-qs` + `~/.local/bin/noctalia` | extracted quickshell fork + launcher wrapper | `setup-noctalia.sh` |
 | `~/.config/noctalia` → `dcli/dotfiles/noctalia` | Noctalia user config | `link-dotfiles.sh` |
@@ -62,12 +65,16 @@ caelestia-dots clone — anything put there is lost on update).
 | **dms** | `dms run` | `shells/dms/hyprland.lua` (standalone) | `~/.config/DankMaterialShell` |
 | **noctalia** | `~/.local/bin/noctalia` | `shells/noctalia/hyprland.lua` (standalone) | `~/.config/noctalia` |
 | **end4** | `qs -c ii` | `shells/end4/hyprland.lua` (standalone) | `~/.config/quickshell/ii` |
+| **end4pc** | `qs -c end4-pC` | `shells/end4pc/hyprland.lua` (standalone) | `~/.config/quickshell/end4-pC` |
 
 caelestia and ambxst ship complete Hyprland configs, so we load theirs and
-layer local tweaks on top. dms, noctalia and end4 don't ship one we can use,
-so each gets a standalone config here — seeded with the same input/layout
+layer local tweaks on top. dms, noctalia, end4 and end4pc don't ship one we can
+use, so each gets a standalone config here — seeded with the same input/layout
 preferences and app binds, plus that shell's own IPC binds. They are fully
-independent of each other; edit freely.
+independent of each other; edit freely. (end4pc's IPC binds were reconciled
+against end4-pC's own `GlobalShortcut` names, so a couple of the ii shell's
+binds — cheatsheet, light/dark — are absent because that fork has no such
+global.)
 
 ## How the pieces connect
 
@@ -119,7 +126,9 @@ and dms need, so they are deliberately **not** pacman-installed:
   wrapper that launches/IPCs using that binary.
 - **end-4** — `illogical-impulse-quickshell-git` likewise conflicts.
   `setup-end4.sh` runs the `ii` config on stock quickshell with the extra qt6
-  deps installed separately.
+  deps installed separately. **end4-pC** (pctrade's fork) has the same trap:
+  `setup-end4pc.sh` runs the `end4-pC` config on stock quickshell and installs
+  the same dep set (all `--needed`, a no-op when end4 already installed them).
 - **caelestia** — the `caelestia-shell` package is installed but entirely
   shadowed: its QML by `~/.config/quickshell/caelestia`, its C++ plugin by
   `QML2_IMPORT_PATH`. The `caelestia` CLI used by scripts and keybinds is a
@@ -178,7 +187,7 @@ Verify any config change with `hyprctl configerrors` — it is empty when clean.
    `cd ~/.config/dcli && git add -A && git commit -m "..." && git push`.
 4. Log out and back in once so the session env (`QML2_IMPORT_PATH`,
    `CAELESTIA_LIB_DIR`) applies, then pick a shell with
-   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4]`.
+   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4|end4pc]`.
 
 AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,
 brave-nightly-bin, caelestia-*) come from AUR/chaotic.

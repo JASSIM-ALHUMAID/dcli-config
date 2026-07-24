@@ -9,6 +9,7 @@ enabled_modules:
 - shell-dms
 - shell-noctalia
 - shell-end4
+- shell-end4pc
 - shell-fish
 - terminal-wezterm
 - editor-neovim

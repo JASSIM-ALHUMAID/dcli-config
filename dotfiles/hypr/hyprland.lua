@@ -10,6 +10,7 @@ local shell_paths = {
     dms       = hypr .. "/shells/dms/hyprland.lua",
     noctalia  = hypr .. "/shells/noctalia/hyprland.lua",
     end4      = hypr .. "/shells/end4/hyprland.lua",
+    end4pc    = hypr .. "/shells/end4pc/hyprland.lua",
 }
 
 -- active.conf holds a bare shell name; older versions wrote a

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4
+# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
@@ -17,7 +17,7 @@ flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4)
+KNOWN=(caelestia ambxst dms noctalia end4 end4pc)
 
 # Where each shell's Lua config lives — must match hyprland.lua's shell_paths
 config_path() {
@@ -47,27 +47,36 @@ SHELL_NAME="${1:-}"
 if [ -z "$SHELL_NAME" ]; then
   if command -v fuzzel >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
     cur=$(current_shell)
-    # Icon + blurb per shell, index-aligned with KNOWN
-    icons=(󰓎 󰆧 󰍹 󰖔 󰣇)
+    # Real per-shell logo (SVG) + blurb, index-aligned with KNOWN. The logos
+    # are committed under dotfiles/fuzzel/shell-icons and land at
+    # ~/.config/fuzzel/shell-icons via the fuzzel dir symlink. Rendered by
+    # fuzzel's dmenu icon protocol (label\0icon\x1f<abs-path>, libresvg).
+    icon_dir="$HOME/.config/fuzzel/shell-icons"
+    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg)
     blurbs=("Material 3 · quickshell"
       "Axenide · Astal"
       "DankMaterialShell"
       "minimal · quickshell"
-      "illogical-impulse")
-    menu=""
+      "illogical-impulse"
+      "pctrade fork")
     args=(--dmenu --index)
     picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
     [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
+    # Preselect the active shell (separate loop — it appends to args, which the
+    # menu-building subshell below can't do since it runs in a pipe).
     for i in "${!KNOWN[@]}"; do
-      s=${KNOWN[$i]}
-      line=$(printf '%s  %-10s  %s' "${icons[$i]}" "$s" "${blurbs[$i]}")
-      if [ "$s" = "$cur" ]; then
-        line+="  ●"
-        args+=(--select-index "$i")
-      fi
-      menu+="$line"$'\n'
+      [ "${KNOWN[$i]}" = "$cur" ] && args+=(--select-index "$i")
     done
-    idx=$(printf '%s' "$menu" | fuzzel "${args[@]}")
+    # Build the menu straight into the pipe: the icon field needs a literal NUL,
+    # which a bash variable cannot hold, so printf each entry directly.
+    idx=$(
+      for i in "${!KNOWN[@]}"; do
+        s=${KNOWN[$i]}
+        label=$(printf '%-10s  %s' "$s" "${blurbs[$i]}")
+        [ "$s" = "$cur" ] && label+="  ●"
+        printf '%s\0icon\x1f%s\n' "$label" "$icon_dir/${icon_files[$i]}"
+      done | fuzzel "${args[@]}"
+    )
     case "$idx" in *[!0-9]* | "") exit 0 ;; esac
     SHELL_NAME=${KNOWN[$idx]:-}
     [ -z "$SHELL_NAME" ] && exit 0
@@ -114,6 +123,7 @@ kill_all_shells() {
   [ -x "$HOME/.local/bin/noctalia" ] && "$HOME/.local/bin/noctalia" kill 2>/dev/null
   command -v dms >/dev/null 2>&1 && dms kill 2>/dev/null
   command -v qs >/dev/null 2>&1 && qs -c ii kill 2>/dev/null
+  command -v qs >/dev/null 2>&1 && qs -c end4-pC kill 2>/dev/null
   # Only ask ambxst to quit if it's actually running: its CLI trusts a
   # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
   # whatever unrelated process now owns that recycled PID.
@@ -123,6 +133,7 @@ kill_all_shells() {
   kill_matching -f "bin/quickshell -c noctalia-shell"
   kill_matching -f "dms run"
   kill_matching -f "qs -c ii"
+  kill_matching -f "qs -c end4-pC"
   kill_matching -x "quickshell"
   kill_matching -f "caelestia shell"
   kill_matching -f "caelestia resizer"
@@ -220,6 +231,12 @@ noctalia)
 end4)
   pgrep -f "qs -c ii" >/dev/null 2>&1 || {
     qs -c ii &
+    disown
+  }
+  ;;
+end4pc)
+  pgrep -f "qs -c end4-pC" >/dev/null 2>&1 || {
+    qs -c end4-pC &
     disown
   }
   ;;
