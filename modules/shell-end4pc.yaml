@@ -9,9 +9,25 @@ packages: []
 post_install_hook: scripts/setup-end4pc.sh
 hook_behavior: once
 
-# No dotfiles entry: ~/.config/quickshell/end4-pC is a symlink into the
-# ~/.local/share/end4-pC checkout (source of truth) — a dcli dotfiles sync
-# must not replace it.
+# ~/.config/quickshell/end4-pC is deliberately NOT listed here: it is a symlink
+# into the ~/.local/share/end4-pC checkout (source of truth) and a dcli dotfiles
+# sync must not replace it.
+#
+# matugen-end4pc is end4pc's own copy of the illogical-impulse matugen config.
+# Upstream expects ~/.config/matugen, which on this machine is a symlink into
+# the ii checkout (~/.local/share/dots-hyprland) — so end4pc used to die with
+# shell-end4. scripts/patch-end4pc.sh rewrites switchwall.sh to use this copy
+# instead, and its hyprland template writes to shells/end4pc/colors.lua.
+dotfiles:
+  - source: matugen-end4pc
+    target: ~/.config/matugen-end4pc
 
 # Launched per-session via ~/.config/hypr/shells/end4pc/hyprland.lua; switch
-# with scripts/switch-shell.sh end4pc
+# with scripts/switch-shell.sh end4pc.
+#
+# That file loads shells/end4pc/{colors,monitors,overrides/*}.lua last — those
+# are written by matugen and by the shell's own settings app (SUPER + I), which
+# scripts/patch-end4pc.sh repoints at them. Shell config lives in
+# ~/.config/illogical-impulse-pC, not the ii shell's ~/.config/illogical-impulse.
+# Only ~/.local/state/quickshell/user and the secret-tool keyring entry are
+# still shared with shell-end4; neither is needed for end4pc to run.

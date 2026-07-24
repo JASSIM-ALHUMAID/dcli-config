@@ -111,4 +111,12 @@ else
     echo ":: Symlinked $QS_CONF -> $REPO_DIR"
 fi
 
+# 4) Repoint the checkout at end4pc-owned paths (hypr overrides, shell config
+#    dir, matugen config) and seed ~/.config/illogical-impulse-pC/config.json.
+#    See scripts/patch-end4pc.sh for what and why. Idempotent.
+#    Called directly, not via as_user: it does its own SUDO_USER handling, and
+#    re-sudoing would make it resolve REAL_USER as root.
+echo ":: Patching end4-pC paths"
+bash "$(dirname "$(readlink -f "$0")")/patch-end4pc.sh"
+
 echo ":: end4-pC shell ready — launch with 'qs -c end4-pC', switch with switch-shell.sh end4pc"

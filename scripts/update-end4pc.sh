@@ -20,8 +20,17 @@ if [ ! -d "$REPO_DIR/.git" ]; then
     exit 1
 fi
 
+# The working tree carries our path rewrites (scripts/patch-end4pc.sh), which
+# would make the pull non-fast-forward. Drop them, pull, then re-apply — the
+# rewrites are literal-string seds, so they survive upstream moving the lines.
+echo ":: Discarding local path patches before pull"
+as_user git -C "$REPO_DIR" checkout -- .
+
 echo ":: Updating end4-pC (main branch)"
 as_user git -C "$REPO_DIR" pull --ff-only
 as_user git -C "$REPO_DIR" submodule update --init --recursive --depth 1
+
+echo ":: Re-applying end4-pC path patches"
+bash "$(dirname "$(readlink -f "$0")")/patch-end4pc.sh"
 
 echo ":: end4-pC updated — restart shell with switch-shell.sh end4pc"

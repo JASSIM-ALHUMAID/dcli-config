@@ -1,0 +1,46 @@
+# matugen config owned by the end4pc shell (shell-end4pc.yaml).
+#
+# Vendored from the illogical-impulse checkout so end4pc no longer depends on
+# ~/.config/matugen, which is a symlink into ~/.local/share/dots-hyprland and
+# therefore disappears if shell-end4 is uninstalled.
+#
+# scripts/colors/switchwall.sh in the end4-pC checkout is rewritten by
+# scripts/patch-end4pc.sh to pass `-c ~/.config/matugen-end4pc/config.toml`.
+#
+# Only the hyprland template output is end4pc-specific — the rest are app
+# themes and shared quickshell state that every shell writes to by design.
+
+[config]
+version_check = false
+
+[templates.m3colors]
+input_path = '~/.config/matugen-end4pc/templates/colors.json'
+output_path = '~/.local/state/quickshell/user/generated/colors.json'
+
+[templates.hyprland]
+input_path = '~/.config/matugen-end4pc/templates/hyprland/colors.lua'
+output_path = '~/.config/hypr/shells/end4pc/colors.lua'
+
+[templates.hyprlock]
+input_path = '~/.config/matugen-end4pc/templates/hyprland/hyprlock-colors.conf'
+output_path = '~/.config/hypr/hyprlock/colors.conf'
+
+[templates.fuzzel]
+input_path = '~/.config/matugen-end4pc/templates/fuzzel/fuzzel_theme.ini'
+output_path = '~/.config/fuzzel/fuzzel_theme.ini'
+
+[templates.gtk3]
+input_path = '~/.config/matugen-end4pc/templates/gtk-3.0/gtk.css'
+output_path = '~/.config/gtk-3.0/gtk.css'
+
+[templates.gtk4]
+input_path = '~/.config/matugen-end4pc/templates/gtk-4.0/gtk.css'
+output_path = '~/.config/gtk-4.0/gtk.css'
+
+[templates.kde_colors]
+input_path = '~/.config/matugen-end4pc/templates/kde/color.txt'
+output_path = '~/.local/state/quickshell/user/generated/color.txt'
+
+[templates.wallpaper]
+input_path = '~/.config/matugen-end4pc/templates/wallpaper.txt'
+output_path = '~/.local/state/quickshell/user/generated/wallpaper/path.txt'

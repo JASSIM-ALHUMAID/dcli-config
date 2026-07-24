@@ -8,7 +8,8 @@ dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/*
 # Theme output, rewritten on every wallpaper/scheme change and recreated from
 # scratch on a new machine — tracking them only produces churn.
 #   caelestia CLI (`caelestia scheme set`): cava, fuzzel.ini
-#   matugen: hypr colours, hyprlock colours
+#   matugen: hypr colours, hyprlock colours (end4pc has its own matugen config
+#            at dotfiles/matugen-end4pc, so it gets its own colours file too)
 #   DMS matugen hook: dms/*.lua, zen.css
 #   noctalia: colors.json
 # NOT ignored: fuzzel/fuzzel_theme.ini — shell-picker.ini `include`s it, and
@@ -17,6 +18,7 @@ dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/*
 dotfiles/cava/config
 dotfiles/fuzzel/fuzzel.ini
 dotfiles/hypr/hyprland/colors.lua
+dotfiles/hypr/shells/end4pc/colors.lua
 dotfiles/hypr/hyprlock/colors.conf
 dotfiles/hypr/dms/*.lua
 dotfiles/hypr/scheme/current.lua
