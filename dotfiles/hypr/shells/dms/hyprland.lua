@@ -110,6 +110,14 @@ hl.config({
 -- Rules
 hl.window_rule({ float = true, match = { class = "blueman-manager" } })
 
+-- DMS theming. Its matugen hook regenerates ~/.config/hypr/dms/colors.lua on
+-- every wallpaper/scheme change; loading it last lets the border colours
+-- follow the wallpaper. pcall because the file only exists once DMS has run
+-- (it is generated output, so it is gitignored and absent on a new machine).
+-- dms/layout.lua and dms/windowrules.lua are deliberately NOT loaded — they
+-- would override the gaps and window rules set above.
+pcall(require, "dms.colors")
+
 -- Exec. hl.exec_cmd at the top level re-runs on every `hyprctl reload`,
 -- which spawned a second shell instance on every switch — hyprland.start
 -- fires once per session, like the old exec-once.
