@@ -87,9 +87,18 @@ The arch package list in `install.sh` includes `quickshell`, installed with
 
 It is only safe because the installer's `filter_packages()` consults a
 `BINARY_CHECK` map — `["quickshell"]="qs"` — and skips the package when the `qs`
-binary is already on PATH, which `quickshell-git` provides. That is a fragile
-guard, so **make sure a provider is installed before running this hook on a fresh
-machine.**
+binary is already on PATH, which `quickshell-git` owns (`pacman -Qo /usr/bin/qs`).
+
+**Under dcli this is safe by construction**, including on a fresh machine: sync
+installs every declared package in one aggregated phase and only then runs
+post-install hooks (see [../NOTES.md](../NOTES.md)), and `shells-quickshell-git`
+declares `quickshell-git`. So the provider is always present by the time this hook
+runs. No extra steps.
+
+The guard is still worth knowing about, because it rests on a binary-name
+coincidence rather than on real dependency metadata. **It only matters on the
+manual path** — running `setup-ambxst.sh` or the fork's `install.sh` directly on a
+machine with no provider installed.
 
 There is no "upstream installer first" step; the fork's installer is the only one
 to run.

@@ -8,8 +8,13 @@
 # NOTE: that installer's arch package list includes stock `quickshell`, which
 # would conflict with quickshell-git (see docs/PACKAGE-CONFLICTS.md). It is only
 # safe because the installer's filter_packages() skips it when the `qs` binary is
-# already on PATH — and quickshell-git provides /usr/bin/qs. So make sure a
-# provider is installed BEFORE running this hook on a fresh machine.
+# already on PATH — and quickshell-git owns /usr/bin/qs.
+#
+# Under dcli that ordering is guaranteed: sync installs every declared package in
+# one aggregated phase and only then runs post-install hooks, and
+# shells-quickshell-git declares quickshell-git. So a fresh `dcli sync` is safe
+# with no extra steps. The caveat applies only when running THIS script or the
+# fork's install.sh by hand before any provider is installed.
 set -euo pipefail
 
 # dcli may run hooks as root — always operate on the real user's home.

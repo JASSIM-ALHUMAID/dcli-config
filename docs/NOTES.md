@@ -32,6 +32,21 @@ interactively.
 **Hooks with `hook_behavior: once` will not re-run.** Check state with
 `dcli hooks list`; force one with `dcli module run-hook <module>`.
 
+**Packages are installed in one global phase, before any hook runs.** `dcli sync`
+aggregates every enabled module's packages into a single list (`Loaded 149
+declared packages`) and installs them, and only then runs post-install hooks.
+`module_processing: parallel` does **not** affect this — parallelism applies to
+module processing, not to the package phase.
+
+This is load-bearing: a hook can rely on any package declared by *any* enabled
+module already being installed. It is why `setup-ambxst.sh` is safe on a fresh
+machine despite its installer wanting stock `quickshell` — `shells-quickshell-git`
+has already provided `/usr/bin/qs` by then.
+
+Verified by correlating `dcli hooks list` timestamps (UTC) with
+`/var/log/pacman.log` (`+0300`): packages installed 14:16:19–14:16:32 UTC, hooks
+ran at 14:16:33 UTC.
+
 ## Provider switching
 
 ```bash
