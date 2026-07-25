@@ -39,7 +39,9 @@ at the end of `setup-end4pc.sh`.
 `patch-end4pc.sh` does its own `SUDO_USER` handling, and re-sudoing would make it
 resolve `REAL_USER` as root.
 
-**Re-run it after any upstream pull**, since a pull can restore upstream's paths:
+**Any upstream pull must be followed by re-running it**, since a pull restores
+upstream's paths. `scripts/update-end4pc.sh` does that for you — only run it by
+hand after a manual `git pull`:
 
 ```bash
 bash ~/.config/dcli/scripts/patch-end4pc.sh
@@ -64,7 +66,8 @@ and end4pc still stands alone if `shell-end4` is disabled.
 ## Submodules are mandatory
 
 Like the `ii` fork, this config has a `.gitmodules` and fails to load without its
-submodules populated. After a manual pull:
+submodules populated. `scripts/update-end4pc.sh` handles this too; run it by hand
+only after a manual pull:
 
 ```bash
 git -C ~/.local/share/end4-pC submodule update --init --recursive --depth 1
@@ -75,14 +78,37 @@ git -C ~/.local/share/end4-pC submodule update --init --recursive --depth 1
 Only `~/.local/state/quickshell/user` and the `secret-tool` keyring entry. Neither
 is needed for end4pc to run, so the two shells are effectively independent.
 
+## Updating
+
+```bash
+~/.config/dcli/scripts/update-end4pc.sh
+```
+
+That is the whole procedure — it discards the path patches, pulls, updates
+submodules, and re-applies `patch-end4pc.sh`. Nothing to do by hand afterwards
+except restart the shell.
+
+**Why it discards first:** `patch-end4pc.sh` leaves 14 files modified in the
+working tree, which would make the pull non-fast-forward. So the script runs
+`git checkout -- .` before pulling.
+
+That is safe *only because* every modified file is one the patch script owns and
+will recreate. **Any manual edit you make in this checkout will be destroyed** —
+there is no personal fork here, so there is nowhere for local changes to live.
+Keep customizations in `dotfiles/hypr/shells/end4pc/` instead. To confirm before
+updating, the dirty set should match the patch script's file list exactly:
+
+```bash
+cd ~/.local/share/end4-pC && git status --porcelain | wc -l    # expect 14
+```
+
 ## Status (2026-07-25)
 
-- **17 commits behind `origin/main`** — the most out-of-date shell here. There is
-  no personal fork, so `origin` *is* upstream and a pull is a plain fast-forward
-  with no local commits to rebase.
+- **Up to date with `origin/main`** (`6354ea2`), after pulling the 17 commits it
+  had fallen behind. There is no personal fork, so `origin` *is* upstream and a
+  pull is a plain fast-forward with no local commits to rebase — which makes this
+  the lowest-risk shell to update.
 - Loads cleanly under `quickshell-git 0.3.0.r3` → `Configuration Loaded`.
-
-After updating, re-run `patch-end4pc.sh` and the submodule update.
 
 ## Health check
 

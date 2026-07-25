@@ -98,12 +98,17 @@ order or the picker shows the wrong icon and switches to the wrong shell.
 
 ## Fork divergence (2026-07-25)
 
-| Fork | vs upstream |
-|---|---|
-| ambxst | up to date |
-| dots-hyprland (end4) | 1 behind |
-| caelestia | 3 behind |
-| end4-pC | **17 behind** |
+| Fork | vs upstream | Update with |
+|---|---|---|
+| ambxst | up to date | fork's own installer |
+| end4-pC | up to date | `scripts/update-end4pc.sh` |
+| dots-hyprland (end4) | 1 behind | `scripts/update-end4.sh` |
+| caelestia | 3 behind | rebase by hand — see [caelestia.md](caelestia.md) |
+
+The update scripts only work where a plain fast-forward is possible. **caelestia
+has no update script on purpose**: it carries 32 local commits, and its last
+rebase is what reverted the plugin target name and broke the shell. It needs a
+real rebase plus a rebuild-and-verify.
 
 `dms` and `noctalia` are packages and track their repos via `dcli update`.
 
