@@ -1,9 +1,15 @@
 #!/bin/bash
 # Bootstrap AMBXst from my fork (plusdrag11/Ambxst, branch my-ambxst;
 # upstream Axenide/Ambxst kept as second remote) — clones to ~/.local/src/ambxst
-# and runs its installer, which sets up a launcher at /usr/local/bin/ambxst
+# and runs THE FORK'S installer, which sets up a launcher at /usr/local/bin/ambxst
 # (it sudos where needed). My AMBXst settings (binds.json, config/,
 # hypr-user.conf, presets/) are managed by dcli dotfiles -> ~/.config/ambxst.
+#
+# NOTE: that installer's arch package list includes stock `quickshell`, which
+# would conflict with quickshell-git (see docs/PACKAGE-CONFLICTS.md). It is only
+# safe because the installer's filter_packages() skips it when the `qs` binary is
+# already on PATH — and quickshell-git provides /usr/bin/qs. So make sure a
+# provider is installed BEFORE running this hook on a fresh machine.
 set -euo pipefail
 
 # dcli may run hooks as root — always operate on the real user's home.

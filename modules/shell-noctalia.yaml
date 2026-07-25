@@ -1,19 +1,37 @@
-description: Noctalia shell - alternate shell (runs on its own quickshell fork)
+description: Noctalia v5 - native Wayland shell (no Quickshell, no Qt)
 
-packages: []
+packages:
+  - noctalia
 
-# Do NOT declare the noctalia-shell package: it depends on noctalia-qs,
-# whose Conflicts=quickshell would REMOVE the stock quickshell that
-# caelestia and dms need. The hook instead clones the noctalia QML to
-# ~/.config/quickshell/noctalia-shell and extracts the noctalia-qs fork
-# (unpackaged) to ~/.local/opt/noctalia-qs with a ~/.local/bin/noctalia
-# launcher wrapper.
+# v5 is a ground-up rewrite: native C++23/Meson on Wayland + OpenGL ES, with no
+# Qt, no QML and no Quickshell. Upstream moved noctalia-dev/noctalia-shell ->
+# noctalia-dev/noctalia and the package was renamed noctalia-shell -> noctalia
+# (5.x, AUR source build via paru — Conflicts is only noctalia-git/noctalia-bin).
+#
+# That means the old noctalia-qs problem is GONE. v4 needed that quickshell fork,
+# which had Conflicts=quickshell AND Conflicts=quickshell-git, so it could not
+# coexist with either provider in modules/shells-quickshell{,-git}.yaml — hence
+# the old download-and-extract-to-~/.local/opt hack. v5 is an ordinary package
+# belonging to neither provider group, and works no matter which one is enabled.
+#
+# NOTE: v5 is still beta (5.0.0_beta.4). See docs/PACKAGE-CONFLICTS.md.
 post_install_hook: scripts/setup-noctalia.sh
 hook_behavior: once
 
+# Config is TOML at ~/.config/noctalia/config.toml (hot-reloaded via inotify),
+# hand-ported from the v4 settings.json — v5 does not read the v4 JSON.
+# As always, the real linking is done by scripts/link-dotfiles.sh, which
+# symlinks the whole ~/.config/noctalia directory.
 dotfiles:
   - source: noctalia
     target: ~/.config/noctalia
 
-# Launched per-session via ~/.config/hypr/shells/noctalia.conf (`noctalia`).
+# The v4 QML plugin "video-wallpaper" is gone: v5 plugins are Luau against the
+# plugin API, and the old noctalia-plugins repo split into legacy-v4-plugins /
+# official-plugins / community-plugins. The official replacement is
+# noctalia/mpvpaper ("Video Wallpaper"), installed from the plugin store rather
+# than vendored here.
+#
+# Launched per-session via ~/.config/hypr/shells/noctalia/hyprland.lua, which
+# uses the v5 `noctalia msg <command>` IPC (v4 used `noctalia ipc call`).
 # Switch with scripts/switch-shell.sh noctalia

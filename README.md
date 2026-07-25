@@ -14,11 +14,33 @@ alternate shells.
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
 | Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-wezterm.sh` | clone + install each shell |
-| Updates | `scripts/update-noctalia.sh`, `scripts/update-end4.sh`, `scripts/update-end4pc.sh` | pull latest QML/fork (noctalia: `--force` to re-download binary) |
+| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
 | Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc |
+| Provider switcher | `scripts/switch-quickshell.sh` | swap the quickshell provider: stock ↔ quickshell-git |
+| Docs | `docs/` | see below |
 
 WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).
+
+## Docs
+
+| Doc | Read it when |
+|---|---|
+| [docs/NOTES.md](docs/NOTES.md) | Machine-wide gotchas: dcli behaviours that surprise you, whether it's safe to update, how to debug a shell that won't start |
+| [docs/shells/](docs/shells/) | One page per shell — layout, traps, install/update, health check |
+| [docs/PACKAGE-CONFLICTS.md](docs/PACKAGE-CONFLICTS.md) | Anything involving `quickshell` vs `quickshell-git` |
+| [docs/LUA-MODULES.md](docs/LUA-MODULES.md), [docs/DIRECTORY-MODULES.md](docs/DIRECTORY-MODULES.md) | Writing dcli modules |
+| [docs/CHEAT-SHEET.md](docs/CHEAT-SHEET.md) | dcli command reference |
+
+**Three things worth knowing before you touch anything:**
+
+1. `dotfiles:` keys in flat YAML modules are **documentation only** —
+   `scripts/link-dotfiles.sh` does the real linking, from its own `TARGETS` array.
+2. Only one quickshell provider can be installed. It's owned by
+   `modules/shells-quickshell{,-git}.yaml`; swap it with
+   `scripts/switch-quickshell.sh`, never `dcli module enable` alone.
+3. Theming regenerates files that are committed here, so unexpected git changes
+   after a wallpaper change are normal.
 
 # Shell architecture
 
@@ -44,9 +66,8 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.config/quickshell/ii` → `dots-hyprland/dots/.config/quickshell/ii` | end-4's quickshell config | `setup-end4.sh` |
 | `~/.local/share/end4-pC` | end4-pC fork (`pctrade/end4-pC`, branch `main`) — the repo root *is* the quickshell config (flat layout) | `setup-end4pc.sh` |
 | `~/.config/quickshell/end4-pC` → `~/.local/share/end4-pC` | end4-pC's quickshell config | `setup-end4pc.sh` |
-| `~/.config/quickshell/noctalia-shell` | Noctalia QML (`noctalia-dev/noctalia-shell`) | `setup-noctalia.sh` |
-| `~/.local/opt/noctalia-qs` + `~/.local/bin/noctalia` | extracted quickshell fork + launcher wrapper | `setup-noctalia.sh` |
-| `~/.config/noctalia` → `dcli/dotfiles/noctalia` | Noctalia user config | `link-dotfiles.sh` |
+| `/usr/bin/noctalia` (pkg `noctalia`) | Noctalia v5 binary — native C++/Wayland, no Quickshell | pacman/paru |
+| `~/.config/noctalia` → `dcli/dotfiles/noctalia` | Noctalia v5 config (`config.toml`, TOML, hot-reloaded) | `link-dotfiles.sh` |
 | `/usr/bin/dms` (pkg `dms-shell`) | DankMaterialShell binary | pacman |
 | `~/.config/DankMaterialShell` → `dcli/dotfiles/DankMaterialShell` | DMS user config | `link-dotfiles.sh` |
 
@@ -58,12 +79,17 @@ caelestia-dots clone — anything put there is lost on update).
 
 ## Per shell
 
+**Each shell has its own notes page in [docs/shells/](docs/shells/)** — layout,
+traps, install/update procedure and a health check. Start with
+[docs/shells/README.md](docs/shells/README.md) for the rules that apply to all of
+them, and [docs/NOTES.md](docs/NOTES.md) for machine-wide gotchas.
+
 | Shell | Launch command | Hyprland config | Its own config |
 |---|---|---|---|
 | **caelestia** | `caelestia shell -d` → `qs -c caelestia` | `~/.local/share/caelestia/hypr/hyprland.lua`, overridden by `~/.config/caelestia/hypr-vars.lua` (variables) and `hypr-user.lua` (sections/binds) | `~/.config/caelestia/` |
 | **ambxst** | `ambxst` → `qs -p …/ambxst/shell.qml` | `~/.local/share/ambxst/hyprland.lua` + `shells/ambxst-overrides.lua` | `~/.config/ambxst` |
 | **dms** | `dms run` | `shells/dms/hyprland.lua` (standalone) | `~/.config/DankMaterialShell` |
-| **noctalia** | `~/.local/bin/noctalia` | `shells/noctalia/hyprland.lua` (standalone) | `~/.config/noctalia` |
+| **noctalia** | `noctalia` | `shells/noctalia/hyprland.lua` (standalone) | `~/.config/noctalia` |
 | **end4** | `qs -c ii` | `shells/end4/hyprland.lua` (standalone) | `~/.config/quickshell/ii` |
 | **end4pc** | `qs -c end4-pC` | `shells/end4pc/hyprland.lua` (standalone) | `~/.config/quickshell/end4-pC` |
 
@@ -116,23 +142,48 @@ Connecting points worth knowing:
 
 ## Packaging traps
 
-Several shells' packages would uninstall the stock quickshell that caelestia
-and dms need, so they are deliberately **not** pacman-installed:
+Every packaged quickshell fork `Conflicts=quickshell`, so only one provider may be
+installed. That provider is owned declaratively by one of two modules —
+`shells-quickshell` (stock) or `shells-quickshell-git` — which list each other in
+`conflicts:`. `shells-quickshell-git` is the enabled default, because
+`caelestia-shell` 2.2.0 requires it and every other shell resolves under it via
+`Provides=quickshell`. Switch with `scripts/switch-quickshell.sh [stock|git]`;
+never with `dcli module enable` alone. Full details in
+[docs/PACKAGE-CONFLICTS.md](docs/PACKAGE-CONFLICTS.md).
 
-- **Noctalia** — `noctalia-shell` depends on `noctalia-qs`, which
-  `Conflicts=quickshell`. `setup-noctalia.sh` clones the QML to
-  `~/.config/quickshell/noctalia-shell` and *extracts* the `noctalia-qs`
-  package to `~/.local/opt/noctalia-qs`, with a `~/.local/bin/noctalia`
-  wrapper that launches/IPCs using that binary.
-- **end-4** — `illogical-impulse-quickshell-git` likewise conflicts.
-  `setup-end4.sh` runs the `ii` config on stock quickshell with the extra qt6
-  deps installed separately. **end4-pC** (pctrade's fork) has the same trap:
-  `setup-end4pc.sh` runs the `end4-pC` config on stock quickshell and installs
-  the same dep set (all `--needed`, a no-op when end4 already installed them).
+Shells whose own fork packages are deliberately **not** pacman-installed:
+
+- **end-4** — `illogical-impulse-quickshell-git` is a further conflicting provider.
+  `setup-end4.sh` runs the `ii` config on whichever provider is enabled, with the
+  extra qt6 deps installed separately. **end4-pC** (pctrade's fork) has the same
+  trap: `setup-end4pc.sh` installs the same dep set (all `--needed`, a no-op when
+  end4 already installed them).
+- **Noctalia** — no longer a trap. v4 needed `noctalia-qs`, which conflicts with
+  *both* `quickshell` and `quickshell-git`, hence the old extract-to-`~/.local/opt`
+  workaround. **v5 dropped Quickshell and Qt entirely** (native C++/Wayland), so it
+  installs as the plain `noctalia` package and belongs to neither provider group.
+  `setup-noctalia.sh` is now a one-shot teardown of the v4 artifacts.
 - **caelestia** — the `caelestia-shell` package is installed but entirely
   shadowed: its QML by `~/.config/quickshell/caelestia`, its C++ plugin by
   `QML2_IMPORT_PATH`. The `caelestia` CLI used by scripts and keybinds is a
   *separate* package, `caelestia-cli`.
+
+  Two traps in that shadowing, both of which broke the shell on 2026-07-25:
+
+  1. The fork's `plugin/src/Caelestia/CMakeLists.txt` target **must** stay named
+     `caelestia-core` (upstream's name since v2.1.0). It determines the built
+     filenames, and if the fork's `.so` is named differently from the package's,
+     both get registered for `module Caelestia` and Qt aborts with *"Cannot add
+     multiple registrations for Caelestia"*. Stock quickshell tolerated this;
+     `quickshell-git` does not. A rebase silently reverted the name once already.
+  2. Never let stale `.so` files accumulate in `~/.local/lib/qt6/qml/Caelestia/*/`.
+     A leftover there beats the fresh one in `../lib/` for the plugin's `$ORIGIN`
+     rpath, so the module loads outdated types (*"ButtonRow is not a type"*).
+     The fork's `scripts/install.sh` now wipes those dirs before every install.
+
+  `scripts/install.sh --skip-sddm` stages the build and relocates it under
+  `~/.local/lib`, so it needs no sudo and never touches pacman-owned files
+  (verify with `pacman -Qkk caelestia-shell` → `0 altered files`).
 
 ## Hyprland Lua config rules
 

@@ -6,7 +6,10 @@ local browser      = "brave-browser-nightly"
 local defaultBrowser = "zen-browser"
 local editor       = "codium"
 local fileExplorer = "thunar"
-local noctaliaCmd  = os.getenv("HOME") .. "/.local/bin/noctalia ipc call"
+-- Noctalia v5 IPC. v4 used `~/.local/bin/noctalia ipc call <object> <method>`
+-- (a wrapper around its quickshell fork); v5 is a plain binary on PATH and its
+-- commands are flat and kebab-cased: `noctalia msg <command> [args]`.
+local noctaliaCmd  = "noctalia msg"
 
 local sensitivity  = 0.3
 local accelProfile = "flat"
@@ -98,7 +101,7 @@ hl.window_rule({ float = true, match = { class = "blueman-manager" } })
 -- which spawned a second shell instance on every switch — hyprland.start
 -- fires once per session, like the old exec-once.
 hl.on("hyprland.start", function()
-    hl.exec_cmd(noctaliaCmd)
+    hl.exec_cmd("noctalia")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
@@ -107,12 +110,14 @@ end)
 -- Keybinds
 -- Shell IPC. Tap Super alone opens the launcher; Super+Space is the us/ara
 -- layout toggle, so it is never bound here.
-hl.bind("SUPER + Super_L",   hl.dsp.exec_cmd(noctaliaCmd .. " launcher toggle"), { release = true })
-hl.bind("SUPER + D",         hl.dsp.exec_cmd(noctaliaCmd .. " controlCenter toggle"))
-hl.bind("SUPER + N",         hl.dsp.exec_cmd(noctaliaCmd .. " notifications toggleHistory"))
-hl.bind("SUPER + I",         hl.dsp.exec_cmd(noctaliaCmd .. " settings toggle"))
-hl.bind("SUPER + L",         hl.dsp.exec_cmd(noctaliaCmd .. " lockScreen toggle"))
-hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd(noctaliaCmd .. " wallpaper random"))
+hl.bind("SUPER + Super_L",   hl.dsp.exec_cmd(noctaliaCmd .. " panel-toggle launcher"), { release = true })
+hl.bind("SUPER + D",         hl.dsp.exec_cmd(noctaliaCmd .. " panel-toggle control-center"))
+-- Notification history is the control-center panel opened on its "notifications"
+-- context (panel-toggle <id> [context]) — v5 has no separate history panel.
+hl.bind("SUPER + N",         hl.dsp.exec_cmd(noctaliaCmd .. " panel-toggle control-center notifications"))
+hl.bind("SUPER + I",         hl.dsp.exec_cmd(noctaliaCmd .. " settings-toggle"))
+hl.bind("SUPER + L",         hl.dsp.exec_cmd(noctaliaCmd .. " session lock"))
+hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd(noctaliaCmd .. " wallpaper-random"))
 
 -- Window management
 hl.bind("SUPER + Q",         hl.dsp.window.close())
@@ -157,12 +162,12 @@ hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
 -- Media
-hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(noctaliaCmd .. " volume increase"), { locked = true })
-hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(noctaliaCmd .. " volume decrease"), { locked = true })
-hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(noctaliaCmd .. " volume muteOutput"), { locked = true })
-hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd(noctaliaCmd .. " volume muteInput"), { locked = true })
-hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(noctaliaCmd .. " brightness increase"), { locked = true })
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(noctaliaCmd .. " brightness decrease"), { locked = true })
+hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(noctaliaCmd .. " volume-up"), { locked = true })
+hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(noctaliaCmd .. " volume-down"), { locked = true })
+hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(noctaliaCmd .. " volume-mute"), { locked = true })
+hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd(noctaliaCmd .. " mic-mute"), { locked = true })
+hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(noctaliaCmd .. " brightness-up"), { locked = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(noctaliaCmd .. " brightness-down"), { locked = true })
 hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
 hl.bind("XF86AudioNext", hl.dsp.exec_cmd("playerctl next"), { locked = true })
 hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })

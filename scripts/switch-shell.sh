@@ -56,7 +56,7 @@ if [ -z "$SHELL_NAME" ]; then
     blurbs=("Material 3 · quickshell"
       "Axenide · Astal"
       "DankMaterialShell"
-      "minimal · quickshell"
+      "v5 · native, no Qt"
       "illogical-impulse"
       "pctrade fork")
     args=(--dmenu --index)
@@ -81,7 +81,7 @@ if [ -z "$SHELL_NAME" ]; then
     SHELL_NAME=${KNOWN[$idx]:-}
     [ -z "$SHELL_NAME" ] && exit 0
   else
-    echo "Usage: switch-shell.sh [caelestia|ambxst|dms|noctalia|end4]  (current: $(current_shell))"
+    echo "Usage: switch-shell.sh [${KNOWN[*]}]  (current: $(current_shell))"
     exit 1
   fi
 fi
@@ -120,7 +120,10 @@ kill_matching() {
 kill_all_shells() {
   # Ask nicely via each shell's own IPC first (skip if binary not installed)
   command -v qs >/dev/null 2>&1 && qs -c caelestia kill 2>/dev/null
-  [ -x "$HOME/.local/bin/noctalia" ] && "$HOME/.local/bin/noctalia" kill 2>/dev/null
+  # No graceful-quit IPC for noctalia v5: its CLI only accepts theme/msg/config/
+  # dmenu/plugins/firefox-theme, and an unrecognised bare argument falls through
+  # and STARTS the shell — so `noctalia kill` would launch it. Killed by name in
+  # kill_matching below instead.
   command -v dms >/dev/null 2>&1 && dms kill 2>/dev/null
   command -v qs >/dev/null 2>&1 && qs -c ii kill 2>/dev/null
   command -v qs >/dev/null 2>&1 && qs -c end4-pC kill 2>/dev/null
@@ -130,7 +133,8 @@ kill_all_shells() {
   pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null
   # Caelestia / generic quickshell stragglers
   kill_matching -f "qs -c caelestia"
-  kill_matching -f "bin/quickshell -c noctalia-shell"
+  # Noctalia v5 is its own binary (no quickshell fork) — match it by name.
+  kill_matching -x "noctalia"
   kill_matching -f "dms run"
   kill_matching -f "qs -c ii"
   kill_matching -f "qs -c end4-pC"
@@ -223,8 +227,8 @@ dms)
   }
   ;;
 noctalia)
-  pgrep -f "bin/quickshell -c noctalia-shell" >/dev/null 2>&1 || {
-    "$HOME/.local/bin/noctalia" &
+  pgrep -x noctalia >/dev/null 2>&1 || {
+    noctalia &
     disown
   }
   ;;

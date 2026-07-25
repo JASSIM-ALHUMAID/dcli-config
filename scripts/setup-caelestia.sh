@@ -19,6 +19,10 @@ REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 
 REPO_URL="https://github.com/plusdrag11/caelestia.git"
 UPSTREAM_URL="https://github.com/caelestia-dots/shell.git"
+# The fork's default branch is `main` (a mirror of upstream), so a bare clone
+# lands on the WRONG branch — the customizations live on my-caelestia-rebased.
+# Pin it explicitly, like setup-ambxst.sh and setup-end4.sh already do.
+REPO_BRANCH="my-caelestia-rebased"
 REPO_DIR="${CAELESTIA_DEV:-$REAL_HOME/Projects/shell/real}"
 QS_CONF="$REAL_HOME/.config/quickshell/caelestia"
 CAEL_CONF="$REAL_HOME/.config/caelestia"
@@ -73,9 +77,9 @@ if [ ! -d "$REPO_DIR/.git" ]; then
     esac
     as_user mkdir -p "$(dirname "$REPO_DIR")"
     if as_user gh auth status >/dev/null 2>&1; then
-        as_user gh repo clone "$REPO_URL" "$REPO_DIR"
+        as_user gh repo clone "$REPO_URL" "$REPO_DIR" -- --branch "$REPO_BRANCH"
     else
-        as_user git clone "$REPO_URL" "$REPO_DIR"
+        as_user git clone --branch "$REPO_BRANCH" "$REPO_URL" "$REPO_DIR"
     fi
     as_user git -C "$REPO_DIR" remote add upstream "$UPSTREAM_URL"
 fi

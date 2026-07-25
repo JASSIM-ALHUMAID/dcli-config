@@ -4,6 +4,7 @@ import: []
 enabled_modules:
 - base
 - hyprland-entry
+- shells-quickshell-git
 - caelestia
 - ambxst
 - shell-dms

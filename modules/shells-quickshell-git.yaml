@@ -1,0 +1,19 @@
+description: quickshell-git provider - required by caelestia-shell >= 2.2.0
+
+packages:
+  - quickshell-git
+
+# The default provider on this host. AUR caelestia-shell 2.2.0 replaced its
+# `quickshell` dependency with `quickshell-git`, which is what made `paru -Syu`
+# deadlock on "quickshell-git and quickshell are in conflict" — see
+# docs/PACKAGE-CONFLICTS.md.
+#
+# quickshell-git has Provides=quickshell, so every other shell still resolves and
+# runs under it: shell-dms (dms-shell depends on plain `quickshell`), ambxst,
+# shell-end4 and shell-end4pc. So all six shells stay runtime-switchable with
+# scripts/switch-shell.sh while this provider is the installed one.
+#
+# See modules/shells-quickshell.yaml for why `conflicts:` alone is not enough to
+# perform the swap, and use scripts/switch-quickshell.sh instead.
+conflicts:
+  - shells-quickshell

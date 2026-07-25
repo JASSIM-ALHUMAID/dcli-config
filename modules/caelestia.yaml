@@ -1,10 +1,16 @@
 description: Caelestia Shell - my custom fork (plusdrag11/caelestia)
 
 packages:
-  - quickshell
   - caelestia-cli
   - caelestia-meta
   - caelestia-shell
+
+# The quickshell provider is no longer declared here — it belongs to
+# modules/shells-quickshell-git.yaml (or shells-quickshell.yaml). caelestia-shell
+# 2.2.0 hard-depends on quickshell-git, so caelestia cannot coexist with the
+# stock provider; hence the conflict below.
+conflicts:
+  - shells-quickshell
 
 # The caelestia-shell package installs the STOCK shell into
 # /etc/xdg/quickshell/caelestia. My fork overrides it at

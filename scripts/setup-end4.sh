@@ -1,11 +1,16 @@
 #!/bin/bash
 # Bootstrap end-4 dots-hyprland (illogical-impulse) shell.
 #
-# CRITICAL: upstream's illogical-impulse-quickshell-git package has
-# Conflicts=quickshell and would remove the stock quickshell needed by
-# the caelestia and dms shells (same trap as noctalia-qs — see README.md).
-# So we do NOT install it; the ii config runs on stock quickshell with
-# the fork's extra deps installed as regular packages.
+# CRITICAL: never run end-4's own dependency installer
+# (sdata/dist-arch/install-deps.sh). Two reasons, both verified in the checkout:
+#   - line 96 builds and installs the illogical-impulse-quickshell-git metapkg,
+#     a FOURTH mutually-exclusive quickshell provider (Conflicts=quickshell) that
+#     would fight the one owned by modules/shells-quickshell{,-git}.yaml;
+#   - line 20 replaces the whole hypr stack (hyprland, hyprlock, hypridle,
+#     xdg-desktop-portal-hyprland, ...) with -git builds.
+# So we install the fork's extra deps ourselves, as regular packages, and the ii
+# config runs on whichever provider is enabled. See docs/PACKAGE-CONFLICTS.md
+# and docs/shells/end4.md.
 #
 # Layout this script produces:
 #   ~/.local/share/dots-hyprland   — my-ii fork checkout on branch my-ii (source of truth)

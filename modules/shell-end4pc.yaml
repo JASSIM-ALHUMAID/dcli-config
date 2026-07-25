@@ -2,10 +2,11 @@ description: end4-pC (pctrade's end-4 dots-hyprland fork) - alternate shell (qui
 
 packages: []
 
-# Do NOT declare the illogical-impulse-quickshell-git package: its
-# Conflicts=quickshell would REMOVE the stock quickshell that caelestia and
-# dms need (same trap as noctalia-qs / the ii shell — see README.md).
-# The hook installs the fork's extra deps as regular packages instead.
+# Do NOT declare the illogical-impulse-quickshell-git package: it is a FOURTH
+# mutually-exclusive quickshell provider and would fight the one owned by
+# modules/shells-quickshell{,-git}.yaml. The end4-pC config runs fine on either
+# of those; this hook installs the fork's extra deps as regular packages
+# instead. See docs/PACKAGE-CONFLICTS.md.
 post_install_hook: scripts/setup-end4pc.sh
 hook_behavior: once
 

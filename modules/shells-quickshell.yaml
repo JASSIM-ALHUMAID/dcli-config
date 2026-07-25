@@ -1,0 +1,22 @@
+description: Stock quickshell provider - released quickshell from the repos
+
+packages:
+  - quickshell
+
+# Exactly one quickshell provider may be installed: quickshell-git has
+# Conflicts=quickshell. Enable this one to pin the released build.
+#
+# Everything except caelestia runs fine here: shell-dms (dms-shell depends on
+# plain `quickshell`), ambxst, shell-end4 and shell-end4pc.
+#
+# caelestia is NOT usable with this provider — AUR caelestia-shell >= 2.2.0
+# hard-depends on quickshell-git. Disable the caelestia module before switching
+# here; scripts/switch-quickshell.sh enforces that.
+#
+# dcli's `conflicts:` only prompts at `dcli module enable` time and never
+# uninstalls the outgoing provider (auto_prune is false, and dcli installs with
+# `pacman -S --noconfirm`, which cannot answer pacman's conflict prompt). Use
+# scripts/switch-quickshell.sh — it does the swap as one interactive pacman
+# transaction, then reconciles with dcli sync.
+conflicts:
+  - shells-quickshell-git

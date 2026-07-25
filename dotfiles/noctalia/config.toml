@@ -1,0 +1,152 @@
+# Noctalia v5 configuration — managed by dcli (modules/shell-noctalia.yaml).
+# Linked to ~/.config/noctalia/config.toml by scripts/link-dotfiles.sh.
+#
+# Ported by hand from the v4 settings.json. v5 is a full rewrite (native C++
+# Wayland, no Quickshell/Qt) and does NOT read v4's settings.json — its
+# src/config/config_migrations.cpp only migrates between TOML config versions.
+# The old v4 files (settings.json, colors.json, plugins.json, the QML plugins/
+# tree) were removed here; retrieve them from git if needed:
+#   git show c2789e8:dotfiles/noctalia/settings.json
+#
+# Most keys hot-reload via inotify. Upstream's fully-commented reference lives at
+# https://raw.githubusercontent.com/noctalia-dev/noctalia/main/example.toml —
+# anything omitted here stays at its default.
+
+[shell]
+font_family     = "Sans Serif"
+time_format     = "{:%I:%M %p}"      # v4 general.clockFormat "h:mm AP"
+polkit_agent    = false
+telemetry_enabled = false
+clipboard_enabled = true
+
+[shell.animation]
+enabled = true
+speed   = 1.0
+
+[shell.panel]
+transparency_mode = "solid"
+# v4 ui.settingsPanelMode was "centered"; the rest followed the bar.
+launcher_placement       = "attached"
+clipboard_placement      = "attached"
+control_center_placement = "attached"
+wallpaper_placement      = "attached"
+session_placement        = "attached"
+
+# ── Bar ───────────────────────────────────────────────────────────────────────
+# v4 had a floating bar on the LEFT edge. With a vertical bar, start = top,
+# center = middle, end = bottom.
+#
+# v4 widget id -> v5 widget id:
+#   Launcher -> launcher            Workspace           -> workspaces
+#   Clock -> clock                  Tray                -> tray
+#   SystemMonitor -> sysmon         NotificationHistory -> notifications
+#   ActiveWindow -> active_window   Battery/Volume/Brightness -> unchanged
+#   MediaMini -> media              ControlCenter       -> control-center
+#
+# The v4 "plugin:video-wallpaper" widget is deliberately absent: v5 plugins are
+# Luau, not QML. Its official replacement is the "Video Wallpaper" plugin
+# (noctalia/mpvpaper) — install it from the plugin store, then add its widget
+# via Settings. See modules/shell-noctalia.yaml.
+
+[bar.main]
+position           = "left"
+background_opacity = 0.93
+radius             = 12
+# v4 marginHorizontal/marginVertical = 4. On a left-edge bar, margin_edge is the
+# gap from the left screen edge and margin_ends the gap at the top/bottom ends.
+# (Upstream's example.toml on main lists margin_h/margin_v — those do not exist
+# in 5.0.0_beta.4; `noctalia config validate` rejects them.)
+margin_edge          = 4
+margin_ends          = 4
+margin_opposite_edge = 0
+padding            = 2
+widget_spacing     = 6
+scale              = 1.0
+shadow             = true
+auto_hide          = false
+reserve_space      = true
+capsule            = false
+
+start  = ["launcher", "clock", "sysmon", "active_window", "media"]
+center = ["workspaces"]
+end    = ["tray", "notifications", "battery", "volume", "brightness", "control-center"]
+
+# ── Wallpaper ─────────────────────────────────────────────────────────────────
+
+[wallpaper]
+enabled               = true
+directory             = "~/Pictures/Wallpapers"
+fill_mode             = "crop"
+transition            = ["honeycomb", "fade", "disc", "stripes", "wipe"]
+transition_duration   = 2500
+edge_smoothness       = 1.0
+transition_on_startup = true
+
+[wallpaper.automation]
+enabled          = false
+interval_seconds = 300               # v4 randomIntervalSec; only used when enabled
+order            = "random"
+recursive        = true
+
+# ── Theme ─────────────────────────────────────────────────────────────────────
+# v4: useWallpaperColors = true, generationMethod "tonal-spot", darkMode = true.
+
+[theme]
+mode             = "dark"
+source           = "wallpaper"
+wallpaper_scheme = "m3-tonal-spot"
+pure_black_dark  = false
+
+# ── Notifications / OSD ───────────────────────────────────────────────────────
+
+[notification]
+enable_daemon      = true
+show_app_name      = true
+show_actions       = true
+background_opacity = 0.93
+
+[osd]
+position           = "top_right"
+background_opacity = 0.93
+
+# ── Lock screen ───────────────────────────────────────────────────────────────
+# v4 general: lockOnSuspend = true, lockScreenBlur = 0, lockScreenTint = 0.
+
+[lockscreen]
+enabled         = true
+blurred_desktop = false
+blur_intensity  = 0.0
+tint_intensity  = 0.0
+
+# ── Services ──────────────────────────────────────────────────────────────────
+
+[system.monitor]
+enabled = true
+
+[audio]
+enable_overdrive = false
+
+[nightlight]
+enabled           = false
+temperature_day   = 6500
+temperature_night = 4000
+
+[location]
+auto_locate = false
+
+[weather]
+enabled = false
+
+[calendar]
+enabled = true                       # v4 location.showCalendarEvents
+
+# v4 idle.enabled was false — both behaviours stay off until you want them.
+[idle.behavior.lock]
+timeout = 660
+action  = "lock"
+enabled = false
+
+[idle.behavior.screen-off]
+timeout = 600
+action  = "screen_off"
+enabled = false

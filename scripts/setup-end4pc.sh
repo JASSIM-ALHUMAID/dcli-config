@@ -3,10 +3,11 @@
 # (illogical-impulse). Runs alongside the existing "end4" (ii) shell as a
 # separate, independent quickshell config named "end4-pC".
 #
-# CRITICAL: like end-4's illogical-impulse-quickshell-git, we do NOT install
-# any packaged quickshell fork — that would Conflicts=quickshell and remove the
-# stock quickshell caelestia/dms need (see README.md). The config runs on stock
-# quickshell with the fork's extra deps installed as regular packages.
+# CRITICAL: like end-4's illogical-impulse-quickshell-git, we do NOT install any
+# packaged quickshell fork — each one Conflicts=quickshell and would fight the
+# provider owned by modules/shells-quickshell{,-git}.yaml. The config runs on
+# whichever provider is enabled, with the fork's extra deps installed as regular
+# packages. See docs/PACKAGE-CONFLICTS.md.
 #
 # This shell's deps are the SAME set as setup-end4.sh installs; we duplicate
 # them here (all --needed, so it's a no-op when shell-end4 already ran) so that
