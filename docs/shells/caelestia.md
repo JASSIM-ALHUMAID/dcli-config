@@ -53,7 +53,8 @@ my-caelestia customizations on upstream/main"` restored the pre-2.1.0 name and
 broke the shell on 2026-07-25. Check it after every rebase:
 
 ```bash
-head -1 plugin/src/Caelestia/CMakeLists.txt   # must be: qml_module(caelestia-core
+grep -n '^qml_module' ~/Projects/shell/real/plugin/src/Caelestia/CMakeLists.txt
+# must print: qml_module(caelestia-core
 ```
 
 ## Trap 2: stale `.so` files
@@ -142,9 +143,12 @@ its own `logindmanager`, its one intentional plugin divergence.
 ## Health check
 
 ```bash
-head -1 plugin/src/Caelestia/CMakeLists.txt      # qml_module(caelestia-core
-find ~/.local/lib/qt6/qml ! -newermt "$(date +%F)" -type f   # stale files
-pacman -Qkk caelestia-shell                      # 0 altered files
-QML2_IMPORT_PATH=~/.local/lib/qt6/qml CAELESTIA_LIB_DIR=~/.local/lib/caelestia \
+cd ~/Projects/shell/real                                     # paths below are fork-relative
+grep -n '^qml_module' plugin/src/Caelestia/CMakeLists.txt    # -> qml_module(caelestia-core
+find ~/.local/lib/qt6/qml ! -newermt "$(date +%F)" -type f   # stale files: expect none
+pacman -Qkk caelestia-shell                                  # -> 0 altered files
+
+# Launches the shell — run it when you can see the screen, not from a script.
+env QML2_IMPORT_PATH=~/.local/lib/qt6/qml CAELESTIA_LIB_DIR=~/.local/lib/caelestia \
   qs -c caelestia 2>&1 | grep -E "Configuration Loaded|FATAL|not a type"
 ```
