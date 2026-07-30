@@ -1,6 +1,6 @@
 # Shells
 
-Six graphical shells live side by side on this machine. Any one can be made active
+Seven graphical shells live side by side on this machine. Any one can be made active
 at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 
 | Shell | Launch | Notes |
@@ -11,6 +11,7 @@ at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 | [noctalia](noctalia.md) | `noctalia` | v5 — native C++, **no Quickshell**. |
 | [end4](end4.md) | `qs -c ii` | end-4 illogical-impulse, custom fork. |
 | [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, no local fork. |
+| [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (alpha). Checkout, not a package. Never run its `install.sh`. |
 
 ## The one rule that breaks everything
 
@@ -30,8 +31,12 @@ The provider is owned declaratively by one of two dcli modules —
 `caelestia-shell` >= 2.2.0 hard-depends on it and, since `quickshell-git` provides
 `quickshell`, every other shell resolves and runs under it too.
 
-That is what keeps all six shells runtime-switchable: they share one provider, so
+That is what keeps all seven shells runtime-switchable: they share one provider, so
 switching shells never touches packages.
+
+omarchy is the newest case of the same trap: `quickshell-git` appears in its own
+`install/omarchy-base.packages`, and `modules/shell-omarchy.yaml` deliberately
+omits it so the provider keeps exactly one owner.
 
 Switch providers with `scripts/switch-quickshell.sh [stock|git]` — **never** with
 `dcli module enable` alone. Full reasoning in
@@ -58,6 +63,7 @@ entirely**, so that problem is gone — see [noctalia.md](noctalia.md).
 | ambxst | `plusdrag11/Ambxst` | `my-ambxst` | `Axenide/Ambxst` |
 | end4 | `plusdrag11/dots-hyprland` | `my-ii` | `end-4/dots-hyprland` |
 | end4pc | `pctrade/end4-pC` | `main` | none — no personal fork |
+| omarchy | `basecamp/omarchy` | `quattro` | none — no personal fork |
 
 All three forks pin their branch explicitly. **This matters:** the caelestia
 fork's *default* branch is `main` (a mirror of upstream), so a bare clone lands on
@@ -76,6 +82,11 @@ running upstream's installer is actively harmful:
 - **caelestia** — the installer we use (`devfiles/install-user.fish`) **only exists
   in the fork**. Upstream's `install.fish` installs system-wide with sudo and
   collides with the `caelestia-shell` package.
+- **omarchy** — `install.sh` is a whole-distro installer: sddm, plymouth, snapper,
+  ufw, docker, PAM limits, `/etc` and `/usr` writes, and a `config/` tree that
+  overwrites `~/.config` for alacritty, foot, btop, git, tmux, lazygit and nvim,
+  all of which are dcli-symlinked. `setup-omarchy.sh` reproduces only the clone
+  and the theme seed. See [omarchy.md](omarchy.md).
 - **ambxst** — we run the fork's own `install.sh`. Its arch package list includes
   stock `quickshell`, which is only skipped because its `filter_packages()` sees
   the `qs` binary already on PATH. **Install a provider before running this hook on
@@ -89,12 +100,19 @@ running upstream's installer is actively harmful:
 2. `~/.config/hypr/hyprland.lua` reads `active.conf` and `dofile()`s the matching
    per-shell Lua config from its `shell_paths` table.
 3. Two shells supply their own Hyprland config from their checkout
-   (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the other four use
-   `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo.
+   (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the other five use
+   `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo. omarchy is a hybrid:
+   that file is a *loader* which runs omarchy's own Lua config from its checkout
+   and layers the house preferences on top, so it needs no `-overrides.lua`.
 
 Adding or removing a shell means editing **three index-aligned arrays** in
 `switch-shell.sh`: `KNOWN`, `icon_files`, and `blurbs`. They must stay in the same
 order or the picker shows the wrong icon and switches to the wrong shell.
+
+**And a fourth thing, in a different file:** `lines=` in
+`dotfiles/fuzzel/shell-picker.ini` must equal the number of shells. fuzzel
+scrolls the overflow with no on-screen indicator, so a stale value silently
+hides the shells you just added.
 
 ## Fork divergence (2026-07-25)
 
@@ -104,6 +122,7 @@ order or the picker shows the wrong icon and switches to the wrong shell.
 | end4-pC | up to date | `scripts/update-end4pc.sh` |
 | dots-hyprland (end4) | 1 behind | `scripts/update-end4.sh` |
 | caelestia | 3 behind | rebase by hand — see [caelestia.md](caelestia.md) |
+| omarchy | tracks upstream directly | `scripts/update-omarchy.sh` |
 
 The update scripts only work where a plain fast-forward is possible. **caelestia
 has no update script on purpose**: it carries 32 local commits, and its last

@@ -3,8 +3,8 @@
 Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v0.2.2):
 packages, services, default apps, dotfiles, and bootstrap hooks for my
 CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
-**AMBXst**, **DankMaterialShell**, **Noctalia**, **end-4** and **end4-pC** as
-alternate shells.
+**AMBXst**, **DankMaterialShell**, **Noctalia**, **end-4**, **end4-pC** and
+**omarchy** as alternate shells.
 
 ## What's in here
 
@@ -13,9 +13,9 @@ alternate shells.
 | Host config | `hosts/cachyos-desktop.yaml` | enabled modules, services, default apps |
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
-| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-wezterm.sh` | clone + install each shell |
-| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
-| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc |
+| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-wezterm.sh` | clone + install each shell |
+| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh`, `scripts/update-omarchy.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
+| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc / omarchy |
 | Provider switcher | `scripts/switch-quickshell.sh` | swap the quickshell provider: stock ↔ quickshell-git |
 | Docs | `docs/` | see below |
 
@@ -44,7 +44,7 @@ WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 
 # Shell architecture
 
-Six shells share one Hyprland session. Each owns its QML/UI process and its
+Seven shells share one Hyprland session. Each owns its QML/UI process and its
 own Hyprland config; this repo owns the entry point that picks between them.
 
 ## Where everything lives
@@ -70,6 +70,9 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.config/noctalia` → `dcli/dotfiles/noctalia` | Noctalia v5 config (`config.toml`, TOML, hot-reloaded) | `link-dotfiles.sh` |
 | `/usr/bin/dms` (pkg `dms-shell`) | DankMaterialShell binary | pacman |
 | `~/.config/DankMaterialShell` → `dcli/dotfiles/DankMaterialShell` | DMS user config | `link-dotfiles.sh` |
+| `~/.local/share/omarchy` | omarchy checkout (`basecamp/omarchy`, branch `quattro`, v4.0.0.alpha) — this is `$OMARCHY_PATH`. Its `shell/` is the Quickshell shell and its `bin/` must be on `PATH` | `setup-omarchy.sh` |
+| `~/.config/omarchy` → `dcli/dotfiles/omarchy` | omarchy user config (`shell.json`, hooks, extensions) | `link-dotfiles.sh` |
+| `~/.local/state/omarchy` | omarchy's generated state (current theme, toggles, done markers) — machine-local, **not** in this repo | `omarchy-theme-set` |
 
 Rule of thumb: **`~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`** for
 anything this repo owns, so editing the live config edits the repo. The two
@@ -92,10 +95,11 @@ them, and [docs/NOTES.md](docs/NOTES.md) for machine-wide gotchas.
 | **noctalia** | `noctalia` | `shells/noctalia/hyprland.lua` (standalone) | `~/.config/noctalia` |
 | **end4** | `qs -c ii` | `shells/end4/hyprland.lua` (standalone) | `~/.config/quickshell/ii` |
 | **end4pc** | `qs -c end4-pC` | `shells/end4pc/hyprland.lua` (standalone) | `~/.config/quickshell/end4-pC` |
+| **omarchy** | `quickshell -n -p $OMARCHY_PATH/shell` | `shells/omarchy/hyprland.lua` — a **loader** that runs omarchy's own `default/hypr/*.lua`, then layers house tweaks | `~/.config/omarchy` |
 
-caelestia and ambxst ship complete Hyprland configs, so we load theirs and
-layer local tweaks on top. dms, noctalia, end4 and end4pc don't ship one we can
-use, so each gets a standalone config here — seeded with the same input/layout
+caelestia, ambxst and omarchy ship complete Hyprland configs, so we load theirs
+and layer local tweaks on top. dms, noctalia, end4 and end4pc don't ship one we
+can use, so each gets a standalone config here — seeded with the same input/layout
 preferences and app binds, plus that shell's own IPC binds. They are fully
 independent of each other; edit freely. (end4pc's IPC binds were reconciled
 against end4-pC's own `GlobalShortcut` names, so a couple of the ii shell's
@@ -124,7 +128,19 @@ Connecting points worth knowing:
   (`dotfiles/fuzzel/shell-picker.ini`).
 - **`shells/<name>-overrides.lua`** — the hook for customising a shell whose
   Hyprland config is owned upstream, since editing the upstream file directly
-  would be lost on update. Currently used by ambxst.
+  would be lost on update. Currently used by ambxst. omarchy does *not* use it:
+  the file the entry point loads for omarchy is already ours, so its tweaks live
+  at the bottom of `shells/omarchy/hyprland.lua`.
+- **omarchy has no `environment.d` file, deliberately.** `$OMARCHY_PATH` must not
+  come from the environment: `os.getenv()` in a Lua config runs at parse time, and
+  a login-scoped variable that is set to the *wrong* value silently beats any
+  fallback — which is how a `%h` that `environment.d` does not expand once left the
+  desktop with 3 binds instead of 216, with an empty `hyprctl configerrors`. A bad
+  path makes omarchy's `require_all.files()` shell out to `find` and find nothing,
+  registering **no binds and no error**. `shells/omarchy/hyprland.lua` therefore
+  probes for the checkout and injects the path into `package.path` and
+  `default.hypr.paths` itself; omarchy's own `envs.lua` covers spawned clients.
+  See [docs/shells/omarchy.md](docs/shells/omarchy.md).
 - **`dotfiles/environment.d/50-caelestia-qml.conf`** — puts
   `QML2_IMPORT_PATH=~/.local/lib/qt6/qml` in the *session* environment. Qt
   otherwise searches only `/usr/lib/qt6/qml`, where the packaged
@@ -163,6 +179,11 @@ Shells whose own fork packages are deliberately **not** pacman-installed:
   workaround. **v5 dropped Quickshell and Qt entirely** (native C++/Wayland), so it
   installs as the plain `noctalia` package and belongs to neither provider group.
   `setup-noctalia.sh` is now a one-shot teardown of the v4 artifacts.
+- **omarchy** — lists `quickshell-git` in its own `install/omarchy-base.packages`;
+  `modules/shell-omarchy.yaml` deliberately omits it so the provider keeps exactly
+  one owner. omarchy is not a package at all here: `setup-omarchy.sh` clones the
+  repo and **never runs its `install.sh`**, which is a whole-distro installer that
+  would overwrite dcli-symlinked configs. See [docs/shells/omarchy.md](docs/shells/omarchy.md).
 - **caelestia** — the `caelestia-shell` package is installed but entirely
   shadowed: its QML by `~/.config/quickshell/caelestia`, its C++ plugin by
   `QML2_IMPORT_PATH`. The `caelestia` CLI used by scripts and keybinds is a
@@ -211,7 +232,10 @@ fully Lua, which changes several things that older `.conf` docs get wrong:
   hold-to-move/resize).
 - **Two binds on one combo both fire.** A duplicated launcher bind toggles it
   open then shut. Check with
-  `hyprctl binds -j | jq 'group_by([.modmask,.key,.release])'`.
+  `hyprctl binds -j | jq 'group_by([.modmask,.key,.release])'` — **except under
+  omarchy**, where `-j` emits invalid JSON because its binds carry descriptions
+  (Hyprland shifts keys against values). Use the plain-text awk recipe in
+  [docs/shells/omarchy.md](docs/shells/omarchy.md) there.
 - **`hyprctl reload` wipes dynamically applied binds**, so whatever applies
   them must re-run on the `configreloaded` event.
 - Types are strict: `explicit_column_widths` takes a **string**, not a table,
@@ -238,7 +262,8 @@ Verify any config change with `hyprctl configerrors` — it is empty when clean.
    `cd ~/.config/dcli && git add -A && git commit -m "..." && git push`.
 4. Log out and back in once so the session env (`QML2_IMPORT_PATH`,
    `CAELESTIA_LIB_DIR`) applies, then pick a shell with
-   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4|end4pc]`.
+   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4|end4pc|omarchy]`.
+   (omarchy needs no relogin — it resolves its own paths.)
 
 AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,
 brave-nightly-bin, caelestia-*) come from AUR/chaotic.

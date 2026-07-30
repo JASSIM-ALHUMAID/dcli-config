@@ -27,3 +27,11 @@ dotfiles/hypr/scheme/current.lua
 dotfiles/hypr/scheme/current.conf
 dotfiles/DankMaterialShell/zen.css
 dotfiles/noctalia/colors.json
+
+# omarchy: `omarchy plugin add` clones third-party plugins as git repos under
+# ~/.config/omarchy/plugins — nested repos must not land in this one. User
+# themes are likewise clones (`omarchy theme install <url>`).
+# omarchy's generated state (current theme, toggles, done markers) lives in
+# ~/.local/state/omarchy and is not linked here at all, so it needs no rule.
+dotfiles/omarchy/plugins/
+dotfiles/omarchy/themes/

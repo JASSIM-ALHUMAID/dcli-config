@@ -11,6 +11,9 @@ local shell_paths = {
     noctalia  = hypr .. "/shells/noctalia/hyprland.lua",
     end4      = hypr .. "/shells/end4/hyprland.lua",
     end4pc    = hypr .. "/shells/end4pc/hyprland.lua",
+    -- omarchy's own config lives in its checkout, but the file below is a
+    -- loader we own that dofile()s it — so it belongs here, not in ~/.local.
+    omarchy   = hypr .. "/shells/omarchy/hyprland.lua",
 }
 
 -- active.conf holds a bare shell name; older versions wrote a

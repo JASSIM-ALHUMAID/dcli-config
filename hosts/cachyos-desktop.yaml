@@ -11,6 +11,7 @@ enabled_modules:
 - shell-noctalia
 - shell-end4
 - shell-end4pc
+- shell-omarchy
 - shell-fish
 - terminal-wezterm
 - editor-neovim

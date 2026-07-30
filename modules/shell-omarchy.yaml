@@ -1,0 +1,61 @@
+description: omarchy v4 (quattro) - DHH's Hyprland desktop, one Quickshell instance
+
+# Runtime deps only. The shell itself is a git checkout, not a package:
+# scripts/setup-omarchy.sh clones basecamp/omarchy at branch `quattro` into
+# ~/.local/share/omarchy. There is no usable AUR package — `aur/omarchy` is a
+# placeholder stub, and omarchy's real packages live in its own repo at
+# pkgs.omarchy.org, which this machine does not add.
+packages:
+  - pamixer
+  - gum
+  - socat
+  - udiskie
+  - gnome-themes-extra
+  - xdg-terminal-exec     # AUR — how omarchy-launch-terminal resolves a terminal
+  - yaru-icon-theme       # AUR — the icon theme omarchy's themes name
+
+# v4 is why omarchy fits here at all. The v3 line (branch master, v3.8.4) is
+# waybar + walker + mako + swaybg driven by .conf files, which does not fit an
+# all-Lua Hyprland setup. v4 replaced that whole stack with ONE Quickshell
+# instance -- `quickshell -n -p $OMARCHY_PATH/shell` -- and moved its Hyprland
+# config to Lua. Bar, launcher, notifications, OSD and polkit agent are all
+# plugins inside that single process.
+#
+# CRITICAL: `quickshell-git` is in omarchy's own package list and is deliberately
+# NOT listed above. The Quickshell provider has exactly one owner —
+# modules/shells-quickshell{,-git}.yaml — and a second module claiming it is the
+# conflict trap described in docs/PACKAGE-CONFLICTS.md. omarchy runs on
+# whichever provider is enabled; quickshell-git is the default here anyway.
+#
+# NOTE: v4.0.0.alpha. Upstream moves daily; update with scripts/update-omarchy.sh.
+post_install_hook: scripts/setup-omarchy.sh
+hook_behavior: once
+
+# The hook never runs omarchy's install.sh. That is a whole-distro installer
+# (sddm, plymouth, snapper, ufw, docker, PAM, /etc and /usr writes) and its
+# config/ tree would overwrite ~/.config for alacritty, foot, ghostty, btop,
+# git, tmux, lazygit and nvim — all dcli-symlinked here. The hook reproduces
+# only the checkout and the theme seed, and marks omarchy's first-run sequence
+# done so it cannot re-theme GTK for the other six shells. Details in
+# docs/shells/omarchy.md.
+
+# As always, the real linking is done by scripts/link-dotfiles.sh; this key is
+# documentation. ~/.config/omarchy holds shell.json (bar layout), hooks/,
+# extensions/ and user themes. omarchy's *generated* state — current theme,
+# toggles, done markers — lives in ~/.local/state/omarchy and is machine-local,
+# deliberately not linked.
+dotfiles:
+  - source: omarchy
+    target: ~/.config/omarchy
+
+# There is deliberately NO environment.d file for OMARCHY_PATH (upstream defaults
+# it to /usr/share/omarchy; we run from a checkout). Sourcing it from the
+# environment is what broke this shell once: os.getenv() in a Lua config runs at
+# config-parse time, and a value set to the WRONG path silently beats the
+# fallback, leaving omarchy with zero keybinds and no error at all. The loader
+# probes for the checkout and injects the path. See docs/shells/omarchy.md.
+#
+# Launched per-session via ~/.config/hypr/shells/omarchy/hyprland.lua, which is
+# a loader: it dofile()s omarchy's own bootstrap.lua, requires its Hyprland
+# defaults, then layers the house input/monitor/bind preferences on top.
+# Switch with scripts/switch-shell.sh omarchy

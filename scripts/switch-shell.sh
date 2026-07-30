@@ -1,5 +1,5 @@
 #!/bin/bash
-# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc
+# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
@@ -17,7 +17,7 @@ flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc)
+KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy)
 
 # Where each shell's Lua config lives — must match hyprland.lua's shell_paths
 config_path() {
@@ -52,13 +52,17 @@ if [ -z "$SHELL_NAME" ]; then
     # ~/.config/fuzzel/shell-icons via the fuzzel dir symlink. Rendered by
     # fuzzel's dmenu icon protocol (label\0icon\x1f<abs-path>, libresvg).
     icon_dir="$HOME/.config/fuzzel/shell-icons"
-    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg)
+    # omarchy is a .png on purpose: upstream's only SVG is a 1215x285 wordmark
+    # in black, unusable at icon size on a dark picker. icon.png is the square
+    # 300x300 logo. fuzzel 1.14 is built +png, so it loads either.
+    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png)
     blurbs=("Material 3 · quickshell"
       "Axenide · Astal"
       "DankMaterialShell"
       "v5 · native, no Qt"
       "illogical-impulse"
-      "pctrade fork")
+      "pctrade fork"
+      "DHH · v4 quickshell")
     args=(--dmenu --index)
     picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
     [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
@@ -103,18 +107,25 @@ fi
 # TERM first, escalate to KILL only for survivors. Patterns must be
 # anchored (-x exact name, or -f with a distinctive phrase) so unrelated
 # processes (e.g. an editor with an ambxst file open) are never matched.
+#
+# -A (--ignore-ancestors) is not optional: with -f, pgrep/pkill match the whole
+# command line, so ANY ancestor of this script whose command line merely contains
+# the pattern is a hit — including the shell that invoked us. That is not
+# theoretical: a `bash -c` whose text mentioned "quickshell -n -p .../omarchy/shell"
+# was TERMed by this function mid-switch, killing the script that was running it.
+# -A excludes our own ancestors and costs nothing.
 kill_matching() {
   local flag="$1" pattern="$2"
-  pkill "$flag" "$pattern" 2>/dev/null || return 0
+  pkill -A "$flag" "$pattern" 2>/dev/null || return 0
   # Poll up to 1s, bail immediately when process exits
   local i=0
   while [ $i -lt 10 ]; do
-    pgrep "$flag" "$pattern" >/dev/null 2>&1 || return 0
+    pgrep -A "$flag" "$pattern" >/dev/null 2>&1 || return 0
     sleep 0.1
     i=$((i + 1))
   done
   # Still alive after 1s — escalate to KILL
-  pkill -9 "$flag" "$pattern" 2>/dev/null
+  pkill -9 -A "$flag" "$pattern" 2>/dev/null
 }
 
 kill_all_shells() {
@@ -130,7 +141,7 @@ kill_all_shells() {
   # Only ask ambxst to quit if it's actually running: its CLI trusts a
   # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
   # whatever unrelated process now owns that recycled PID.
-  pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null
+  pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null
   # Caelestia / generic quickshell stragglers
   kill_matching -f "qs -c caelestia"
   # Noctalia v5 is its own binary (no quickshell fork) — match it by name.
@@ -150,6 +161,12 @@ kill_all_shells() {
   kill_matching -x "ambxst"
   kill_matching -x "axctl"
   kill_matching -f "ambxst_ipc"
+  # omarchy v4 is one quickshell instance started as
+  # `quickshell -n -p <checkout>/shell`. Like ambxst's `qs -p` it has no config
+  # name, so it must be matched by command line — and the pattern is anchored on
+  # the whole invocation, not just "omarchy/shell", which would also match an
+  # editor holding a file from the checkout open.
+  kill_matching -f "quickshell -n -p .*omarchy/shell"
   kill_matching -f "loginlock.sh"
   kill_matching -f "sleep_monitor.sh"
   # Old quickshell wallpaper scripts from previous configs
@@ -158,7 +175,7 @@ kill_all_shells() {
   killall -q qs quickshell 2>/dev/null
   # Wait briefly for OS to reclaim resources from killed processes
   local i=0
-  while [ $i -lt 5 ] && pgrep -f "qs -c|quickshell|ambxst|noctalia|dms run" >/dev/null 2>&1; do
+  while [ $i -lt 5 ] && pgrep -A -f "qs -c|quickshell|ambxst|noctalia|dms run|omarchy/shell" >/dev/null 2>&1; do
     sleep 0.1
     i=$((i + 1))
   done
@@ -183,7 +200,13 @@ sleep 0.2
 # need it re-entered; root-level binds go dead if a submap is left active.
 # Detect from the loaded binds instead of hardcoding shell names. Dispatchers
 # take Lua syntax under a .lua config and legacy syntax under a .conf one.
-if hyprctl binds -j | jq -e 'any(.[]; .submap == "global")' >/dev/null 2>&1; then
+#
+# Parsed from the PLAIN-TEXT output on purpose: `hyprctl binds -j` emits invalid
+# JSON on this Hyprland build whenever binds carry descriptions (it shifts keys
+# against values, e.g. `"keycode": XF86AudioRaiseVolume` unquoted). omarchy sets
+# a description on every one of its 216 binds, so jq fails there — which used to
+# land in the else branch by accident rather than by decision.
+if hyprctl binds | grep -qE '^[[:space:]]*submap: global$'; then
   hyprctl dispatch 'hl.dsp.submap("global")' >/dev/null 2>&1 || hyprctl dispatch submap global
 else
   hyprctl dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1 || hyprctl dispatch submap reset
@@ -198,7 +221,7 @@ exec 200>&-
 # (guarded so a fresh login doesn't double-start them).
 case "$SHELL_NAME" in
 caelestia)
-  pgrep -f "qs -c caelestia" >/dev/null 2>&1 || {
+  pgrep -A -f "qs -c caelestia" >/dev/null 2>&1 || {
     # The fork's QML needs its own Caelestia.Internal plugin (~/.local/lib):
     # the packaged one in /usr/lib is older and lacks types like
     # LogindManager, so the shell dies with "Failed to load configuration".
@@ -211,7 +234,7 @@ caelestia)
   }
   ;;
 ambxst)
-  pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 || {
+  pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 || {
     # ambxst rewrites the monitor on startup; shells/ambxst-overrides.lua
     # puts it back at scale 1 on the next reload.
     ambxst &
@@ -221,26 +244,38 @@ ambxst)
   }
   ;;
 dms)
-  pgrep -f "dms run" >/dev/null 2>&1 || {
+  pgrep -A -f "dms run" >/dev/null 2>&1 || {
     dms run &
     disown
   }
   ;;
 noctalia)
-  pgrep -x noctalia >/dev/null 2>&1 || {
+  pgrep -A -x noctalia >/dev/null 2>&1 || {
     noctalia &
     disown
   }
   ;;
 end4)
-  pgrep -f "qs -c ii" >/dev/null 2>&1 || {
+  pgrep -A -f "qs -c ii" >/dev/null 2>&1 || {
     qs -c ii &
     disown
   }
   ;;
 end4pc)
-  pgrep -f "qs -c end4-pC" >/dev/null 2>&1 || {
+  pgrep -A -f "qs -c end4-pC" >/dev/null 2>&1 || {
     qs -c end4-pC &
+    disown
+  }
+  ;;
+omarchy)
+  pgrep -A -f "quickshell -n -p .*omarchy/shell" >/dev/null 2>&1 || {
+    # Nothing puts OMARCHY_PATH in the session environment on purpose (see
+    # docs/shells/omarchy.md), so it is exported here for the shell process.
+    # The Hyprland config does not rely on this — it resolves the checkout
+    # itself — but the shell's QML calls omarchy-* scripts by bare name.
+    OMARCHY_PATH="$HOME/.local/share/omarchy" \
+      PATH="$HOME/.local/share/omarchy/bin:$PATH" \
+      quickshell -n -p "$HOME/.local/share/omarchy/shell" &
     disown
   }
   ;;
