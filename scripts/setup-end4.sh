@@ -17,6 +17,7 @@
 #                                    origin = plusdrag11/dots-hyprland, upstream = end-4/dots-hyprland
 #   ~/.config/quickshell/ii        — symlink -> dots-hyprland/dots/.config/quickshell/ii
 #   ~/.config/matugen              — symlink -> dots-hyprland/dots/.config/matugen
+#   ~/.config/hypr/hyprland/scripts — symlink -> dcli/dotfiles/hypr/shells/end4/hyprland/scripts
 #
 # Note: the ii shell also writes its own state to
 # ~/.config/illogical-impulse at runtime — nothing to do for that.
@@ -130,3 +131,16 @@ else
 fi
 
 echo ":: end-4 ii shell ready — launch with 'qs -c ii', switch with switch-shell.sh end4"
+
+# 5) Symlink hyprland/scripts -> our dotfiles scripts so the upstream
+#    keybinds.lua (which references $HOME/.config/hypr/hyprland/scripts)
+#    can find them.
+HYPR_SCRIPTS_SRC="$REAL_HOME/.config/dcli/dotfiles/hypr/shells/end4/hyprland/scripts"
+HYPR_SCRIPTS_DST="$REAL_HOME/.config/hypr/hyprland/scripts"
+if [ -L "$HYPR_SCRIPTS_DST" ] && [ "$(readlink -f "$HYPR_SCRIPTS_DST")" = "$(readlink -f "$HYPR_SCRIPTS_SRC")" ]; then
+    echo ":: ~/.config/hypr/hyprland/scripts already linked"
+else
+    as_user mkdir -p "$(dirname "$HYPR_SCRIPTS_DST")"
+    as_user ln -sfn "$HYPR_SCRIPTS_SRC" "$HYPR_SCRIPTS_DST"
+    echo ":: Symlinked $HYPR_SCRIPTS_DST -> $HYPR_SCRIPTS_SRC"
+fi

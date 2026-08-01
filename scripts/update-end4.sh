@@ -25,3 +25,14 @@ as_user git -C "$REPO_DIR" pull --ff-only
 as_user git -C "$REPO_DIR" submodule update --init --recursive --depth 1
 
 echo ":: end-4 ii updated — restart shell with switch-shell.sh end4"
+
+# Ensure the hyprland/scripts symlink is correct (may be needed after updates)
+HYPR_SCRIPTS_SRC="$REAL_HOME/.config/dcli/dotfiles/hypr/shells/end4/hyprland/scripts"
+HYPR_SCRIPTS_DST="$REAL_HOME/.config/hypr/hyprland/scripts"
+if [ -L "$HYPR_SCRIPTS_DST" ] && [ "$(readlink -f "$HYPR_SCRIPTS_DST")" = "$(readlink -f "$HYPR_SCRIPTS_SRC")" ]; then
+    echo ":: ~/.config/hypr/hyprland/scripts already linked"
+else
+    as_user mkdir -p "$(dirname "$HYPR_SCRIPTS_DST")"
+    as_user ln -sfn "$HYPR_SCRIPTS_SRC" "$HYPR_SCRIPTS_DST"
+    echo ":: Symlinked $HYPR_SCRIPTS_DST -> $HYPR_SCRIPTS_SRC"
+fi
