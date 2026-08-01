@@ -12,7 +12,7 @@
 --   bootstrap.lua           sets package.path for the three module roots
 --   default.hypr.omarchy    helpers, autostart, bindings, envs, looknfeel,
 --                           input, windows, and the current theme's colours
---   <our layer>             the four things below
+--   <our layer>             monitor, input, unbinds (loaded via dofile)
 --   default.hypr.toggles    runtime toggle state, must come last
 --
 -- TRAPS
@@ -93,74 +93,17 @@ package.loaded["default.hypr.paths"] = {
 
 require("default.hypr.omarchy")
 
--- With paths fixed, omarchy's own default/hypr/envs.lua has already done
--- hl.env("OMARCHY_PATH", ...) and put its bin/ at the front of PATH for every
--- client Hyprland spawns. environment.d is still worth having — it covers
--- terminals and anything else outside the compositor — but the shell no longer
--- depends on it, so a relogin is not required to switch here.
-
 -- ---------------------------------------------------------------------------
--- House layer
+-- House layer — modular sub-modules
 -- ---------------------------------------------------------------------------
---
--- Deliberately small. This shell KEEPS omarchy's keymap — that is the reason to
--- load its config at all — so the only binds touched are the two that would
--- otherwise make the machine unusable: the Arabic layout toggle and the way out
--- of this shell. Everything else omarchy binds stays omarchy's.
--- See docs/shells/omarchy.md for the resulting differences from the other six.
+-- Loaded via dofile (not require) to avoid the ~/.config/?.lua path collision
+-- described in trap 1. Sub-modules live in shells/omarchy/hyprland/.
 
-local terminal     = "wezterm-gui"
-local browser      = "brave-browser-nightly"
-local fileExplorer = "thunar"
+local script_dir = debug.getinfo(1, "S").source:match("^@(.*/)") or (home .. "/.config/hypr/shells/omarchy/")
 
--- Monitor: omarchy leaves this to the user's hypr/monitors.lua, which we do not
--- load (see trap 1). Same default as the other shells.
-hl.monitor({
-    output   = "",
-    mode     = "preferred",
-    position = "auto",
-    scale    = 1,
-})
-
--- Input. omarchy's default/hypr/input.lua derives kb_layout from
--- /etc/vconsole.conf and sets kb_options to "compose:caps,shift:both_capslock",
--- which loses both the Arabic layout and ctrl:nocaps. Re-assert the house
--- settings; hl.config merges, so the touchpad/repeat defaults it set survive.
-hl.config({
-    input = {
-        kb_layout     = "us,ara",
-        kb_variant    = "",
-        kb_options    = "grp:win_space_toggle, ctrl:nocaps",
-        sensitivity   = 0.3,
-        accel_profile = "flat",
-    },
-})
-
--- SUPER+SPACE is the us/ara toggle on every shell here, but omarchy binds it to
--- its menu. Both would fire. Free the combo and move the menu onto a Super tap,
--- which is where noctalia's launcher lives too.
-hl.unbind("SUPER + SPACE")
-hl.bind("SUPER + Super_L", hl.dsp.exec_cmd("omarchy-menu toggle"), { release = true })
-
--- The way out. omarchy binds SUPER+SHIFT+O to Obsidian (only when its
--- preinstalled-app bindings are on, but unbind is harmless either way).
-hl.unbind("SUPER + SHIFT + O")
-hl.bind("SUPER + SHIFT + O", hl.dsp.exec_cmd(home .. "/.config/dcli/scripts/switch-shell.sh"))
-
--- House app binds on combos omarchy leaves free. SUPER+RETURN already opens a
--- terminal via omarchy-launch-terminal -> xdg-terminal-exec, which resolves to
--- wezterm from the XDG default; SUPER+T is bound below only as the explicit
--- house alias. SUPER+W is NOT rebound to the browser here — omarchy uses it to
--- close windows, and SUPER+Q is added as the house-style close instead.
-hl.bind("SUPER + Q", hl.dsp.window.close())
-hl.bind("SUPER + B", hl.dsp.exec_cmd(browser))
-hl.bind("SUPER + E", hl.dsp.exec_cmd(fileExplorer))
-hl.bind("SUPER + R", hl.dsp.exec_cmd(fileExplorer))
-hl.bind("CTRL + ALT + B", hl.dsp.exec_cmd("blueman-manager"))
-
--- Terminal alias. omarchy has SUPER+T on float-toggle, so unbind first.
-hl.unbind("SUPER + T")
-hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
+dofile(script_dir .. "hyprland/monitor.lua")
+dofile(script_dir .. "hyprland/input.lua")
+dofile(script_dir .. "hyprland/keybinds.lua")
 
 -- Runtime toggle state and workspace layouts. Last, exactly as in omarchy's own
 -- config/hypr/hyprland.lua — it re-reads ~/.local/state/omarchy/toggles/hypr.
