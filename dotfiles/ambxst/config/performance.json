@@ -3,6 +3,6 @@
   "windowPreview": true,
   "wavyLine": true,
   "rotateCoverArt": true,
-  "dashboardPersistTabs": false,
+  "dashboardPersistTabs": true,
   "dashboardMaxPersistentTabs": 2
 }

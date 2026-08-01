@@ -2597,7 +2597,7 @@
             "actions": [
                 {
                     "args": {
-                        "command": "hyprctl dispatch workspace e+1\n"
+                        "command": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'"
                     },
                     "id": "command.run",
                     "layouts": [
@@ -2619,7 +2619,7 @@
             "actions": [
                 {
                     "args": {
-                        "command": "hyprctl dispatch workspace e-1\n"
+                        "command": "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'"
                     },
                     "id": "command.run",
                     "layouts": [
@@ -2642,7 +2642,7 @@
             "actions": [
                 {
                     "args": {
-                        "command": "hyprctl dispatch fullscreen 0"
+                        "command": "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"fullscreen\" })'"
                     },
                     "id": "command.run",
                     "layouts": [
@@ -2664,7 +2664,7 @@
             "actions": [
                 {
                     "args": {
-                        "command": "hyprctl dispatch fullscreen 1"
+                        "command": "hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = \"maximized\" })'"
                     },
                     "id": "command.run",
                     "layouts": [
