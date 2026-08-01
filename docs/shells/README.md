@@ -1,6 +1,6 @@
 # Shells
 
-Seven graphical shells live side by side on this machine. Any one can be made active
+Eight graphical shells live side by side on this machine. Any one can be made active
 at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 
 | Shell | Launch | Notes |
@@ -12,6 +12,7 @@ at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 | [end4](end4.md) | `qs -c ii` | end-4 illogical-impulse, custom fork. |
 | [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, no local fork. |
 | [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (alpha). Checkout, not a package. Never run its `install.sh`. |
+| [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. Was installed system-wide; now user-scope. |
 
 ## The one rule that breaks everything
 
@@ -31,7 +32,7 @@ The provider is owned declaratively by one of two dcli modules —
 `caelestia-shell` >= 2.2.0 hard-depends on it and, since `quickshell-git` provides
 `quickshell`, every other shell resolves and runs under it too.
 
-That is what keeps all seven shells runtime-switchable: they share one provider, so
+That is what keeps all eight shells runtime-switchable: they share one provider, so
 switching shells never touches packages.
 
 omarchy is the newest case of the same trap: `quickshell-git` appears in its own
@@ -42,7 +43,9 @@ Switch providers with `scripts/switch-quickshell.sh [stock|git]` — **never** w
 `dcli module enable` alone. Full reasoning in
 [../PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).
 
-Verified 2026-07-25: all five Quickshell-based shells report
+Verified 2026-08-01: xenon reports `Configuration Loaded` from its user checkout
+and survives a switch round-trip.
+Verified 2026-07-25: the other five Quickshell-based shells report
 `Configuration Loaded` under `quickshell-git 0.3.0.r3`.
 
 ## Never install a packaged Quickshell fork
@@ -64,6 +67,7 @@ entirely**, so that problem is gone — see [noctalia.md](noctalia.md).
 | end4 | `plusdrag11/dots-hyprland` | `my-ii` | `end-4/dots-hyprland` |
 | end4pc | `pctrade/end4-pC` | `main` | none — no personal fork |
 | omarchy | `basecamp/omarchy` | `quattro` | none — no personal fork |
+| xenon | `MannuVilasara/xenon-shell` | `main` | none — no personal fork |
 
 All three forks pin their branch explicitly. **This matters:** the caelestia
 fork's *default* branch is `main` (a mirror of upstream), so a bare clone lands on
@@ -123,6 +127,7 @@ hides the shells you just added.
 | dots-hyprland (end4) | 1 behind | `scripts/update-end4.sh` |
 | caelestia | 3 behind | rebase by hand — see [caelestia.md](caelestia.md) |
 | omarchy | tracks upstream directly | `scripts/update-omarchy.sh` |
+| xenon | tracks upstream directly | `scripts/update-xenon.sh` |
 
 The update scripts only work where a plain fast-forward is possible. **caelestia
 has no update script on purpose**: it carries 32 local commits, and its last

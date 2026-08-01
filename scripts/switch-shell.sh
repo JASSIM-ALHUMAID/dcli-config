@@ -1,5 +1,5 @@
 #!/bin/bash
-# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy
+# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy | xenon
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
@@ -17,7 +17,7 @@ flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy)
+KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon)
 
 # Where each shell's Lua config lives — must match hyprland.lua's shell_paths
 config_path() {
@@ -55,14 +55,15 @@ if [ -z "$SHELL_NAME" ]; then
     # omarchy is a .png on purpose: upstream's only SVG is a 1215x285 wordmark
     # in black, unusable at icon size on a dark picker. icon.png is the square
     # 300x300 logo. fuzzel 1.14 is built +png, so it loads either.
-    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png)
+    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png xenon.svg)
     blurbs=("Material 3 · quickshell"
       "Axenide · Astal"
       "DankMaterialShell"
       "v5 · native, no Qt"
       "illogical-impulse"
       "pctrade fork"
-      "DHH · v4 quickshell")
+      "DHH · v4 quickshell"
+      "MannuVilasara · quickshell")
     args=(--dmenu --index)
     picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
     [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
@@ -138,6 +139,10 @@ kill_all_shells() {
   command -v dms >/dev/null 2>&1 && dms kill 2>/dev/null
   command -v qs >/dev/null 2>&1 && qs -c ii kill 2>/dev/null
   command -v qs >/dev/null 2>&1 && qs -c end4-pC kill 2>/dev/null
+  # No graceful-quit IPC for xenon either: its handlers are launcher, clipboard,
+  # sidePanel, wallpaperpanel, powermenu, infopanel, settings, cliphistService,
+  # wallpaper and lock — there is no kill/quit verb to call. It is TERMed by
+  # command line below.
   # Only ask ambxst to quit if it's actually running: its CLI trusts a
   # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
   # whatever unrelated process now owns that recycled PID.
@@ -149,6 +154,7 @@ kill_all_shells() {
   kill_matching -f "dms run"
   kill_matching -f "qs -c ii"
   kill_matching -f "qs -c end4-pC"
+  kill_matching -f "qs -c xenon"
   kill_matching -x "quickshell"
   kill_matching -f "caelestia shell"
   kill_matching -f "caelestia resizer"
@@ -276,6 +282,12 @@ omarchy)
     OMARCHY_PATH="$HOME/.local/share/omarchy" \
       PATH="$HOME/.local/share/omarchy/bin:$PATH" \
       quickshell -n -p "$HOME/.local/share/omarchy/shell" &
+    disown
+  }
+  ;;
+xenon)
+  pgrep -A -f "qs -c xenon" >/dev/null 2>&1 || {
+    qs -c xenon &
     disown
   }
   ;;

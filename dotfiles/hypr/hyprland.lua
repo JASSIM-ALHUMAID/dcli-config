@@ -14,6 +14,7 @@ local shell_paths = {
     -- omarchy's own config lives in its checkout, but the file below is a
     -- loader we own that dofile()s it — so it belongs here, not in ~/.local.
     omarchy   = hypr .. "/shells/omarchy/hyprland.lua",
+    xenon     = hypr .. "/shells/xenon/hyprland.lua",
 }
 
 -- active.conf holds a bare shell name; older versions wrote a

@@ -12,6 +12,7 @@ enabled_modules:
 - shell-end4
 - shell-end4pc
 - shell-omarchy
+- shell-xenon
 - shell-fish
 - terminal-wezterm
 - editor-neovim

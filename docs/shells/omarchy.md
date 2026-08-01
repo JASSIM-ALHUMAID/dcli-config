@@ -168,7 +168,7 @@ default.hypr.toggles   runtime toggle state; must be last
 
 ### Trap: `~/.config/?.lua` is on package.path
 
-That is this repo's **shared** `dotfiles/hypr/` directory, used by all seven
+That is this repo's **shared** `dotfiles/hypr/` directory, used by all eight
 shells. omarchy's own user config does `require("hypr.bindings")`,
 `require("hypr.monitors")` and so on — meaning if
 `dotfiles/hypr/{monitors,input,bindings,looknfeel,autostart}.lua` ever exist,

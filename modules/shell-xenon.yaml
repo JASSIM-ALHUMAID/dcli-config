@@ -1,0 +1,36 @@
+description: xenon-shell (MannuVilasara/xenon-shell) - alternate shell (quickshell config "xenon")
+
+packages: []
+
+# Do NOT declare quickshell/quickshell-git here: the provider has exactly one
+# owner, modules/shells-quickshell{,-git}.yaml, and a second module claiming it
+# is the conflict trap in docs/PACKAGE-CONFLICTS.md. xenon is a plain Quickshell
+# config and runs on whichever provider is enabled. The hook installs only its
+# own runtime deps (python, imagemagick, brightnessctl, cliphist, wl-clipboard,
+# the two nerd fonts, papirus-icon-theme) as regular packages.
+#
+# There is no upstream installer to skip — xenon's README is a git clone plus a
+# dependency list, nothing more.
+post_install_hook: scripts/setup-xenon.sh
+hook_behavior: once
+
+# ~/.config/quickshell/xenon is deliberately NOT listed here: it is a symlink
+# into the ~/.local/share/xenon-shell checkout (source of truth, cloned straight
+# from upstream — no personal fork) and a dcli dotfiles sync must not replace it.
+#
+# /etc/xdg/quickshell/xenon is a leftover root-owned clone owned by no package.
+# It is left in place on purpose: quickshell prefers XDG_CONFIG_HOME, so the
+# user copy above shadows it. Nothing here touches /etc.
+#
+# ~/.config/xenon holds config.json only (fonts, bar layout, wallpaper dir,
+# lock-screen toggles) — small and hand-editable, so it IS tracked. Generated
+# data (colors, wallpaper thumbnails, app-usage) lives in ~/.cache/xenon and is
+# machine-local. As always, the real linking is done by scripts/link-dotfiles.sh;
+# this key is documentation.
+dotfiles:
+  - source: xenon
+    target: ~/.config/xenon
+
+# Launched per-session via ~/.config/hypr/shells/xenon/hyprland.lua, which binds
+# the shell's `qs -c xenon ipc call <target> <fn>` verbs. Switch with
+# scripts/switch-shell.sh xenon.
