@@ -116,13 +116,17 @@ fi
 if [ -L "$MATUGEN_CONF" ] && [ "$(readlink -f "$MATUGEN_CONF")" = "$(readlink -f "$MATUGEN_SRC")" ]; then
     echo ":: matugen-ml4w already linked"
 else
-    if [ -e "$MATUGEN_CONF" ]; then
-        echo "!! $MATUGEN_CONF exists and is not a correct symlink — refusing to clobber." >&2
-        exit 1
-    fi
     as_user mkdir -p "$(dirname "$MATUGEN_CONF")"
-    as_user ln -s "$MATUGEN_SRC" "$MATUGEN_CONF"
-    echo ":: Symlinked $MATUGEN_CONF -> $MATUGEN_SRC"
+    if ! as_user ln -s "$MATUGEN_SRC" "$MATUGEN_CONF" 2>/dev/null; then
+        if [ "$(readlink -f "$MATUGEN_CONF")" = "$(readlink -f "$MATUGEN_SRC")" ]; then
+            echo ":: Symlinked $MATUGEN_CONF -> $MATUGEN_SRC (created by a concurrent hook)"
+        else
+            echo "!! $MATUGEN_CONF exists and is not the correct symlink — refusing to clobber." >&2
+            exit 1
+        fi
+    else
+        echo ":: Symlinked $MATUGEN_CONF -> $MATUGEN_SRC"
+    fi
 fi
 
 # 6) Fonts the QML references (Fira Sans for Theme.qml's fontFamily, Material
@@ -130,7 +134,7 @@ fi
 echo ":: Installing ml4w fonts"
 as_user mkdir -p "$REAL_HOME/.local/share/fonts"
 as_user cp -rn "$REPO_DIR/setup/fonts/"* "$REAL_HOME/.local/share/fonts/" 2>/dev/null || true
-fc-cache -f >/dev/null 2>&1 || true
+as_user fc-cache -f >/dev/null 2>&1 || true
 
 # 7) Runtime deps (external commands the QML execs). No quickshell provider
 #    here — see docs/PACKAGE-CONFLICTS.md.

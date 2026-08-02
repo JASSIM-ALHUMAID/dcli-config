@@ -34,7 +34,15 @@ for name in "${TARGETS[@]}"; do
         mv "$dst" "$dst.bak-$ts"
         echo ":: $name: backed up -> $dst.bak-$ts"
     fi
-    ln -s "$src" "$dst"
-    echo ":: $name: linked $dst -> $src"
+    if ! ln -s "$src" "$dst" 2>/dev/null; then
+        if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+            echo ":: $name: linked $dst -> $src (created by a concurrent hook)"
+        else
+            echo "!! $name: $dst exists and is not the correct symlink — refusing to clobber." >&2
+            exit 1
+        fi
+    else
+        echo ":: $name: linked $dst -> $src"
+    fi
 done
 echo "Done. Backups (if any) are at ~/.config/*.bak-$ts"

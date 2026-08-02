@@ -1,8 +1,8 @@
 hl.on("hyprland.start", function()
     -- The shell: one quickshell instance as named config "ml4w".
     hl.exec_cmd("qs -c ml4w")
-    -- Supporting daemons. These are shared infra and survive shell switches,
-    -- so a switch never needs to (re)start them.
+    -- Supporting daemons. Shared infra that survives shell switches, so on a
+    -- mid-session switch the switch script re-guards (starts if missing) them.
     hl.exec_cmd("swaync")
     hl.exec_cmd("awww-daemon")
     hl.exec_cmd("nm-applet --indicator")

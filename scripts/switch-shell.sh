@@ -300,9 +300,16 @@ ml4w)
     # Theme.qml loads colors only via IPC (its onCompleted reload is disabled
     # upstream), so trigger the reload once quickshell has registered the
     # handler. Delayed so the failure-free path is silent.
-    ( sleep 1; qs -c ml4w ipc call theme-manager reload >/dev/null 2>&1 ) &
+    ( sleep 2; qs -c ml4w ipc call theme-manager reload >/dev/null 2>&1 ) &
     disown
   }
+  # The bar's notification/tray/wallpaper daemons are started from
+  # shells/ml4w/hyprland.lua's execs (login-only), so a mid-session switch
+  # would otherwise leave the bar's modules dead. Guarded like the shell so a
+  # switch never double-starts them.
+  pgrep -A -x swaync >/dev/null 2>&1 || { swaync & disown; }
+  pgrep -A -f "awww-daemon" >/dev/null 2>&1 || { awww-daemon & disown; }
+  pgrep -A -f "nm-applet" >/dev/null 2>&1 || { nm-applet --indicator & disown; }
   ;;
 esac
 

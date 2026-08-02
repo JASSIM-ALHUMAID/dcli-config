@@ -11,7 +11,7 @@ checkout tracks upstream `main` directly.
 | Quickshell config | `~/.config/quickshell/ml4w` → `~/.local/share/ml4w-dotfiles/dotfiles/.config/quickshell` |
 | Install | `scripts/setup-ml4w.sh` (module `shell-ml4w`) |
 | Update | `scripts/update-ml4w.sh` |
-| Health check | `pgrep -f "qs -c ml4w"`, `hyprctl configerrors` empty |
+| Health check | `pgrep -A -f "qs -c ml4w"`, `hyprctl configerrors` empty |
 
 ## Layout
 

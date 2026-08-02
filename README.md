@@ -79,6 +79,7 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.local/share/ml4w-dotfiles` | ml4w checkout (`mylinuxforwork/dotfiles`, branch `main`) — the quickshell config is nested at `dotfiles/.config/quickshell` | `setup-ml4w.sh` |
 | `~/.config/quickshell/ml4w` → `~/.local/share/ml4w-dotfiles/dotfiles/.config/quickshell` | ml4w's quickshell config, run as `qs -c ml4w` | `setup-ml4w.sh` |
 | `~/.config/ml4w` | ml4w runtime config (settings, scripts, wallpapers, `colors/`) — seeded real dir, machine-local | `setup-ml4w.sh` / `update-ml4w.sh` |
+| `~/.config/ml4w-statusbar` | ml4w statusbar override (`statusbar.json`) — seeded real dir, machine-local | `setup-ml4w.sh` |
 
 Rule of thumb: **`~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`** for
 anything this repo owns, so editing the live config edits the repo. The two
