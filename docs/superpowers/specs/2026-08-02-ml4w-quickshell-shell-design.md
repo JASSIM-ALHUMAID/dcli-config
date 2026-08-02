@@ -88,10 +88,13 @@ dcli symlink and NOT a checkout symlink — it is a seeded real dir (see Purpose
 
 - `description`: ml4w (ML4W OS) — mylinuxforwork/dotfiles quickshell shell,
   named config "ml4w".
-- `packages` (runtime deps only, exact names verified at implementation):
+- `packages` (runtime deps only):
   - `swaync` — the SwayncModule statusbar widget needs it running
-  - `awww-daemon` + wallpaper engine deps — the WallpaperApp
+  - `awww` — the wallpaper engine (now `extra/awww`, the swww successor; the
+    daemon binary is `awww-daemon`). Used by ml4w's WallpaperApp.
   - `network-manager-applet` — nm-applet for the tray
+  - possibly `papirus-icon-theme` / `fira-sans-fonts` if the QML references
+    them (verified by grepping the checkout's QML at implementation)
   - matugen is already in `base`; fonts/icons: ml4w QML uses Fira Sans (and
     house `ttf-*` already present); icons via papirus if the QML references it
   - **Do NOT declare `quickshell`/`quickshell-git`** — one-owner provider rule
@@ -120,12 +123,16 @@ Mirrors `setup-xenon.sh` structure (root-safe via `REAL_USER`/`as_user`):
    it exists and looks populated — first-run only), and seed
    `~/.config/ml4w-statusbar/statusbar.json` from the shipped
    `ml4w/settings/statusbar.json` if the user override is absent.
-4. Seed matugen: copy ml4w's `dotfiles/.config/matugen` config + templates into
-   `~/.config/matugen-ml4w` (dcli-tracked dir gets overwritten? no — this is a
-   bootstrapping fallback; the canonical copy lives in dcli and is symlinked).
-   Repoint the colors template to output `~/.config/ml4w/colors/colors.json`.
-   **Never touch `~/.config/matugen`** (symlink into the end4 checkout — owned
-   by shell-end4; this is exactly the matugen-end4pc lesson).
+4. matugen: the canonical config lives in dcli (`dotfiles/matugen-ml4w`,
+   symlinked by `link-dotfiles.sh` to `~/.config/matugen-ml4w`). Because hooks
+   run in parallel, `setup-ml4w.sh` must not assume that symlink exists yet —
+   it ensures `~/.config/matugen-ml4w` → dcli `dotfiles/matugen-ml4w` itself.
+   The `matugen-ml4w` template set is adapted once from ml4w's
+   `dotfiles/.config/matugen/templates/colors.json` and committed; the setup
+   script does NOT copy from the checkout. Its template writes
+   `~/.config/ml4w/colors/colors.json`. **Never touch `~/.config/matugen`**
+   (symlink into the end4 checkout — owned by shell-end4; this is exactly the
+   matugen-end4pc lesson).
 5. Seed a default wallpaper (copy one from checkout wallpapers) and run matugen
    once with the ml4w config so `Theme.qml` has colors on first launch.
 6. Install `RUNTIME_DEPS` via pacman (`--needed --noconfirm`).
@@ -169,7 +176,10 @@ plus:
   the QML at implementation):
   - SUPER+SPACE → `statusbar focus`
   - SUPER+CTRL+B → `statusbar toggle`; SUPER+SHIFT+B → `statusbar reload`
-  - launcher, `sidebar`, `power` (powermenu), `calendar`, `wallpaper`, `overview`
+  - launcher, `sidebar`, `power` (powermenu), `calendar`, `wallpaper`
+  - (NOT `overview`: ml4w runs that as a *separate* `qs -p .../overview`
+    process, not an IPC target of shell.qml — out of scope for the minimal
+    ecosystem.)
 - Guard the launch with pgrep like every other shell (exec-once does not
   re-fire on `hyprctl reload`).
 
@@ -220,8 +230,9 @@ plus:
   GTK scripts, `hyprland-gui.lua`, welcome-app autostart popup are NOT
   installed. The SidebarApp's settings app-launcher buttons that point at them
   will no-op; acceptable for the minimal-ecosystem scope.
-- ml4w ships `overview/` and `shared/` dirs — they come along via the symlink;
-  `overview` can be bound, `shared` (icons) is used by the QML.
+- ml4w ships `overview/` and `shared/` dirs — they come along via the symlink
+  but are inert for this shell: `shared/` (icons) is used by the QML, while
+  `overview/` is a separate quickshell process upstream and is not wired in.
 - If ml4w's sidebar/welcome auto-popups prove intrusive, silence via the
   seeded `~/.cache/ml4w-welcome-autostart` marker (upstream's mechanism) — a
   follow-up, not part of the initial shell.
