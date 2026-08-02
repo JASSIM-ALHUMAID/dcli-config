@@ -4,7 +4,7 @@ Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v
 packages, services, default apps, dotfiles, and bootstrap hooks for my
 CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 **AMBXst**, **DankMaterialShell**, **Noctalia**, **end-4**, **end4-pC**,
-**omarchy** and **xenon** as alternate shells.
+**omarchy**, **xenon** and **ml4w** as alternate shells.
 
 ## What's in here
 
@@ -13,9 +13,9 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 | Host config | `hosts/cachyos-desktop.yaml` | enabled modules, services, default apps |
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
-| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-xenon.sh`, `setup-wezterm.sh` | clone + install each shell |
-| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh`, `scripts/update-omarchy.sh`, `scripts/update-xenon.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
-| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc / omarchy / xenon |
+| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-xenon.sh`, `setup-ml4w.sh`, `setup-wezterm.sh` | clone + install each shell |
+| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh`, `scripts/update-omarchy.sh`, `scripts/update-xenon.sh`, `scripts/update-ml4w.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
+| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc / omarchy / xenon / ml4w |
 | Provider switcher | `scripts/switch-quickshell.sh` | swap the quickshell provider: stock ↔ quickshell-git |
 | Docs | `docs/` | see below |
 
@@ -44,7 +44,7 @@ WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
 
 # Shell architecture
 
-Eight shells share one Hyprland session. Each owns its QML/UI process and its
+Nine shells share one Hyprland session. Each owns its QML/UI process and its
 own Hyprland config; this repo owns the entry point that picks between them.
 
 ## Where everything lives
@@ -76,6 +76,9 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.local/share/xenon-shell` | xenon checkout (`MannuVilasara/xenon-shell`, branch `main`) — the repo root *is* the quickshell config (flat layout) | `setup-xenon.sh` |
 | `~/.config/quickshell/xenon` → `~/.local/share/xenon-shell` | xenon's quickshell config; shadows the hand-made root clone still sitting at `/etc/xdg/quickshell/xenon` | `setup-xenon.sh` |
 | `~/.config/xenon` → `dcli/dotfiles/xenon` | xenon user config (`config.json`) — generated data stays in `~/.cache/xenon` | `link-dotfiles.sh` |
+| `~/.local/share/ml4w-dotfiles` | ml4w checkout (`mylinuxforwork/dotfiles`, branch `main`) — the quickshell config is nested at `dotfiles/.config/quickshell` | `setup-ml4w.sh` |
+| `~/.config/quickshell/ml4w` → `~/.local/share/ml4w-dotfiles/dotfiles/.config/quickshell` | ml4w's quickshell config, run as `qs -c ml4w` | `setup-ml4w.sh` |
+| `~/.config/ml4w` | ml4w runtime config (settings, scripts, wallpapers, `colors/`) — seeded real dir, machine-local | `setup-ml4w.sh` / `update-ml4w.sh` |
 
 Rule of thumb: **`~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`** for
 anything this repo owns, so editing the live config edits the repo. The two
@@ -100,6 +103,7 @@ them, and [docs/NOTES.md](docs/NOTES.md) for machine-wide gotchas.
 | **end4pc** | `qs -c end4-pC` | `shells/end4pc/hyprland.lua` (standalone) | `~/.config/quickshell/end4-pC` |
 | **omarchy** | `quickshell -n -p $OMARCHY_PATH/shell` | `shells/omarchy/hyprland.lua` — a **loader** that runs omarchy's own `default/hypr/*.lua`, then layers house tweaks | `~/.config/omarchy` |
 | **xenon** | `qs -c xenon` | `shells/xenon/hyprland.lua` (standalone) | `~/.config/xenon` |
+| **ml4w** | `qs -c ml4w` | `shells/ml4w/hyprland.lua` (standalone) | `~/.config/ml4w` |
 
 caelestia, ambxst and omarchy ship complete Hyprland configs, so we load theirs
 and layer local tweaks on top. dms, noctalia, end4, end4pc and xenon don't ship one we
@@ -266,7 +270,7 @@ Verify any config change with `hyprctl configerrors` — it is empty when clean.
    `cd ~/.config/dcli && git add -A && git commit -m "..." && git push`.
 4. Log out and back in once so the session env (`QML2_IMPORT_PATH`,
    `CAELESTIA_LIB_DIR`) applies, then pick a shell with
-   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4|end4pc|omarchy|xenon]`.
+   `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4|end4pc|omarchy|xenon|ml4w]`.
    (omarchy needs no relogin — it resolves its own paths.)
 
 AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,

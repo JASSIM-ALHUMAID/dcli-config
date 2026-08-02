@@ -1,6 +1,6 @@
 # Shells
 
-Eight graphical shells live side by side on this machine. Any one can be made active
+Nine graphical shells live side by side on this machine. Any one can be made active
 at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 
 | Shell | Launch | Notes |
@@ -13,6 +13,7 @@ at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 | [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, no local fork. |
 | [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (alpha). Checkout, not a package. Never run its `install.sh`. |
 | [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. Was installed system-wide; now user-scope. |
+| [ml4w](ml4w.md) | `qs -c ml4w` | mylinuxforwork/dotfiles (ML4W OS), no local fork. Checkout, not a package. |
 
 ## The one rule that breaks everything
 
@@ -32,7 +33,7 @@ The provider is owned declaratively by one of two dcli modules —
 `caelestia-shell` >= 2.2.0 hard-depends on it and, since `quickshell-git` provides
 `quickshell`, every other shell resolves and runs under it too.
 
-That is what keeps all eight shells runtime-switchable: they share one provider, so
+That is what keeps all nine shells runtime-switchable: they share one provider, so
 switching shells never touches packages.
 
 omarchy is the newest case of the same trap: `quickshell-git` appears in its own
@@ -68,6 +69,7 @@ entirely**, so that problem is gone — see [noctalia.md](noctalia.md).
 | end4pc | `pctrade/end4-pC` | `main` | none — no personal fork |
 | omarchy | `basecamp/omarchy` | `quattro` | none — no personal fork |
 | xenon | `MannuVilasara/xenon-shell` | `main` | none — no personal fork |
+| ml4w | `mylinuxforwork/dotfiles` | `main` | none — no personal fork |
 
 All three forks pin their branch explicitly. **This matters:** the caelestia
 fork's *default* branch is `main` (a mirror of upstream), so a bare clone lands on
@@ -128,6 +130,7 @@ hides the shells you just added.
 | caelestia | 3 behind | rebase by hand — see [caelestia.md](caelestia.md) |
 | omarchy | tracks upstream directly | `scripts/update-omarchy.sh` |
 | xenon | tracks upstream directly | `scripts/update-xenon.sh` |
+| ml4w | tracks upstream directly | `scripts/update-ml4w.sh` |
 
 The update scripts only work where a plain fast-forward is possible. **caelestia
 has no update script on purpose**: it carries 32 local commits, and its last
