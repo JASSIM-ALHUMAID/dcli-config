@@ -84,7 +84,10 @@ Rule of thumb: **`~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`** for
 anything this repo owns, so editing the live config edits the repo. The two
 deliberate exceptions are `~/.config/caelestia` (symlink into the fork, which
 has its own git history) and `~/.config/uwsm` (symlink into the upstream
-caelestia-dots clone — anything put there is lost on update).
+caelestia-dots clone — anything put there is lost on update). A third, different
+case: `~/.config/ml4w` and `~/.config/ml4w-statusbar` are seeded real dirs, not
+symlinks, because the ml4w apps write into them — see
+[docs/shells/ml4w.md](docs/shells/ml4w.md).
 
 ## Per shell
 
@@ -106,9 +109,9 @@ them, and [docs/NOTES.md](docs/NOTES.md) for machine-wide gotchas.
 | **ml4w** | `qs -c ml4w` | `shells/ml4w/hyprland.lua` (standalone) | `~/.config/ml4w` |
 
 caelestia, ambxst and omarchy ship complete Hyprland configs, so we load theirs
-and layer local tweaks on top. dms, noctalia, end4, end4pc and xenon don't ship one we
-can use, so each gets a standalone config here — seeded with the same input/layout
-preferences and app binds, plus that shell's own IPC binds. They are fully
+and layer local tweaks on top. dms, noctalia, end4, end4pc, xenon and ml4w don't
+ship one we can use, so each gets a standalone config here — seeded with the same
+input/layout preferences and app binds, plus that shell's own IPC binds. They are fully
 independent of each other; edit freely. (end4pc's IPC binds were reconciled
 against end4-pC's own `GlobalShortcut` names, so a couple of the ii shell's
 binds — cheatsheet, light/dark — are absent because that fork has no such

@@ -106,7 +106,7 @@ running upstream's installer is actively harmful:
 2. `~/.config/hypr/hyprland.lua` reads `active.conf` and `dofile()`s the matching
    per-shell Lua config from its `shell_paths` table.
 3. Two shells supply their own Hyprland config from their checkout
-   (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the other five use
+   (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the other six use
    `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo. omarchy is a hybrid:
    that file is a *loader* which runs omarchy's own Lua config from its checkout
    and layers the house preferences on top, so it needs no `-overrides.lua`.
