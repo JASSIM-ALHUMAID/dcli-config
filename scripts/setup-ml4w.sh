@@ -149,7 +149,7 @@ fi
 WALL="$ML4W_DIR/wallpapers/default.jpg"
 if [ -f "$WALL" ] && command -v matugen >/dev/null 2>&1; then
     echo ":: Generating initial theme from $WALL"
-    as_user matugen -c "$MATUGEN_CONF/config.toml" "$WALL" \
+    as_user matugen -c "$MATUGEN_CONF/config.toml" image "$WALL" --source-color-index 0 \
         || echo "!! matugen failed — the shell will still run; run it after the first wallpaper set"
 fi
 

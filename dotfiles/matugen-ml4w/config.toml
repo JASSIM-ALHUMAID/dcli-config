@@ -7,7 +7,7 @@
 #
 # Only colors.json matters here: CustomTheme/Theme.qml reads
 # ~/.config/ml4w/colors/colors.json on `qs -c ml4w ipc call theme-manager reload`.
-# Run it as: matugen -c ~/.config/matugen-ml4w/config.toml <wallpaper>
+# Run it as: matugen -c ~/.config/matugen-ml4w/config.toml image <wallpaper> --source-color-index 0
 
 [config]
 version_check = false

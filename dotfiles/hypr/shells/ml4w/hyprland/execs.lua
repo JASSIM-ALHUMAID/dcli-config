@@ -12,8 +12,8 @@ hl.on("hyprland.start", function()
     -- does not re-fire on `hyprctl reload`, so this is start-only; the switch
     -- script re-triggers the reload on switch.
     hl.exec_cmd("awww img " .. os.getenv("HOME") .. "/.config/ml4w/wallpapers/default.jpg")
-    hl.exec_cmd("matugen -c " .. os.getenv("HOME") .. "/.config/matugen-ml4w/config.toml "
-        .. os.getenv("HOME") .. "/.config/ml4w/wallpapers/default.jpg")
+    hl.exec_cmd("matugen -c " .. os.getenv("HOME") .. "/.config/matugen-ml4w/config.toml image "
+        .. os.getenv("HOME") .. "/.config/ml4w/wallpapers/default.jpg --source-color-index 0")
     hl.exec_cmd("sh -c 'sleep 2; qs -c ml4w ipc call theme-manager reload'")
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
