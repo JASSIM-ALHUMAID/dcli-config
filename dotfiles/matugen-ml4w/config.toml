@@ -1,0 +1,17 @@
+# matugen config owned by the ml4w shell (shell-ml4w.yaml).
+#
+# Vendored from mylinuxforwork/dotfiles dotfiles/.config/matugen/config.toml so
+# the ml4w shell never depends on ~/.config/matugen, which is a symlink into
+# ~/.local/share/dots-hyprland (owned by shell-end4) — the same lesson as
+# matugen-end4pc.
+#
+# Only colors.json matters here: CustomTheme/Theme.qml reads
+# ~/.config/ml4w/colors/colors.json on `qs -c ml4w ipc call theme-manager reload`.
+# Run it as: matugen -c ~/.config/matugen-ml4w/config.toml <wallpaper>
+
+[config]
+version_check = false
+
+[templates.colorsjson]
+input_path = '~/.config/matugen-ml4w/templates/colors.json'
+output_path = '~/.config/ml4w/colors/colors.json'
