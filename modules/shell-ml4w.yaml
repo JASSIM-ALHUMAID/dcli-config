@@ -1,0 +1,36 @@
+description: ml4w (ML4W OS) - mylinuxforwork/dotfiles quickshell shell (named config "ml4w")
+
+# Runtime deps only. The shell is a git checkout, not a package — there is no
+# ml4w-hyprland package (upstream removed AUR packages). The Quickshell provider
+# has exactly one owner (modules/shells-quickshell{,-git}.yaml) and must NOT be
+# declared here; ml4w runs on whichever provider is enabled. These three are the
+# external commands the QML execs: swaync (StatusbarApp/SwayncModule),
+# awww (WallpaperApp + the awww-daemon, extra/awww), network-manager-applet
+# (system tray). Fonts (Fira Sans, Material Icons) are copied from the checkout
+# by scripts/setup-ml4w.sh, not installed as packages.
+packages:
+  - swaync
+  - awww
+  - network-manager-applet
+
+# Never run the ML4W installer (bash <(curl -s https://ml4w.com/os/stable)): it
+# is a whole-dotfiles installer that overwrites dcli-symlinked configs (sddm,
+# waybar, ~/.config/hypr, ...). The hook reproduces only the checkout, the
+# quickshell symlink, the seeded ~/.config/ml4w dirs and the matugen config.
+# Details in docs/shells/ml4w.md.
+post_install_hook: scripts/setup-ml4w.sh
+hook_behavior: once
+
+# ~/.config/quickshell/ml4w is deliberately NOT listed here: it is a symlink
+# into ~/.local/share/ml4w-dotfiles (source of truth) and a dcli dotfiles sync
+# must not replace it. ~/.config/ml4w and ~/.config/ml4w-statusbar are seeded
+# REAL dirs (apps write into them, matugen regenerates colors.json), so they are
+# machine-local, not dcli dotfiles. As always, the real linking is done by
+# scripts/link-dotfiles.sh; this key is documentation.
+dotfiles:
+  - source: matugen-ml4w
+    target: ~/.config/matugen-ml4w
+
+# Launched per-session via ~/.config/hypr/shells/ml4w/hyprland.lua, which binds
+# `qs -c ml4w ipc call <target> <fn>` (statusbar, sidebar, power, calendar,
+# wallpaper, theme-manager). Switch with scripts/switch-shell.sh ml4w.
