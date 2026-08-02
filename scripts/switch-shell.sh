@@ -1,5 +1,5 @@
 #!/bin/bash
-# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy | xenon
+# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy | xenon | ml4w
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
@@ -17,7 +17,7 @@ flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon)
+KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon ml4w)
 
 # Where each shell's Lua config lives — must match hyprland.lua's shell_paths
 config_path() {
@@ -55,7 +55,7 @@ if [ -z "$SHELL_NAME" ]; then
     # omarchy is a .png on purpose: upstream's only SVG is a 1215x285 wordmark
     # in black, unusable at icon size on a dark picker. icon.png is the square
     # 300x300 logo. fuzzel 1.14 is built +png, so it loads either.
-    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png xenon.svg)
+    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png xenon.svg ml4w.svg)
     blurbs=("Material 3 · quickshell"
       "Axenide · Astal"
       "DankMaterialShell"
@@ -63,7 +63,8 @@ if [ -z "$SHELL_NAME" ]; then
       "illogical-impulse"
       "pctrade fork"
       "DHH · v4 quickshell"
-      "MannuVilasara · quickshell")
+      "MannuVilasara · quickshell"
+      "MyLinuxForWork · quickshell")
     args=(--dmenu --index)
     picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
     [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
@@ -155,6 +156,7 @@ kill_all_shells() {
   kill_matching -f "qs -c ii"
   kill_matching -f "qs -c end4-pC"
   kill_matching -f "qs -c xenon"
+  kill_matching -f "qs -c ml4w"
   kill_matching -x "quickshell"
   kill_matching -f "caelestia shell"
   kill_matching -f "caelestia resizer"
@@ -288,6 +290,17 @@ omarchy)
 xenon)
   pgrep -A -f "qs -c xenon" >/dev/null 2>&1 || {
     qs -c xenon &
+    disown
+  }
+  ;;
+ml4w)
+  pgrep -A -f "qs -c ml4w" >/dev/null 2>&1 || {
+    qs -c ml4w &
+    disown
+    # Theme.qml loads colors only via IPC (its onCompleted reload is disabled
+    # upstream), so trigger the reload once quickshell has registered the
+    # handler. Delayed so the failure-free path is silent.
+    ( sleep 1; qs -c ml4w ipc call theme-manager reload >/dev/null 2>&1 ) &
     disown
   }
   ;;
