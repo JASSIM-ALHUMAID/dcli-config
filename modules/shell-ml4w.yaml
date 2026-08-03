@@ -8,10 +8,28 @@ description: ml4w (ML4W OS) - mylinuxforwork/dotfiles quickshell shell (named co
 # awww (WallpaperApp + the awww-daemon, extra/awww), network-manager-applet
 # (system tray). Fonts (Fira Sans, Material Icons) are copied from the checkout
 # by scripts/setup-ml4w.sh, not installed as packages.
+#
+# The rest are what the shell's buttons and menus actually launch. Without them
+# the sidebar and welcome windows render fine but every button silently no-ops,
+# because the QML fires them through Quickshell.execDetached with no error path.
+# hyprmod is AUR-only, so setup-ml4w.sh installs through paru when present.
 packages:
   - swaync
   - awww
   - network-manager-applet
+  # Launcher. ml4w/settings/launcher selects "rofi"; rofi 2.x is Wayland-native,
+  # so there is no rofi-wayland to reach for and nothing conflicts.
+  - rofi
+  # Settings app deps (bin/ml4w-dotfiles-settings is a shell script)
+  - gum
+  - jq
+  # Sidebar / welcome button targets
+  - nwg-displays
+  - qt6ct
+  - mission-center
+  - waypaper
+  - gnome-text-editor
+  - hyprmod
 
 # Never run the ML4W installer (bash <(curl -s https://ml4w.com/os/stable)): it
 # is a whole-dotfiles installer that overwrites dcli-symlinked configs (sddm,

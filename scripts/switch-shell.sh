@@ -157,6 +157,11 @@ kill_all_shells() {
   kill_matching -f "qs -c end4-pC"
   kill_matching -f "qs -c xenon"
   kill_matching -f "qs -c ml4w"
+  # ml4w's overview and settings app are separate `qs -p <path>` processes, so
+  # like ambxst and omarchy they have no config name to match on — anchor on the
+  # path. Killing only `qs -c ml4w` left both running on top of the next shell.
+  kill_matching -f "qs -p .*ml4w-overview"
+  kill_matching -f "qs -p .*ml4w-dotfiles-settings/quickshell"
   # ml4w's daemons. Killing the quickshell process alone left these behind, so
   # switching away from ml4w kept a second notification daemon and a second
   # wallpaper daemon alive on top of the next shell. No other shell here starts
@@ -331,6 +336,25 @@ ml4w)
   pgrep -A -x swaync >/dev/null 2>&1 || { swaync & disown; }
   pgrep -A -f "awww-daemon" >/dev/null 2>&1 || { awww-daemon & disown; }
   pgrep -A -f "nm-applet" >/dev/null 2>&1 || { nm-applet --indicator & disown; }
+  # The overview and settings app are separate quickshell processes (see
+  # shells/ml4w/hyprland/execs.lua), started here too because exec-once does not
+  # re-fire on reload. Both are skipped when their path is missing so a partial
+  # install degrades to "that bind does nothing" instead of erroring on switch.
+  OVERVIEW_DIR="$HOME/.config/ml4w-overview"
+  SETTINGS_DIR="$HOME/.local/share/ml4w-dotfiles-settings/quickshell"
+  if [ -d "$OVERVIEW_DIR" ]; then
+    pgrep -A -f "qs -p .*ml4w-overview" >/dev/null 2>&1 || {
+      qs -p "$OVERVIEW_DIR" &
+      disown
+    }
+  fi
+  if [ -d "$SETTINGS_DIR" ]; then
+    pgrep -A -f "qs -p .*ml4w-dotfiles-settings/quickshell" >/dev/null 2>&1 || {
+      # PROFILE selects the settings.json under ~/.config/ml4w-dotfiles-settings.
+      PROFILE="com.ml4w.dotfiles" qs -p "$SETTINGS_DIR" &
+      disown
+    }
+  fi
   ;;
 esac
 

@@ -52,6 +52,13 @@ ML4W_DIR="$REAL_HOME/.config/ml4w"
 SB_OVERRIDE="$REAL_HOME/.config/ml4w-statusbar/statusbar.json"
 MATUGEN_CONF="$REAL_HOME/.config/matugen-ml4w"
 MATUGEN_SRC="$REAL_HOME/.config/dcli/dotfiles/matugen-ml4w"
+ROFI_DIR="$REAL_HOME/.config/rofi"
+OVERVIEW_DIR="$REAL_HOME/.config/ml4w-overview"
+ML4W_CACHE="$REAL_HOME/.cache/ml4w/hyprland-dotfiles"
+SETTINGS_URL="https://github.com/mylinuxforwork/ml4w-dotfiles-settings.git"
+SETTINGS_SRC="$REAL_HOME/.local/share/ml4w-dotfiles-settings-src"
+SETTINGS_LIB="$REAL_HOME/.local/share/ml4w-dotfiles-settings"
+SETTINGS_CONF="$REAL_HOME/.config/ml4w-dotfiles-settings"
 
 as_user() {
     if [ "$(id -u)" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
@@ -151,14 +158,108 @@ as_user mkdir -p "$REAL_HOME/.local/share/fonts"
 as_user cp -rn "$REPO_DIR/setup/fonts/"* "$REAL_HOME/.local/share/fonts/" 2>/dev/null || true
 as_user fc-cache -f >/dev/null 2>&1 || true
 
-# 7) Runtime deps (external commands the QML execs). No quickshell provider
-#    here — see docs/PACKAGE-CONFLICTS.md.
-RUNTIME_DEPS=(swaync awww network-manager-applet)
+# 7) Runtime deps: every external command the QML execs. No quickshell provider
+#    here — see docs/PACKAGE-CONFLICTS.md. Keep this list in sync with
+#    modules/shell-ml4w.yaml.
+#
+#    The QML fires these through Quickshell.execDetached, which has no error
+#    path — a missing binary makes the button do nothing at all, with no log
+#    line. So they are dependencies, not nice-to-haves.
+RUNTIME_DEPS=(
+    swaync awww network-manager-applet
+    rofi                    # launcher (ml4w/settings/launcher == "rofi")
+    gum jq                  # ml4w-dotfiles-settings is a shell script
+    nwg-displays qt6ct mission-center waypaper gnome-text-editor
+)
+# hyprmod is AUR-only. paru handles repo + AUR in one transaction; without it
+# the repo packages still install and only the hyprmod button stays dead.
+AUR_DEPS=(hyprmod)
 echo ":: Installing ml4w runtime dependencies"
-if [ "$(id -u)" -eq 0 ]; then
-    pacman -S --needed --noconfirm "${RUNTIME_DEPS[@]}"
+if as_user command -v paru >/dev/null 2>&1; then
+    as_user paru -S --needed --noconfirm "${RUNTIME_DEPS[@]}" "${AUR_DEPS[@]}"
 else
-    sudo pacman -S --needed --noconfirm "${RUNTIME_DEPS[@]}"
+    echo "!! paru not found — installing repo packages only, ${AUR_DEPS[*]} skipped"
+    if [ "$(id -u)" -eq 0 ]; then
+        pacman -S --needed --noconfirm "${RUNTIME_DEPS[@]}"
+    else
+        sudo pacman -S --needed --noconfirm "${RUNTIME_DEPS[@]}"
+    fi
+fi
+
+# 7b) The rofi launcher config. Seeded as a REAL dir, not a symlink into the
+#     checkout, because matugen writes colors.rasi into it on every wallpaper
+#     change (config.toml's [templates.rofi]) — pointing that at the checkout
+#     would dirty the git tree on every theme regeneration. Nothing else on this
+#     machine owns ~/.config/rofi.
+if [ -d "$ROFI_DIR" ]; then
+    echo ":: ~/.config/rofi already present"
+else
+    echo ":: Seeding ~/.config/rofi from checkout"
+    as_user cp -r "$REPO_DIR/dotfiles/.config/rofi" "$ROFI_DIR"
+fi
+
+# 7b2) The workspace overview. Upstream runs it straight out of the quickshell
+#      dir, but matugen regenerates common/Appearance.colors.qml on every
+#      wallpaper change and that file is TRACKED in the checkout — writing there
+#      would dirty the tree and break update-ml4w.sh's `git pull --ff-only`.
+#      So it gets a seeded real dir, same reasoning as ~/.config/ml4w.
+#      update-ml4w.sh refreshes it (no-clobber) after a pull.
+if [ -d "$OVERVIEW_DIR" ]; then
+    echo ":: ~/.config/ml4w-overview already seeded"
+else
+    echo ":: Seeding ~/.config/ml4w-overview from checkout"
+    as_user cp -r "$CHECKOUT_QS/overview" "$OVERVIEW_DIR"
+fi
+
+# 7c) ml4w's config.rasi @imports this cache file for the launcher's background
+#     image. It is normally written by ml4w-wallpaper, which the house wallpaper
+#     flow in execs.lua does not run — so seed it against the default wallpaper.
+#     A missing @import is not fatal for rofi, but it loses the backdrop.
+if [ -f "$ML4W_CACHE/current_wallpaper.rasi" ]; then
+    echo ":: current_wallpaper.rasi already present"
+else
+    as_user mkdir -p "$ML4W_CACHE"
+    as_user tee "$ML4W_CACHE/current_wallpaper.rasi" >/dev/null <<RASI
+* { current-image: url("$ML4W_DIR/wallpapers/default.jpg", height); }
+RASI
+    echo ":: Seeded $ML4W_CACHE/current_wallpaper.rasi"
+fi
+
+# 7d) The ML4W Dotfiles Settings app — a SEPARATE upstream repo, which is why it
+#     was missing until now. The SidebarApp and WelcomeApp both toggle it via
+#     `qs -p ~/.local/share/ml4w-dotfiles-settings/quickshell ipc call settings
+#     toggle`, so that exact path has to exist.
+#
+#     Its own setup.sh is a curl|bash that appends to ~/.bashrc — not run here.
+#     `make install` is the whole of it: bin/ -> ~/.local/bin, lib/* -> the lib
+#     dir above. The checkout lives at ...-settings-src because make install
+#     writes INTO ...-settings, so the two cannot be the same directory.
+if [ -d "$SETTINGS_SRC/.git" ]; then
+    echo ":: ml4w-dotfiles-settings already cloned"
+else
+    if [ -e "$SETTINGS_SRC" ]; then
+        echo "!! $SETTINGS_SRC exists but is not a git repo — refusing to touch it." >&2
+        exit 1
+    fi
+    echo ":: Cloning ml4w-dotfiles-settings"
+    as_user git clone --depth 1 "$SETTINGS_URL" "$SETTINGS_SRC"
+fi
+if [ -d "$SETTINGS_LIB/quickshell" ]; then
+    echo ":: ml4w-dotfiles-settings already installed"
+else
+    echo ":: Installing ml4w-dotfiles-settings (make install)"
+    as_user make -C "$SETTINGS_SRC" install
+fi
+#     The settings PROFILE ("com.ml4w.dotfiles") is a directory of settings.json
+#     under ~/.config/ml4w-dotfiles-settings — SettingsWindow reads $PROFILE and
+#     renders nothing without it. Seeded real, like ~/.config/ml4w, because the
+#     app writes to it.
+if [ -f "$SETTINGS_CONF/com.ml4w.dotfiles/settings.json" ]; then
+    echo ":: ml4w-dotfiles-settings profile already seeded"
+else
+    echo ":: Seeding $SETTINGS_CONF"
+    as_user mkdir -p "$SETTINGS_CONF"
+    as_user cp -rn "$REPO_DIR/dotfiles/.config/ml4w-dotfiles-settings/"* "$SETTINGS_CONF/"
 fi
 
 # 8) Initial theming so Theme.qml has colors on first launch. Theme.qml reads

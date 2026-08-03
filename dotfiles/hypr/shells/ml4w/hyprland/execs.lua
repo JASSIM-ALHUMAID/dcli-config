@@ -1,6 +1,19 @@
+local home = os.getenv("HOME")
+
 hl.on("hyprland.start", function()
     -- The shell: one quickshell instance as named config "ml4w".
     hl.exec_cmd("qs -c ml4w")
+    -- The workspace overview and the settings app are SEPARATE quickshell
+    -- processes upstream (ml4w-autostart starts both), not windows of the main
+    -- shell — they are `qs -p <path>` instances with their own IPC targets
+    -- ("overview", "settings"). Started here so the binds in keybinds.lua have
+    -- something to talk to; switch-shell.sh starts and tears down both too.
+    hl.exec_cmd("qs -p " .. home .. "/.config/ml4w-overview")
+    -- PROFILE picks the settings profile dir under
+    -- ~/.config/ml4w-dotfiles-settings; without it SettingsWindow has no
+    -- settings.json to render. Same value ml4w-autostart uses.
+    hl.exec_cmd("env PROFILE=com.ml4w.dotfiles qs -p "
+        .. home .. "/.local/share/ml4w-dotfiles-settings/quickshell")
     -- Supporting daemons. Shared infra that survives shell switches, so on a
     -- mid-session switch the switch script re-guards (starts if missing) them.
     hl.exec_cmd("swaync")

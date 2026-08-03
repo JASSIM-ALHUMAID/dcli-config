@@ -20,6 +20,9 @@ DST="$REAL_HOME/.config/ml4w"
 SB_OVERRIDE="$REAL_HOME/.config/ml4w-statusbar/statusbar.json"
 SB_FALLBACK="$DST/settings/statusbar.json"
 SB_MARKER="$REAL_HOME/.config/ml4w-statusbar/.dcli-bar-enabled-repair"
+OVERVIEW_DIR="$REAL_HOME/.config/ml4w-overview"
+ROFI_DIR="$REAL_HOME/.config/rofi"
+SETTINGS_SRC="$REAL_HOME/.local/share/ml4w-dotfiles-settings-src"
 
 as_user() {
     if [ "$(id -u)" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
@@ -55,6 +58,25 @@ if [ -d "$DST" ]; then
 else
     echo "!! $DST missing — run setup-ml4w.sh first" >&2
     exit 1
+fi
+
+# Refresh the other seeded copies the same no-clobber way. Both exist as real
+# dirs rather than checkout symlinks because matugen writes generated files into
+# them (rofi/colors.rasi, ml4w-overview/common/Appearance.colors.qml) and those
+# paths are tracked in the checkout — see setup-ml4w.sh.
+if [ -d "$OVERVIEW_DIR" ]; then
+    as_user cp -rn "$SRC/../quickshell/overview/." "$OVERVIEW_DIR/" 2>/dev/null || true
+fi
+if [ -d "$ROFI_DIR" ]; then
+    as_user cp -rn "$SRC/../rofi/." "$ROFI_DIR/" 2>/dev/null || true
+fi
+
+# The settings app is its own upstream repo, pulled and reinstalled here so a
+# dcli update keeps it in step with the shell that toggles it.
+if [ -d "$SETTINGS_SRC/.git" ]; then
+    echo ":: Updating ml4w-dotfiles-settings"
+    as_user git -C "$SETTINGS_SRC" pull --ff-only
+    as_user make -C "$SETTINGS_SRC" install >/dev/null
 fi
 
 # One-time repair for installs seeded before the setup hook wrote the statusbar

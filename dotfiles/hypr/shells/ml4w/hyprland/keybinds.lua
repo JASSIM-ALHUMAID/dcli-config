@@ -1,6 +1,11 @@
 -- ml4w keybinds
 
+local home      = os.getenv("HOME")
 local qs        = "qs -c ml4w ipc call"
+-- The overview and settings apps run as path-based quickshell instances, so
+-- they are addressed with `qs -p <path>`, not by config name.
+local overviewIpc = "qs -p " .. home .. "/.config/ml4w-overview ipc call"
+local settingsIpc = "qs -p " .. home .. "/.local/share/ml4w-dotfiles-settings/quickshell ipc call"
 local terminal  = "wezterm-gui"
 local browser   = "brave-browser-nightly"
 local defaultBrowser = "zen-browser"
@@ -11,7 +16,6 @@ local launcher  = os.getenv("HOME") .. "/.config/hypr/scripts/launcher.sh"
 -- SidebarApp / PowerApp / CalendarApp / WallpaperApp / CustomTheme.
 -- `statusbar focus` expands the pill and grabs the keyboard (SUPER+SPACE).
 -- `theme-manager reload` re-reads ~/.config/ml4w/colors/colors.json.
--- No bind for the welcome/settings apps — out of the minimal-ecosystem scope.
 hl.bind("SUPER + SPACE",      hl.dsp.exec_cmd(qs .. " statusbar focus"))
 hl.bind("SUPER + CTRL + B",   hl.dsp.exec_cmd(qs .. " statusbar toggle"))
 hl.bind("SUPER + SHIFT + B",  hl.dsp.exec_cmd(qs .. " statusbar reload"))
@@ -21,6 +25,16 @@ hl.bind("SUPER + CTRL + C",   hl.dsp.exec_cmd(qs .. " calendar toggle"))
 hl.bind("SUPER + CTRL + W",   hl.dsp.exec_cmd(qs .. " wallpaper toggle"))
 hl.bind("SUPER + SHIFT + W",  hl.dsp.exec_cmd(qs .. " wallpaper toggle"))
 hl.bind("SUPER + CTRL + RETURN", hl.dsp.exec_cmd(launcher))
+-- The welcome window lives in the same process as the bar (shell.qml
+-- instantiates WelcomeWindow), so it answers on the "ml4w" config like the rest.
+hl.bind("SUPER + CTRL + H",   hl.dsp.exec_cmd(qs .. " welcome toggle"))
+
+-- The overview and the settings app are their own quickshell processes (started
+-- in execs.lua), so their IPC goes through `qs -p <path>`, NOT `qs -c ml4w`.
+-- SUPER+TAB is already the workspace cycle below, so the overview takes
+-- SUPER+SHIFT+SPACE.
+hl.bind("SUPER + SHIFT + SPACE", hl.dsp.exec_cmd(overviewIpc .. " overview toggle"))
+hl.bind("SUPER + CTRL + COMMA",  hl.dsp.exec_cmd(settingsIpc .. " settings toggle"))
 
 -- Window management
 hl.bind("SUPER + Q",         hl.dsp.window.close())
