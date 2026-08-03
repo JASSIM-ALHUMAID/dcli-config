@@ -17,6 +17,9 @@ REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
 REPO_DIR="$REAL_HOME/.local/share/ml4w-dotfiles"
 SRC="$REPO_DIR/dotfiles/.config/ml4w"
 DST="$REAL_HOME/.config/ml4w"
+SB_OVERRIDE="$REAL_HOME/.config/ml4w-statusbar/statusbar.json"
+SB_FALLBACK="$DST/settings/statusbar.json"
+SB_MARKER="$REAL_HOME/.config/ml4w-statusbar/.dcli-bar-enabled-repair"
 
 as_user() {
     if [ "$(id -u)" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
@@ -52,6 +55,33 @@ if [ -d "$DST" ]; then
 else
     echo "!! $DST missing — run setup-ml4w.sh first" >&2
     exit 1
+fi
+
+# One-time repair for installs seeded before the setup hook wrote the statusbar
+# override with "enabled": true. shell-ml4w's hook_behavior is `once`, so the
+# setup fix never reaches an existing machine — this does.
+#
+# Guarded by a marker so it runs exactly once: after the repair the flag is the
+# user's to own (SUPER + CTRL + B / the SidebarApp switch persist into this same
+# file), and a repair on every update would fight a deliberate toggle-off.
+if [ -f "$SB_MARKER" ]; then
+    : # already repaired
+else
+    if [ -f "$SB_OVERRIDE" ] && grep -qE '"enabled"[[:space:]]*:[[:space:]]*false' "$SB_OVERRIDE"; then
+        as_user sed -i -E 's/("enabled"[[:space:]]*:[[:space:]]*)false/\1true/' "$SB_OVERRIDE"
+        echo ":: Repaired $SB_OVERRIDE — statusbar enabled (no waybar fallback here)"
+    fi
+    as_user mkdir -p "$(dirname "$SB_MARKER")"
+    as_user touch "$SB_MARKER"
+fi
+
+# The StatusbarApp's parser tolerates /* */ blocks and trailing commas but not
+# `#` comments, and a hand-edited fallback that fails to parse is silently
+# ignored (built-in defaults take over). Strip them so the file stays usable if
+# the override is ever removed.
+if [ -f "$SB_FALLBACK" ] && grep -qE '^[[:space:]]*#' "$SB_FALLBACK"; then
+    as_user sed -i -E '/^[[:space:]]*#/d' "$SB_FALLBACK"
+    echo ":: Stripped '#' comment lines from $SB_FALLBACK (invalid JSON)"
 fi
 
 echo ":: ml4w shell updated — restart shell with switch-shell.sh ml4w"

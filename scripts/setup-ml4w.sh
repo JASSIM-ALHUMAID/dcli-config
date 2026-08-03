@@ -99,16 +99,31 @@ else
     as_user mkdir -p "$ML4W_DIR/colors"
 fi
 
-# 4) Seed the statusbar override file from the shipped fallback when absent.
-#    ~/.config/ml4w-statusbar/statusbar.json is the "master" file the
-#    StatusbarApp reads when present; the shipped fallback lives in the ml4w
-#    settings dir. Seeding it makes the bar read our copy, not upstream's.
+# 4) Seed the statusbar override file. ~/.config/ml4w-statusbar/statusbar.json is
+#    the "master" file the StatusbarApp reads when present; it wins over the
+#    shipped fallback in the ml4w settings dir.
+#
+#    CRITICAL: written explicitly with "enabled": true rather than copied from
+#    the checkout. Upstream ships the quickshell bar DISABLED
+#    (StatusbarApp/statusbar.json) and covers the gap with waybar, which
+#    conf/autostart.lua launches unconditionally; the flag only flips to true
+#    when the user picks Quickshell in the SidebarApp switch. This repo installs
+#    no waybar (minimal-ecosystem scope), so seeding upstream's default would
+#    leave the session with no bar at all. Enabled-by-default is a deliberate
+#    divergence — see docs/shells/ml4w.md.
 if [ -f "$SB_OVERRIDE" ]; then
     echo ":: statusbar override already present"
 else
     as_user mkdir -p "$(dirname "$SB_OVERRIDE")"
-    as_user cp "$ML4W_DIR/settings/statusbar.json" "$SB_OVERRIDE"
-    echo ":: Seeded $SB_OVERRIDE"
+    as_user tee "$SB_OVERRIDE" >/dev/null <<'JSON'
+{
+    "bar": {
+        "enabled": true,
+        "alwaysExpanded": false
+    }
+}
+JSON
+    echo ":: Seeded $SB_OVERRIDE (bar enabled — no waybar fallback here)"
 fi
 
 # 5) Ensure the matugen-ml4w symlink (the base hook links it, but hooks run in

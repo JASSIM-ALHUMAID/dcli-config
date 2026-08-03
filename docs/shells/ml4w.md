@@ -36,14 +36,47 @@ expand with SUPER+SPACE), launcher button, sidebar, powermenu, calendar,
 wallpaper app and the matugen-driven custom theme. `swaync`, `awww-daemon` and
 `nm-applet` are started for the bar's notification/tray/wallpaper modules.
 
+The quickshell statusbar is upstream's own — `~/.config/ml4w/settings/statusbar`
+selects it (over waybar) and ml4w's scripts dispatch on that value. What differs
+here is only that it is enabled out of the box; see Traps.
+
+Only the sidebar, powermenu, calendar and wallpaper app are on-demand popups —
+an idle ml4w session shows the bar and nothing else. That is expected.
+
 Not installed (minimal-ecosystem scope): ml4w's waybar, settings app
 (`ml4w-dotfiles-settings`), swaync config tree, GTK scripts and the ML4W
 installer. Buttons/scripts that reference them no-op.
+
+The checkout tracks branch `main` — upstream's development trunk, not the
+`2.9.9.x` tags the ml4w.com stable installer uses. Same policy as end4pc,
+omarchy and xenon.
 
 ## Traps
 
 - **Never run the ML4W installer** (`bash <(curl -s https://ml4w.com/os/stable)`).
   It overwrites `~/.config/hypr`, waybar, sddm, etc. — all dcli-owned here.
+- **The bar is opt-in upstream; this repo enables it.** Upstream ships
+  `StatusbarApp/statusbar.json` with `"enabled": false` and lets waybar (launched
+  from its `conf/autostart.lua`) cover the gap until you pick Quickshell in the
+  SidebarApp switch. There is no waybar here, so `setup-ml4w.sh` seeds
+  `~/.config/ml4w-statusbar/statusbar.json` with `"enabled": true`. **If the shell
+  starts and no bar appears, check that flag first** — the process is running and
+  the QML loaded, the window is just `visible: false`. Recover with
+  `qs -c ml4w ipc call statusbar enable` or SUPER+CTRL+B.
+- **Don't use the sidebar's waybar/quickshell statusbar switch.** Picking waybar
+  runs `qs ipc call statusbar disable` and `~/.config/waybar/launch.sh`, which is
+  not installed — leaving no bar at all, recoverable only through the IPC call
+  above.
+- **`swaync` and `awww-daemon` are ml4w-only and are torn down on switch.**
+  `switch-shell.sh` kills both, because swaync holds the
+  `org.freedesktop.Notifications` bus name and would swallow the next shell's
+  notifications. `nm-applet` is left running on purpose — no bus conflict, and it
+  is often started at login by something outside dcli.
+- **`~/.config/ml4w-statusbar/statusbar.json` is the master file.** While it
+  exists, `~/.config/ml4w/settings/statusbar.json` is ignored entirely. Both are
+  parsed with a tolerant reader that strips `/* */` blocks and trailing commas but
+  **not** `#` comments — a `#` line makes the file unparseable and it is silently
+  dropped in favour of the built-in defaults.
 - **No quickshell provider is declared for this shell.** It runs on whichever
   provider is enabled (`quickshell-git` is default). See
   [PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).

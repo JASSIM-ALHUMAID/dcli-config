@@ -157,6 +157,22 @@ kill_all_shells() {
   kill_matching -f "qs -c end4-pC"
   kill_matching -f "qs -c xenon"
   kill_matching -f "qs -c ml4w"
+  # ml4w's daemons. Killing the quickshell process alone left these behind, so
+  # switching away from ml4w kept a second notification daemon and a second
+  # wallpaper daemon alive on top of the next shell. No other shell here starts
+  # either binary (grep the repo), so they are unambiguously ml4w's.
+  #
+  # swaync is the one that actually breaks things: it owns the
+  # org.freedesktop.Notifications bus name, so while it survives, the incoming
+  # shell's own notification daemon cannot take the name and notifications go to
+  # ml4w's popup — with no ml4w bar left to configure it from.
+  #
+  # nm-applet is deliberately NOT killed: it is a passive tray icon with no bus
+  # conflict, and it is commonly started at login by something outside dcli
+  # (ml4w's exec only starts it when absent). Killing it here would take out a
+  # process this script never started.
+  kill_matching -x "swaync"
+  kill_matching -f "awww-daemon"
   kill_matching -x "quickshell"
   kill_matching -f "caelestia shell"
   kill_matching -f "caelestia resizer"
@@ -300,7 +316,12 @@ ml4w)
     # Theme.qml loads colors only via IPC (its onCompleted reload is disabled
     # upstream), so trigger the reload once quickshell has registered the
     # handler. Delayed so the failure-free path is silent.
-    ( sleep 2; qs -c ml4w ipc call theme-manager reload >/dev/null 2>&1 ) &
+    #
+    # Re-check active.conf before firing: a switch away from ml4w inside the
+    # 2s window cannot cancel this subshell, so it would otherwise wake up and
+    # fire IPC at a shell that kill_all_shells just tore down.
+    ( sleep 2; grep -qx ml4w "$ACTIVE" 2>/dev/null \
+        && qs -c ml4w ipc call theme-manager reload >/dev/null 2>&1 ) &
     disown
   }
   # The bar's notification/tray/wallpaper daemons are started from
@@ -314,5 +335,4 @@ ml4w)
 esac
 
 echo "Switched to $SHELL_NAME"
-echo "Active shell:"
-grep '^source' "$ACTIVE"
+echo "Active shell: $(grep -v '^#' "$ACTIVE")"
