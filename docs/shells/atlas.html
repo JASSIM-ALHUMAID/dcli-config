@@ -1,0 +1,484 @@
+<title>dcli Shell Atlas</title>
+<style>
+  :root {
+    --bg: #f5f7f6;
+    --surface: #ffffff;
+    --surface2: #edf1ef;
+    --ink: #1b2422;
+    --muted: #5c6a65;
+    --line: #dbe2de;
+    --accent: #1f7a63;
+    --accent-soft: #e2efea;
+    --fork: #96690f;
+    --fork-bg: #f5ecd8;
+    --checkout: #46628f;
+    --checkout-bg: #e5ebf4;
+    --pkg: #1f7a63;
+    --pkg-bg: #dfeee8;
+    --native: #8a4a5e;
+    --native-bg: #f3e4e9;
+    --code-bg: #eef2f0;
+    --warn: #9a4d1f;
+    --warn-bg: #f7e9de;
+    --mono: "Maple Mono NF", "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+    --sans: "Fira Sans", system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131819;
+      --surface: #1a2123;
+      --surface2: #20282b;
+      --ink: #d7e0dc;
+      --muted: #8da09a;
+      --line: #2a3336;
+      --accent: #52b898;
+      --accent-soft: #1c2f29;
+      --fork: #d5a54e;
+      --fork-bg: #2e2614;
+      --checkout: #86a7d8;
+      --checkout-bg: #1d2735;
+      --pkg: #52b898;
+      --pkg-bg: #172b24;
+      --native: #d089a2;
+      --native-bg: #301f26;
+      --code-bg: #101617;
+      --warn: #d8935c;
+      --warn-bg: #2f2115;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131819;
+    --surface: #1a2123;
+    --surface2: #20282b;
+    --ink: #d7e0dc;
+    --muted: #8da09a;
+    --line: #2a3336;
+    --accent: #52b898;
+    --accent-soft: #1c2f29;
+    --fork: #d5a54e;
+    --fork-bg: #2e2614;
+    --checkout: #86a7d8;
+    --checkout-bg: #1d2735;
+    --pkg: #52b898;
+    --pkg-bg: #172b24;
+    --native: #d089a2;
+    --native-bg: #301f26;
+    --code-bg: #101617;
+    --warn: #d8935c;
+    --warn-bg: #2f2115;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    margin: 0;
+    padding: 0 1.25rem 5rem;
+    font-size: 16px;
+  }
+  main { max-width: 62rem; margin: 0 auto; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+  code, .path {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 0.08em 0.35em;
+    white-space: nowrap;
+  }
+  .path { white-space: normal; word-break: break-all; }
+
+  /* ---- header ---- */
+  header { padding: 3.2rem 0 1.6rem; }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.9rem, 4.5vw, 2.7rem);
+    font-weight: 700;
+    margin: 0.35rem 0 0.6rem;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .lede { color: var(--muted); max-width: 44rem; margin: 0; }
+  .lede strong { color: var(--ink); }
+
+  /* ---- pipeline ---- */
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0.55rem;
+    margin: 1.8rem 0 0;
+  }
+  .stage {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.55rem 0.8rem;
+    flex: 1 1 12rem;
+    min-width: 11rem;
+  }
+  .stage b { display: block; font-family: var(--mono); font-size: 0.8rem; }
+  .stage span { font-size: 0.78rem; color: var(--muted); }
+  .arrow { align-self: center; color: var(--accent); font-family: var(--mono); font-weight: 700; }
+
+  .rule {
+    margin: 1.6rem 0 0;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+    font-size: 0.92rem;
+  }
+  .rule b { color: var(--accent); }
+
+  /* ---- nav chips ---- */
+  nav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 1.7rem 0 0; }
+  nav a {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 0.28rem 0.85rem;
+  }
+  nav a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+
+  /* ---- summary table ---- */
+  h2 {
+    font-family: var(--mono);
+    font-size: 1.25rem;
+    margin: 3rem 0 0.9rem;
+    letter-spacing: -0.01em;
+  }
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.87rem; }
+  th, td { text-align: left; padding: 0.55rem 0.85rem; border-top: 1px solid var(--line); vertical-align: top; }
+  thead th {
+    border-top: none;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    background: var(--surface2);
+  }
+  td code { font-size: 0.8rem; }
+
+  /* ---- badges ---- */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    border-radius: 4px;
+    padding: 0.12em 0.5em;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .b-fork    { color: var(--fork);    background: var(--fork-bg); }
+  .b-checkout{ color: var(--checkout);background: var(--checkout-bg); }
+  .b-pkg     { color: var(--pkg);     background: var(--pkg-bg); }
+  .b-native  { color: var(--native);  background: var(--native-bg); }
+
+  /* ---- shell cards ---- */
+  .shell {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin: 1.4rem 0;
+    padding: 1.3rem 1.4rem 1.1rem;
+    scroll-margin-top: 1rem;
+  }
+  .shell-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin-bottom: 0.2rem; }
+  .shell-head h3 {
+    font-family: var(--mono);
+    font-size: 1.35rem;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .launch {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 4px;
+    padding: 0.15em 0.55em;
+  }
+  .shell > p { margin: 0.5rem 0 0.9rem; font-size: 0.93rem; color: var(--muted); max-width: 52rem; }
+  .shell > p strong { color: var(--ink); }
+
+  dl.paths {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.35rem 1.1rem;
+    margin: 0 0 0.4rem;
+    font-size: 0.87rem;
+  }
+  dl.paths dt {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+    padding-top: 0.18em;
+  }
+  dl.paths dd { margin: 0; }
+  @media (max-width: 640px) {
+    dl.paths { grid-template-columns: 1fr; gap: 0.1rem; }
+    dl.paths dd { margin-bottom: 0.5rem; }
+  }
+
+  ul.notes { margin: 0.7rem 0 0; padding-left: 1.1rem; font-size: 0.87rem; }
+  ul.notes li { margin: 0.3rem 0; }
+  ul.notes li::marker { color: var(--accent); }
+  .trap { color: var(--warn); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.07em; background: var(--warn-bg); border-radius: 4px; padding: 0.1em 0.45em; margin-right: 0.3em; }
+
+  .legend { font-size: 0.82rem; color: var(--muted); margin: 0.8rem 0 0; }
+  footer { margin-top: 3.5rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+
+<main>
+<header>
+  <div class="kicker">~/.config/dcli</div>
+  <h1>dcli Shell Atlas</h1>
+  <p class="lede">Nine Hyprland desktop shells live side by side on one CachyOS machine and swap at
+  runtime — no relogin, no package churn. This page maps each one: <strong>where it is installed,
+  where its configs live, how it launches, and how it updates.</strong></p>
+
+  <div class="pipeline" aria-label="How a shell becomes active">
+    <div class="stage"><b>switch-shell.sh &lt;name&gt;</b><span>writes the shell name, kills every running shell, reloads Hyprland, launches the pick (no arg = fuzzel picker)</span></div>
+    <div class="arrow">→</div>
+    <div class="stage"><b>shells/active.conf</b><span>a bare shell name — the single switch the whole system pivots on</span></div>
+    <div class="arrow">→</div>
+    <div class="stage"><b>hypr/hyprland.lua</b><span>reads active.conf and <code>dofile()</code>s that shell's Lua config from its <code>shell_paths</code> table</span></div>
+    <div class="arrow">→</div>
+    <div class="stage"><b>the shell process</b><span>started by the script itself (exec-once never re-fires on reload), guarded by pgrep</span></div>
+  </div>
+
+  <div class="rule"><b>The one rule that breaks everything:</b> exactly one Quickshell provider may be
+  installed. Every packaged fork declares <code>Conflicts=quickshell</code>. The provider here is
+  <code>quickshell-git</code> (module <code>shells-quickshell-git</code>) — it <em>provides</em>
+  <code>quickshell</code>, so all Quickshell-based shells resolve and run under it. Swap providers only
+  with <code>scripts/switch-quickshell.sh</code>, never by enabling modules by hand.</div>
+
+  <nav aria-label="Shells">
+    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a><a href="#ml4w">ml4w</a>
+  </nav>
+</header>
+
+<h2>At a glance</h2>
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Shell</th><th>Launch</th><th>Source</th><th>Installed at</th><th>Update with</th></tr></thead>
+  <tbody>
+    <tr><td><a href="#caelestia">caelestia</a> <span class="badge b-fork">custom fork</span></td><td><code>caelestia shell -d</code></td><td>AUR pkgs + local C++ build</td><td class="path">~/Projects/shell/real</td><td>rebase by hand</td></tr>
+    <tr><td><a href="#ambxst">ambxst</a> <span class="badge b-fork">custom fork</span></td><td><code>ambxst</code></td><td>fork's own installer</td><td class="path">~/.local/src/ambxst</td><td>fork's installer</td></tr>
+    <tr><td><a href="#dms">dms</a> <span class="badge b-pkg">package</span></td><td><code>dms run</code></td><td><code>dms-shell</code> + <code>dgop</code></td><td class="path">pacman-owned</td><td><code>dcli update</code></td></tr>
+    <tr><td><a href="#noctalia">noctalia</a> <span class="badge b-native">native C++</span></td><td><code>noctalia</code></td><td>AUR source build</td><td class="path">pacman-owned</td><td><code>dcli update</code></td></tr>
+    <tr><td><a href="#end4">end4</a> <span class="badge b-fork">custom fork</span></td><td><code>qs -c ii</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/dots-hyprland</td><td><code>update-end4.sh</code></td></tr>
+    <tr><td><a href="#end4pc">end4pc</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c end4-pC</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/end4-pC</td><td><code>update-end4pc.sh</code></td></tr>
+    <tr><td><a href="#omarchy">omarchy</a> <span class="badge b-checkout">checkout</span></td><td><code>quickshell -n -p …/shell</code></td><td>checkout, never its installer</td><td class="path">~/.local/share/omarchy</td><td><code>update-omarchy.sh</code></td></tr>
+    <tr><td><a href="#xenon">xenon</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c xenon</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/xenon-shell</td><td><code>update-xenon.sh</code></td></tr>
+    <tr><td><a href="#ml4w">ml4w</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c ml4w</code> ×3</td><td>checkout + settings repo</td><td class="path">~/.local/share/ml4w-dotfiles</td><td><code>update-ml4w.sh</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="legend">Badges say where the code comes from: <span class="badge b-fork">custom fork</span> tracks a personal
+fork (<code>plusdrag11/…</code>) with local commits, <span class="badge b-checkout">checkout</span> tracks upstream
+directly with no fork, <span class="badge b-pkg">package</span> is pacman-managed, and
+<span class="badge b-native">native C++</span> is the one shell with no Quickshell at all. In path rows,
+"→" means a symlink.</p>
+
+<h2>The nine shells</h2>
+
+<section class="shell" id="caelestia">
+  <div class="shell-head"><h3>caelestia</h3><span class="badge b-fork">custom fork</span><span class="launch">caelestia shell -d</span></div>
+  <p>Fork of <strong>caelestia-dots/shell</strong>, and the most maintenance-heavy shell here: it is the only
+  one whose C++ plugin is compiled locally, and that plugin is the source of every serious breakage so far.
+  Hard-requires the <code>quickshell-git</code> provider.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/Projects/shell/real — origin <code>plusdrag11/caelestia</code>, branch <code>my-caelestia-rebased</code> (the fork's default branch is a plain upstream mirror; the branch must be pinned)</dd>
+    <dt>Installed QML</dt><dd class="path">~/.config/quickshell/caelestia (overrides the package's /etc/xdg copy)</dd>
+    <dt>C++ plugin</dt><dd class="path">~/.local/lib/qt6/qml/{Caelestia,M3Shapes} (overrides the package's /usr/lib copy)</dd>
+    <dt>Config</dt><dd class="path">~/.config/caelestia → the fork's <code>caelestia-configs</code> (version-controlled inside the fork, not in dcli)</dd>
+    <dt>Hyprland</dt><dd class="path">~/.local/share/caelestia/hypr/hyprland.lua — supplied by the checkout, not this repo</dd>
+    <dt>Update</dt><dd>no script on purpose — 32 local commits mean a real rebase, rebuild, and verify</dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">trap</span>CMake target must stay <code>qml_module(caelestia-core</code> — a rebase reverted it once and Qt aborted with "Cannot add multiple registrations".</li>
+    <li><span class="trap">trap</span>Stale <code>.so</code> files survive <code>cmake --install</code> and shadow fresh builds ("ButtonRow is not a type").</li>
+  </ul>
+</section>
+
+<section class="shell" id="ambxst">
+  <div class="shell-head"><h3>ambxst</h3><span class="badge b-fork">custom fork</span><span class="launch">ambxst</span></div>
+  <p>Fork of <strong>Axenide/Ambxst</strong>. Quickshell-based but installed by the fork's own
+  <code>install.sh</code>, which writes the launcher to <code>/usr/local/bin/ambxst</code> — the one shell
+  binary that is neither pacman's nor dcli's.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/src/ambxst — origin <code>plusdrag11/Ambxst</code>, branch <code>my-ambxst</code></dd>
+    <dt>Runtime link</dt><dd class="path">~/.local/share/ambxst → the checkout (where its hyprland.lua loads from)</dd>
+    <dt>Config</dt><dd class="path">~/.config/ambxst → dotfiles/ambxst — dcli-managed: binds.json, config/, presets/</dd>
+    <dt>Hyprland</dt><dd class="path">its own hyprland.lua from the checkout, then dotfiles/hypr/shells/ambxst-overrides.lua layered on top (monitor scale, us,ara layout, pointer accel)</dd>
+    <dt>Update</dt><dd>re-run the fork's installer</dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">trap</span>Rewrites the monitor config at startup; switch-shell.sh re-applies scale 1 a second later.</li>
+    <li><span class="trap">trap</span><code>ambxst quit</code> trusts a cached PID in /tmp — stale entries kill random recycled PIDs, so it is only called after pgrep confirms the shell runs.</li>
+  </ul>
+</section>
+
+<section class="shell" id="dms">
+  <div class="shell-head"><h3>dms — DankMaterialShell</h3><span class="badge b-pkg">package</span><span class="launch">dms run</span></div>
+  <p>The only shell with <strong>no fork and no build step</strong> — fully packaged, lowest maintenance,
+  and the control case: when everything breaks at once and dms breaks too, the problem is the provider or
+  Hyprland, not a fork.</p>
+  <dl class="paths">
+    <dt>Packages</dt><dd><code>dms-shell</code>, <code>dgop</code> (+ <code>dms-shell-hyprland</code> as compositor backend)</dd>
+    <dt>Config</dt><dd class="path">~/.config/DankMaterialShell → dotfiles/DankMaterialShell — dcli-managed</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/dms/hyprland.lua — standalone, in this repo (+ hyprmod.lua overlay from the HyprMod GUI)</dd>
+    <dt>IPC</dt><dd><code>dms ipc call &lt;object&gt; &lt;method&gt;</code> — spotlight, clipboard, notifications, settings, powermenu, lock</dd>
+    <dt>Update</dt><dd><code>dcli update</code> (ordinary package)</dd>
+  </dl>
+  <ul class="notes">
+    <li>Has a real <code>dms kill</code> for graceful teardown — switch-shell.sh uses it before falling back to pkill.</li>
+  </ul>
+</section>
+
+<section class="shell" id="noctalia">
+  <div class="shell-head"><h3>noctalia</h3><span class="badge b-native">native C++</span><span class="launch">noctalia</span></div>
+  <p>v5 is a ground-up rewrite in <strong>C++23/Meson on Wayland + OpenGL ES — no Quickshell, no Qt</strong>.
+  The only shell immune to the provider conflict. Its v4 ancestor needed <code>noctalia-qs</code>, the worst
+  of the Quickshell forks; all of that machinery is gone.</p>
+  <dl class="paths">
+    <dt>Package</dt><dd><code>noctalia</code> (AUR, source build via paru) — 5.0.0 beta</dd>
+    <dt>Config</dt><dd class="path">~/.config/noctalia/config.toml → dotfiles/noctalia — TOML, hot-reloaded via inotify, hand-ported from v4 (v5 does not read v4's settings.json)</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/noctalia/hyprland.lua — standalone, in this repo</dd>
+    <dt>Setup hook</dt><dd><code>setup-noctalia.sh</code> — v4 teardown only (removes the old extracted fork and its wrapper)</dd>
+    <dt>Update</dt><dd><code>dcli update</code></dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">trap</span>Upstream's <code>example.toml</code> on main is ahead of the released beta — always <code>noctalia config validate</code> after editing.</li>
+  </ul>
+</section>
+
+<section class="shell" id="end4">
+  <div class="shell-head"><h3>end4 — illogical impulse</h3><span class="badge b-fork">custom fork</span><span class="launch">qs -c ii</span></div>
+  <p>end-4's <strong>dots-hyprland</strong>, run from a personal fork as the Quickshell config named
+  <code>ii</code>. Its upstream installer is never run: it would install a conflicting Quickshell provider
+  and replace the whole hypr stack with -git builds. The setup hook installs the fork's extra deps itself.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/dots-hyprland — origin <code>plusdrag11/dots-hyprland</code>, branch <code>my-ii</code></dd>
+    <dt>QS config</dt><dd class="path">~/.config/quickshell/ii → checkout's dots/.config/quickshell/ii</dd>
+    <dt>Theming</dt><dd class="path">~/.config/matugen → the checkout — this shell <em>owns</em> the matugen path</dd>
+    <dt>State</dt><dd class="path">~/.config/illogical-impulse — written by the shell itself</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/end4/hyprland.lua — standalone, in this repo</dd>
+    <dt>Update</dt><dd><code>update-end4.sh</code> (fast-forward only)</dd>
+  </dl>
+  <ul class="notes">
+    <li>The two config symlinks point into the checkout and are not dcli <code>dotfiles:</code> entries — a dotfiles sync must not replace them.</li>
+  </ul>
+</section>
+
+<section class="shell" id="end4pc">
+  <div class="shell-head"><h3>end4pc</h3><span class="badge b-checkout">checkout</span><span class="launch">qs -c end4-pC</span></div>
+  <p><strong>pctrade/end4-pC</strong>, a fork of end-4's dots, run as an independent config alongside end4
+  without either touching the other — that separation took deliberate work, because upstream expects the
+  <code>~/.config/matugen</code> path that end4 already owns.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/end4-pC — upstream <code>main</code>, no personal fork</dd>
+    <dt>QS config</dt><dd class="path">~/.config/quickshell/end4-pC → the checkout root (flat layout — the repo root <em>is</em> the config)</dd>
+    <dt>Theming</dt><dd class="path">~/.config/matugen-end4pc — its own matugen config, dcli-managed</dd>
+    <dt>State</dt><dd class="path">~/.config/illogical-impulse-pC — separate from end4's</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/end4pc/hyprland.lua — standalone, in this repo</dd>
+    <dt>Update</dt><dd><code>update-end4pc.sh</code> — pulls, then re-runs <code>patch-end4pc.sh</code></dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">trap</span>Every upstream pull restores upstream's matugen paths — <code>patch-end4pc.sh</code> (idempotent) must re-run after any manual pull, or end4pc and end4 start fighting over one directory.</li>
+  </ul>
+</section>
+
+<section class="shell" id="omarchy">
+  <div class="shell-head"><h3>omarchy — Quattro</h3><span class="badge b-checkout">checkout</span><span class="launch">quickshell -n -p $OMARCHY_PATH/shell</span></div>
+  <p>DHH's Hyprland desktop at <strong>v4.0 "Quattro" (RC)</strong>, run as <em>a shell, not a
+  distribution</em>: one long-running Quickshell process hosts bar, menu, notifications, OSDs, panels, lock
+  screen and polkit agent as plugins. Its whole-distro <code>install.sh</code> is never run —
+  <code>setup-omarchy.sh</code> reproduces only the checkout, theme seed, icon font, and state seeds.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/omarchy = <code>$OMARCHY_PATH</code> — <code>basecamp/omarchy</code> branch <code>quattro</code>, tracks upstream directly</dd>
+    <dt>Config</dt><dd class="path">~/.config/omarchy → dotfiles/omarchy — shell.json (bar layout, idle timers), shell.toml, branding/, extensions/</dd>
+    <dt>State</dt><dd class="path">~/.local/state/omarchy — current theme, toggles, done markers; machine-local, never in git</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/omarchy/hyprland.lua — a <em>loader</em>: runs omarchy's own Lua config from the checkout, then layers house monitor/input/keybinds on top</dd>
+    <dt>Shims</dt><dd class="path">scripts/omarchy-shims — house wrappers first on PATH (screensaver terminal, web-app browser fallback)</dd>
+    <dt>Update</dt><dd><code>update-omarchy.sh</code> (fast-forward; warns when migrations/ or install/ changed)</dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">trap</span>Never trust <code>$OMARCHY_PATH</code> from the environment — the loader probes for <code>bootstrap.lua</code> and injects the path; a wrong value once cost 213 of 216 keybinds, silently.</li>
+    <li><span class="trap">trap</span>Checkout-vs-package gaps (lock-screen PAM file, icon font, scale-2 clamshell fallback) are documented in docs/shells/omarchy.md and handled by the setup script.</li>
+  </ul>
+</section>
+
+<section class="shell" id="xenon">
+  <div class="shell-head"><h3>xenon</h3><span class="badge b-checkout">checkout</span><span class="launch">qs -c xenon</span></div>
+  <p><strong>MannuVilasara/xenon-shell</strong>, run as an independent Quickshell config. It once lived
+  system-wide at <code>/etc/xdg/quickshell/xenon</code> by hand; the module moved it to user scope like
+  every other shell.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/xenon-shell — upstream <code>main</code>, no personal fork</dd>
+    <dt>QS config</dt><dd class="path">~/.config/quickshell/xenon → the checkout root (flat layout, shell.qml at top level)</dd>
+    <dt>Config</dt><dd class="path">~/.config/xenon → dotfiles/xenon — config.json only, dcli-managed</dd>
+    <dt>Cache</dt><dd class="path">~/.cache/xenon — colors.json, wallpaper thumbnails, app-usage; machine-local</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/xenon/hyprland.lua — standalone, in this repo</dd>
+    <dt>Update</dt><dd><code>update-xenon.sh</code></dd>
+  </dl>
+  <ul class="notes">
+    <li>The old root-owned copy in /etc/xdg is left in place on purpose — XDG resolution means the user checkout shadows it, and nothing tracks the system copy.</li>
+  </ul>
+</section>
+
+<section class="shell" id="ml4w">
+  <div class="shell-head"><h3>ml4w — ML4W OS</h3><span class="badge b-checkout">checkout</span><span class="launch">qs -c ml4w (+2 more)</span></div>
+  <p>Stephan Raabe's <strong>mylinuxforwork/dotfiles</strong>. The odd one out structurally: it is
+  <strong>three Quickshell processes</strong> — the main shell (<code>qs -c ml4w</code>), the workspace
+  overview and the settings app (both path-addressed <code>qs -p</code> instances with no config name) —
+  plus a separate settings-app repo built with <code>make install</code>.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/ml4w-dotfiles — upstream <code>main</code>, no personal fork (+ ~/.local/share/ml4w-dotfiles-settings-src for the settings app)</dd>
+    <dt>QS config</dt><dd class="path">~/.config/quickshell/ml4w → checkout's dotfiles/.config/quickshell</dd>
+    <dt>Seeded dirs</dt><dd class="path">~/.config/ml4w, ml4w-overview, ml4w-statusbar, rofi — <em>real copied dirs, not symlinks</em>: apps and matugen write into them, and symlinking them would dirty the checkout on every wallpaper change</dd>
+    <dt>Theming</dt><dd class="path">~/.config/matugen-ml4w → dotfiles/matugen-ml4w — dcli-managed</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/ml4w/hyprland.lua — standalone, in this repo, with IPC binds for all three processes</dd>
+    <dt>Update</dt><dd><code>update-ml4w.sh</code> — pulls and re-seeds the copied dirs</dd>
+  </dl>
+</section>
+
+<h2>Cross-cutting rules</h2>
+<ul class="notes">
+  <li><strong>Hyprland loads <code>hyprland.conf</code> or <code>hyprland.lua</code>, never both.</strong> This machine is all-Lua; under a Lua config <code>hyprctl keyword</code> is rejected — use <code>hyprctl eval 'hl.…'</code>.</li>
+  <li><strong>Two shells bring their own Hyprland config</strong> (caelestia, ambxst — from their checkouts); six use standalone configs in this repo; omarchy is the hybrid loader.</li>
+  <li><strong>SUPER+SPACE is reserved everywhere</strong> for the us/ara keyboard-layout toggle; launchers live on a Super tap or SUPER+D per shell. <strong>SUPER+SHIFT+O is the way out</strong> — it opens the shell picker from any shell.</li>
+  <li><strong>Per-shell Hyprland settings GUI:</strong> <code>scripts/edit-hypr.sh [shell]</code> retargets HyprMod at the shell's managed overlay, <code>dotfiles/hypr/shells/&lt;name&gt;/hyprmod.lua</code>.</li>
+  <li><strong>Stale processes are the usual "new shell looks broken" cause</strong> — anything in <code>pgrep -a -f "qs -c|quickshell|ambxst|dms run|noctalia"</code> that isn't the active shell shouldn't be there.</li>
+  <li><strong>Adding a shell touches four index-aligned things:</strong> <code>KNOWN</code>, <code>icon_files</code>, <code>blurbs</code> in switch-shell.sh, and <code>lines=</code> in the fuzzel picker config.</li>
+</ul>
+
+<footer>Generated 2026-08-13 from <code>~/.config/dcli</code> — sources: docs/shells/*.md, modules/*.yaml,
+scripts/switch-shell.sh. The per-shell markdown docs remain the authoritative deep-dives.</footer>
+</main>
