@@ -40,7 +40,7 @@
     "kor": false
   },
   "pomodoro": {
-    "workTime": 1500,
+    "workTime": 1620,
     "restTime": 300,
     "autoStart": false,
     "syncSpotify": false

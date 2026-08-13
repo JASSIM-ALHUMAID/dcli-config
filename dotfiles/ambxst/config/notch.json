@@ -3,7 +3,7 @@
   "position": "top",
   "hoverRegionHeight": 16,
   "keepHidden": false,
-  "noMediaDisplay": "custom",
+  "noMediaDisplay": "userHost",
   "customText": "Ambxst",
   "disableHoverExpansion": true
 }

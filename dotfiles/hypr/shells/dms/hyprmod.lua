@@ -3,3 +3,11 @@
 -- Environment
 hl.env("XCURSOR_THEME", "material_light_cursors")
 hl.env("XCURSOR_SIZE", "24")
+
+-- Settings
+hl.config({
+    input = {
+        repeat_delay = 250,
+        repeat_rate = 35,
+    },
+})
