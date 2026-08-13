@@ -6,7 +6,8 @@
 # and in ~/.config/omarchy — so this is a plain fast-forward. If it refuses,
 # something wrote into the checkout and that is worth looking at before forcing.
 #
-# v4.0 is alpha and moves daily; expect to run this often.
+# v4.0 "Quattro" is at release-candidate stage (final ships imminently); it
+# still moves daily, so expect to run this often.
 set -euo pipefail
 
 REAL_USER="${SUDO_USER:-$USER}"

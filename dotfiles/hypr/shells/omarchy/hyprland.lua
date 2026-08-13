@@ -93,6 +93,15 @@ package.loaded["default.hypr.paths"] = {
 
 require("default.hypr.omarchy")
 
+-- Re-declare PATH on top of what envs.lua just set, with the house shim dir
+-- first, so processes spawned from KEYBINDS also resolve the shims in
+-- scripts/omarchy-shims (the shell process gets the same ordering from its
+-- launch command in switch-shell.sh). Later hl.env wins. envs.lua's own
+-- prepend of <checkout>/bin must be rebuilt here: hl.env only affects spawned
+-- clients, not os.getenv at parse time, so PATH here is Hyprland's own.
+hl.env("PATH", home .. "/.config/dcli/scripts/omarchy-shims:"
+    .. omarchy .. "/bin:" .. (os.getenv("PATH") or "/usr/local/bin:/usr/bin"))
+
 -- ---------------------------------------------------------------------------
 -- House layer — modular sub-modules
 -- ---------------------------------------------------------------------------

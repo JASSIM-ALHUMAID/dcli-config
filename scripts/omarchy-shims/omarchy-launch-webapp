@@ -1,0 +1,25 @@
+#!/bin/bash
+# House shim, shadows $OMARCHY_PATH/bin/omarchy-launch-webapp via PATH (see the
+# omarchy-launch-screensaver shim for the mechanism).
+#
+# Upstream opens web apps in a chromium --app= window. It honors the xdg
+# default browser only when it is Chromium-family, and otherwise falls back to
+# a hard-coded "chromium.desktop". The default browser here is zen
+# (Firefox-based, no --app mode) and chromium is not installed, so the Exec
+# extraction produced nothing and uwsm-app was handed "--app=URL" as the
+# program: `error: path "--app=https://..." does not exist`.
+#
+# A Chromium-family default keeps upstream behavior; anything else routes web
+# apps to Brave nightly — the house chromium-family browser, the same one
+# SUPER + B opens — while zen stays the default browser everywhere else.
+
+OMARCHY_PATH="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
+
+browser=$(xdg-settings get default-web-browser 2>/dev/null)
+case $browser in
+google-chrome* | brave* | microsoft-edge* | opera* | vivaldi* | helium* | chromium*)
+  exec "$OMARCHY_PATH/bin/omarchy-launch-webapp" "$@"
+  ;;
+esac
+
+exec setsid uwsm-app -- brave-browser-nightly --app="$1" "${@:2}"

@@ -7,7 +7,7 @@ distinction is the whole story of this page.
 |---|---|
 | Module | `modules/shell-omarchy.yaml` |
 | Source | git checkout, no package — `~/.local/share/omarchy` |
-| Version | `4.0.0.alpha`, branch `quattro` |
+| Version | `4.0.0` RC (version file: `4.0.0.alpha`), branch `quattro` |
 | Launch | `quickshell -n -p $OMARCHY_PATH/shell` |
 | Config | `~/.config/omarchy/shell.json` (bar layout, plugins, idle timers) |
 | Upstream | [basecamp/omarchy](https://github.com/basecamp/omarchy) — no personal fork |
@@ -21,14 +21,14 @@ mako + swaybg, configured with `.conf` files**. That is a second bar/launcher
 stack and a config format this setup does not use — Hyprland loads
 `hyprland.conf` *or* `hyprland.lua`, never both, and this machine is all-Lua.
 
-`quattro` (the default branch, v4.0.0.alpha) replaced that entire stack with
+`quattro` (the default branch, v4.0.0 RC) replaced that entire stack with
 **one Quickshell instance**. Bar, launcher, notifications, OSD, polkit agent and
 panels are all plugins inside a single process, and the Hyprland config became
 Lua. `quickshell-git` — already the provider enabled here — is what it wants.
 So the fit is architectural, not a coincidence, and the older stable line would
 have been the harder integration.
 
-The cost: **it is alpha and moves daily.** Expect `update-omarchy.sh` to be
+The cost: **it moves daily (RC as of 2026-08-13).** Expect `update-omarchy.sh` to be
 routine, and expect keybinds and `shell.json` keys to shift under you.
 
 ## We never run `install.sh`
@@ -143,7 +143,8 @@ absolute paths, no specifiers.
    which applies its own `/usr/share/omarchy` fallback independently.
 
 Verified against `%h/...`, unset, empty, relative, and a real-but-wrong directory
-— 216 binds in every case; missing checkout errors loudly.
+— the full bind count in every case (230 as of 4.0.0 RC, 2026-08-13; it grows as
+upstream adds binds); missing checkout errors loudly.
 
 There is **no `environment.d` file for omarchy, deliberately.** omarchy's own
 `default/hypr/envs.lua` does the runtime half — `hl.env("OMARCHY_PATH", …)` plus
@@ -203,8 +204,8 @@ Check for accidental doubles with:
 
 **`hyprctl binds -j` does not work here** — it emits invalid JSON whenever binds
 carry descriptions (it shifts keys against values: `"keycode": XF86AudioRaiseVolume`
-unquoted, `"allow_input_capture": Volume up`). omarchy sets a description on all
-216 of its binds, so every `hyprctl binds -j | jq …` recipe fails under it. Parse
+unquoted, `"allow_input_capture": Volume up`). omarchy sets a description on
+nearly all of its binds, so every `hyprctl binds -j | jq …` recipe fails under it. Parse
 the plain-text output instead:
 
 ```bash
@@ -253,7 +254,7 @@ record it here before adding it to the module.
 git -C ~/.local/share/omarchy log -1 --oneline
 cat ~/.local/share/omarchy/version
 
-# the binds are the real health signal: 216, not 3.
+# the binds are the real health signal: 230 (as of 4.0.0 RC), not 3.
 hyprctl binds | grep -c '^bind'
 hyprctl configerrors                     # empty when clean
 
@@ -278,3 +279,69 @@ pgrep -af "quickshell -n -p .*omarchy/shell"
 Two warnings are normal on a dry run while another shell is active — the
 notification server and the polkit agent are already registered by it. They go
 away once omarchy is the only shell running.
+
+## Lock screen, screensaver, icon font — the three checkout-vs-package gaps
+
+A real Omarchy install ships these through its Arch packages; a checkout gets
+none of them. All three were found the hard way (2026-08-13, 4.0.0 RC):
+
+**Lock screen.** The shell *refuses to lock* — silently, logging
+`lock-denied: missing-pam` — unless `/etc/pam.d/omarchy-lock-password` exists
+(`shell/plugins/lock/Service.qml` watches that exact path; a deliberate
+failsafe so a lock can never engage that could not be unlocked). One-time fix:
+
+```bash
+sudo env PATH=~/.local/share/omarchy/bin:$PATH \
+  ~/.local/share/omarchy/bin/omarchy-apply-lock
+```
+
+It also writes `omarchy-lock-fingerprint` if fprintd has enrolled fingers.
+`omarchy-shell lock status` reports `passwordPam: true` immediately after —
+the QML FileView watches the path, no restart needed. Idle-lock (300s) comes
+from the shell's idle service and needs nothing else.
+
+**Screensaver.** Three blockers. (1) It is drawn by `ttfx`, which exists only in
+omarchy's package repo — build it from the official source instead:
+`cargo install --git https://github.com/omacom-io/ttfx --locked`. (2) Upstream
+`omarchy-launch-screensaver` hard-refuses unless the *default* terminal
+(`xdg-terminal-exec --print-id`) is alacritty/foot/ghostty/kitty — ours is
+wezterm. `scripts/omarchy-shims/omarchy-launch-screensaver` (on the shell's
+PATH ahead of the checkout bin, wired in switch-shell.sh) feeds the real
+script a private fake `xdg-terminal-exec` that answers `--print-id` with foot,
+so upstream's own foot branch runs and wezterm stays the session terminal.
+(3) ttfx draws `~/.config/omarchy/branding/screensaver.txt`, which upstream's
+installer seeds from `logo.txt`; without it ttfx dies with "error reading
+input". `dotfiles/omarchy/branding/screensaver.txt` now ships that seed
+(customize it freely — `omarchy branding screensaver` edits the same file).
+
+**Unlock rescales the desktop.** After every idle wake — which includes the
+moment you unlock — the idle service runs `omarchy-system-wake` →
+`omarchy-hyprland-monitor-clamshell`, whose `read_monitor_scale()` resolves the
+laptop panel's scale from `~/.config/hypr/monitors.lua` (a file this repo must
+never create — trap 1), then from
+`~/.local/state/omarchy/toggles/hypr/internal-monitor-scale`, then falls back
+to a **hard-coded scale 2**. Unseeded, the first unlock jumps eDP-1 to scale 2
+(`~/.local/state/omarchy/monitor-scaling.log` records every change with the
+caller's ancestry — good forensics). setup-omarchy.sh now seeds the state file
+with the live scale; omarchy maintains it itself from then on.
+
+**Bar menu icon (top-left).** Renders glyph `U+E900` from the `omarchy` font family
+(`default/fonts/omarchy/omarchy.ttf` in the checkout) — unregistered, it shows
+as a tofu box. setup-omarchy.sh now symlinks it into `~/.local/share/fonts/`
+and runs `fc-cache`; the symlink tracks checkout updates. Restart the shell
+after the first registration (Qt loads fonts at startup).
+
+**Web apps** (`omarchy-launch-webapp`, used by the menu's web-app entries and
+several binds). Upstream opens them in a chromium `--app=` window; it honors
+the xdg default browser only when Chromium-family, else falls back to a
+hard-coded `chromium.desktop`. With zen as the default browser and no chromium
+installed, the Exec extraction is empty and uwsm-app is handed `--app=URL` as
+the program (`error: path "--app=…" does not exist`).
+`scripts/omarchy-shims/omarchy-launch-webapp` routes the non-Chromium-family
+case to Brave nightly instead; zen stays the default browser everywhere else.
+
+The shim dir reaches processes on two roads, and both matter:
+switch-shell.sh prepends it to the shell process's PATH (menus, panels, idle),
+and `shells/omarchy/hyprland.lua` re-declares `hl.env("PATH", …)` after
+`require("default.hypr.omarchy")` so keybind-spawned processes get it too —
+rebuilding envs.lua's `<checkout>/bin` prepend, which hl.env alone would lose.

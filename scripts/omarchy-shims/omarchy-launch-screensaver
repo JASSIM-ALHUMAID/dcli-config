@@ -1,0 +1,26 @@
+#!/bin/bash
+# House shim, shadows $OMARCHY_PATH/bin/omarchy-launch-screensaver via PATH
+# (prepended in switch-shell.sh's omarchy launch block).
+#
+# Upstream refuses to run the screensaver unless the DEFAULT terminal
+# (xdg-terminal-exec --print-id) is alacritty, foot, ghostty or kitty — it
+# needs per-terminal flags for a fullscreen, padding-free, org.omarchy.screensaver
+# window. The default here is wezterm (~/.config/xdg-terminals.list) and only
+# the screensaver needs to differ, so: run the REAL script unmodified, but with
+# a private fake xdg-terminal-exec first on ITS PATH that answers --print-id
+# with foot. Upstream then uses its own foot branch (foot + its
+# default/foot/screensaver.ini ship with the checkout/module deps).
+#
+# Only this child process sees the fake — the shell's real xdg-terminal-exec
+# calls (right-click on the menu button opens a terminal) still resolve wezterm.
+#
+# FRAGILITY: assumes upstream keeps (a) the --print-id probe and (b) a *foot*
+# case branch. Both exist as of 4.0.0 RC (2026-08-13). If the screensaver ever
+# refuses again with "only runs in Alacritty, Foot, ...", re-read upstream's
+# bin/omarchy-launch-screensaver against this shim.
+
+OMARCHY_PATH="${OMARCHY_PATH:-$HOME/.local/share/omarchy}"
+SHIM_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec env PATH="$SHIM_DIR/screensaver-terminal:$PATH" \
+  "$OMARCHY_PATH/bin/omarchy-launch-screensaver" "$@"

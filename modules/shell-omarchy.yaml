@@ -11,8 +11,17 @@ packages:
   - socat
   - udiskie
   - gnome-themes-extra
+  - qrencode              # network panel Wi-Fi QR sharing
+  - zbar                  # QR capture: decode a screen region to the clipboard
+  - libvips               # vipsthumbnail — theme/background carousel previews
+  - imv                   # default image viewer, themed via config/imv
+  - dua-cli               # disk usage action in the omarchy menu
+  - ddcutil               # brightness keys on external monitors via DDC/CI
+  - foot                  # screensaver terminal (via scripts/omarchy-shims; the
+                          # session default stays wezterm)
   - xdg-terminal-exec     # AUR — how omarchy-launch-terminal resolves a terminal
   - yaru-icon-theme       # AUR — the icon theme omarchy's themes name
+  - tensaku               # AUR — screenshot/clipboard annotator (tensaku-edit)
 
 # v4 is why omarchy fits here at all. The v3 line (branch master, v3.8.4) is
 # waybar + walker + mako + swaybg driven by .conf files, which does not fit an
@@ -27,7 +36,8 @@ packages:
 # conflict trap described in docs/PACKAGE-CONFLICTS.md. omarchy runs on
 # whichever provider is enabled; quickshell-git is the default here anyway.
 #
-# NOTE: v4.0.0.alpha. Upstream moves daily; update with scripts/update-omarchy.sh.
+# NOTE: v4.0.0 RC (version file still reads 4.0.0.alpha; rc tagging happens at
+# package build). Upstream moves daily; update with scripts/update-omarchy.sh.
 post_install_hook: scripts/setup-omarchy.sh
 hook_behavior: once
 

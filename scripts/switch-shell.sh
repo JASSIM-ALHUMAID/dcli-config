@@ -302,8 +302,15 @@ omarchy)
     # docs/shells/omarchy.md), so it is exported here for the shell process.
     # The Hyprland config does not rely on this — it resolves the checkout
     # itself — but the shell's QML calls omarchy-* scripts by bare name.
+    # QS_DISABLE_FILE_WATCHER/QS_NO_RELOAD_POPUP mirror upstream's
+    # omarchy-launch-shell: quickshell's own file-watcher reload against a
+    # half-updated checkout crashes the shell, so reloads stay deliberate.
+    # scripts/omarchy-shims comes FIRST so house shims shadow same-named
+    # upstream scripts for everything the shell spawns (currently just
+    # omarchy-launch-screensaver — see the shim for why).
     OMARCHY_PATH="$HOME/.local/share/omarchy" \
-      PATH="$HOME/.local/share/omarchy/bin:$PATH" \
+      PATH="$HOME/.config/dcli/scripts/omarchy-shims:$HOME/.local/share/omarchy/bin:$PATH" \
+      QS_DISABLE_FILE_WATCHER=1 QS_NO_RELOAD_POPUP=1 \
       quickshell -n -p "$HOME/.local/share/omarchy/shell" &
     disown
   }

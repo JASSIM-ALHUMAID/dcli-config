@@ -155,6 +155,40 @@ else
     as_omarchy omarchy-theme-set "Tokyo Night"
 fi
 
+# 7) Register omarchy's icon font. The bar's menu button (and other shell
+#    glyphs) render codepoints from the "omarchy" font family, which the real
+#    install ships as a system package. From a checkout, fontconfig never sees
+#    it and the bar's top-left icon renders as a tofu box. A symlink keeps it
+#    current across checkout updates.
+as_user mkdir -p "$REAL_HOME/.local/share/fonts"
+as_user ln -sf "$OMARCHY_PATH/default/fonts/omarchy/omarchy.ttf" "$REAL_HOME/.local/share/fonts/omarchy.ttf"
+as_user fc-cache -f "$REAL_HOME/.local/share/fonts" >/dev/null 2>&1 || true
+
+# 8) Lock-screen PAM. The shell REFUSES to lock (logs "lock-denied:
+#    missing-pam") unless /etc/pam.d/omarchy-lock-password exists — upstream's
+#    installer writes it via bin/omarchy-apply-lock (sudo). Not done here so
+#    this script stays root-free; run it once by hand:
+#      sudo env PATH="$OMARCHY_PATH/bin:\$PATH" "$OMARCHY_PATH/bin/omarchy-apply-lock"
+
+# 9) Seed the internal-monitor scale state. omarchy's clamshell/wake logic
+#    (bin/omarchy-hyprland-monitor-clamshell, run by omarchy-system-wake after
+#    every idle wake — i.e. right after unlocking) resolves the laptop panel's
+#    scale from ~/.config/hypr/monitors.lua — a file this repo must never
+#    create (see trap 1 in shells/omarchy/hyprland.lua) — then from this state
+#    file, then falls back to a hard-coded scale of 2. Unseeded, the first
+#    unlock rescales the desktop. Seed it with the live scale (or 1) once;
+#    the script maintains it itself afterwards.
+SCALE_STATE="$STATE_DIR/toggles/hypr/internal-monitor-scale"
+if [ ! -f "$SCALE_STATE" ]; then
+    as_user mkdir -p "$STATE_DIR/toggles/hypr"
+    live_scale=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.name | startswith("eDP")) | .scale' 2>/dev/null | head -1)
+    case "$live_scale" in
+        ''|null) live_scale=1 ;;
+    esac
+    as_user sh -c "echo '$live_scale' > '$SCALE_STATE'"
+    echo ":: Seeded internal-monitor scale state: $live_scale"
+fi
+
 echo ":: omarchy ready — switch with switch-shell.sh omarchy"
 echo "   (no relogin needed: the Hyprland config resolves OMARCHY_PATH itself,"
 echo "    and omarchy's own envs.lua puts its bin/ on PATH for the session)"

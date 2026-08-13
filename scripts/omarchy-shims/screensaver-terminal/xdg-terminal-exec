@@ -1,0 +1,10 @@
+#!/bin/bash
+# Fake xdg-terminal-exec, visible ONLY to the child omarchy-launch-screensaver
+# spawned by the shim one directory up. Answers the --print-id probe with foot
+# so upstream picks its foot screensaver branch; anything else falls through to
+# the real binary so behaviour stays identical if upstream ever calls more.
+if [[ ${1:-} == --print-id ]]; then
+  echo "foot.desktop"
+  exit 0
+fi
+exec /usr/bin/xdg-terminal-exec "$@"
