@@ -1,0 +1,1 @@
+-- HyprMod managed settings for dms — seeded by edit-hypr.sh, written by hyprmod (Ctrl+S)

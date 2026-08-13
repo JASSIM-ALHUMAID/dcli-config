@@ -111,6 +111,12 @@ running upstream's installer is actively harmful:
    that file is a *loader* which runs omarchy's own Lua config from its checkout
    and layers the house preferences on top, so it needs no `-overrides.lua`.
 
+Each shell's Hyprland settings can be edited in a GUI with
+`scripts/edit-hypr.sh [shell]` (no argument = active shell), which retargets
+[HyprMod](hyprmod.md) at a per-shell managed overlay,
+`dotfiles/hypr/shells/<name>/hyprmod.lua` — see [hyprmod.md](hyprmod.md) for
+the mechanism and its caveats.
+
 Adding or removing a shell means editing **three index-aligned arrays** in
 `switch-shell.sh`: `KNOWN`, `icon_files`, and `blurbs`. They must stay in the same
 order or the picker shows the wrong icon and switches to the wrong shell.

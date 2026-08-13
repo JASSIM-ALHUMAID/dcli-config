@@ -80,7 +80,12 @@ local function seed_scheme(dir)
     copy(default, current)
 end
 
-local shell = read_active_shell()
+-- DCLI_HYPRMOD_SHELL: set by scripts/edit-hypr.sh in hyprmod's environment
+-- only, so hyprmod's config reader (which executes this file) evaluates the
+-- shell being edited instead of the active one. Hyprland never has it set.
+-- Ignored unless it names a known shell.
+local edit_shell = os.getenv("DCLI_HYPRMOD_SHELL")
+local shell = (edit_shell and shell_paths[edit_shell]) and edit_shell or read_active_shell()
 local path = shell_paths[shell]
 local dir = path:match("^(.*)/")
 
@@ -91,3 +96,10 @@ dofile(path)
 -- Local overrides for shells whose config is owned upstream
 local overrides = hypr .. "/shells/" .. shell .. "-overrides.lua"
 if file_exists(overrides) then dofile(overrides) end
+
+-- HyprMod per-shell managed settings (edited via scripts/edit-hypr.sh, which
+-- points hyprmod's config-path at this shell's file). Loaded last so GUI
+-- edits override both the shell config and shells/<name>-overrides.lua.
+-- require() rather than dofile() so Hyprland's autoreload tracks the file.
+local managed = hypr .. "/shells/" .. shell .. "/hyprmod.lua"
+if file_exists(managed) then require("shells." .. shell .. ".hyprmod") end
