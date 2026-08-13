@@ -4,7 +4,7 @@ local dmsCmd        = "dms ipc call"
 local terminal      = "wezterm-gui"
 local browser       = "brave-browser-nightly"
 local defaultBrowser = "zen-browser"
-local fileExplorer  = "thunar"
+local fileExplorer  = "nautilus"
 
 -- Shell IPC. Tap Super alone opens the launcher; Super+Space is the us/ara
 -- layout toggle, so it is never bound here.
