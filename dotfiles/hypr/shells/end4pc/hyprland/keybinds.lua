@@ -23,6 +23,11 @@ hl.bind("SUPER + I",        hl.dsp.global("quickshell:settingsToggle"))
 -- ii shell's SUPER+SLASH (cheatsheet) and CTRL+SUPER+SHIFT+D (light/dark)
 -- binds are intentionally omitted here.
 hl.bind("CTRL + ALT + DELETE", hl.dsp.global("quickshell:sessionToggle"))
+-- Lock. The shell's own WlSessionLock — modules/common/panels/lock/LockScreen.qml
+-- registers the "lock" global. `loginctl lock-session` is NOT used here: nothing
+-- in this stack listens for logind's Lock signal (upstream relies on hypridle's
+-- $lock_cmd, and no hypridle.conf is deployed).
+hl.bind("SUPER + L", hl.dsp.global("quickshell:lock"))
 hl.bind("CTRL + SUPER + T",    hl.dsp.global("quickshell:wallpaperSelectorToggle"))
 hl.bind("SUPER + SHIFT + W",   hl.dsp.global("quickshell:wallpaperSelectorRandom"))
 hl.bind("SUPER + SHIFT + A", hl.dsp.global("quickshell:regionSearch"))

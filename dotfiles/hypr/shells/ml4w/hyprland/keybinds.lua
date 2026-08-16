@@ -29,6 +29,12 @@ hl.bind("SUPER + CTRL + RETURN", hl.dsp.exec_cmd(launcher))
 -- instantiates WelcomeWindow), so it answers on the "ml4w" config like the rest.
 hl.bind("SUPER + CTRL + H",   hl.dsp.exec_cmd(qs .. " welcome toggle"))
 
+-- Lock. ml4w has no lock of its own — the PowerApp's lock button shells out to
+-- `ml4w-power -l` (`pidof hyprlock || hyprlock`), so the bind goes through the
+-- same script. Bare hyprlock needs a config in an XDG path; the house one is
+-- ~/.config/hypr/hyprlock.conf.
+hl.bind("SUPER + L",          hl.dsp.exec_cmd(home .. "/.config/ml4w/scripts/ml4w-power -l"))
+
 -- The overview and the settings app are their own quickshell processes (started
 -- in execs.lua), so their IPC goes through `qs -p <path>`, NOT `qs -c ml4w`.
 -- SUPER+TAB is already the workspace cycle below, so the overview takes

@@ -332,7 +332,11 @@ hl.bind("SUPER + ALT + Equal",
     hl.dsp.exec_cmd("notify-send 'Urgent notification' 'Ah hell no' -u critical -a 'Hyprland keybind'")) -- # [hidden]
 
 --##! Session
-hl.bind("SUPER + L", hl.dsp.exec_cmd("loginctl lock-session"), { description = "Session: Lock" })
+-- The shell's own WlSessionLock (ii/modules/common/panels/lock/LockScreen.qml
+-- registers the "lock" global). Upstream binds `loginctl lock-session`, which
+-- only locks if hypridle is running with a $lock_cmd — no hypridle.conf ships
+-- in this hypr dir, so that route silently did nothing.
+hl.bind("SUPER + L", hl.dsp.global("quickshell:lock"), { description = "Session: Lock" })
 hl.bind("SUPER + SHIFT + L", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"),
     { locked = true, description = "Session: Sleep" }) -- Sleep
 -- hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd("systemctl suspend || loginctl suspend"), {locked = true} ) -- # [hidden] Suspend when laptop lid is closed, uncomment if for whatever reason it's not the default behavior
