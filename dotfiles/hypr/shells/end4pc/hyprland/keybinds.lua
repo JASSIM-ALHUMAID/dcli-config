@@ -64,9 +64,10 @@ hl.bind("SUPER + CTRL + RIGHT",   hl.dsp.layout("swapcol r"))
 hl.bind("SUPER + CTRL + LEFT",    hl.dsp.layout("swapcol l"))
 
 -- Workspaces
-for i = 1, 5 do
-    hl.bind("SUPER + " .. i, hl.dsp.focus({ workspace = tostring(i) }))
-    hl.bind("SUPER + ALT + " .. i, hl.dsp.window.move({ workspace = tostring(i) }))
+for i = 1, 10 do
+    local key = i == 10 and "0" or tostring(i)
+    hl.bind("SUPER + " .. key, hl.dsp.focus({ workspace = tostring(i) }))
+    hl.bind("SUPER + ALT + " .. key, hl.dsp.window.move({ workspace = tostring(i) }))
 end
 hl.bind("SUPER + TAB",         hl.dsp.focus({ workspace = "m+1" }))
 hl.bind("SUPER + SHIFT + TAB", hl.dsp.focus({ workspace = "m-1" }))

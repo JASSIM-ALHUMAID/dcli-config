@@ -6,3 +6,5 @@ hl.config({
     },
     binds = { scroll_event_delay = 0, drag_threshold = 10 },
 })
+
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })

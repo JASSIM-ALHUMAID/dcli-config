@@ -13,3 +13,5 @@ hl.config({
         accel_profile = "flat",
     },
 })
+
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })

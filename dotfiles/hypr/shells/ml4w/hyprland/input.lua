@@ -10,3 +10,5 @@ hl.config({
         drag_threshold     = 10,
     },
 })
+
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
