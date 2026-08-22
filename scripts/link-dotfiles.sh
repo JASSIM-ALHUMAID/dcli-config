@@ -46,3 +46,29 @@ for name in "${TARGETS[@]}"; do
     fi
 done
 echo "Done. Backups (if any) are at ~/.config/*.bak-$ts"
+
+# ── swaync D-Bus activation guard ────────────────────────────────────────────
+#
+# swaync ships /usr/share/dbus-1/services/org.erikreider.swaync.service, which
+# declares `Name=org.freedesktop.Notifications` + `SystemdService=swaync.service`.
+# So ANY app sending a notification while no daemon holds that name will D-Bus
+# auto-activate swaync — regardless of whether the unit is enabled, and
+# regardless of which shell is active.
+#
+# That is how swaync hijacked notifications on 2026-08-22: quickshell was dead
+# for ~2h after the Qt 6.11.2 ABI break, and the first notification sent in that
+# window spawned swaync, which then held the name even after caelestia came back.
+# switch-shell.sh only tears swaync down on a *switch*; it cannot see a rogue
+# activation. See docs/PACKAGE-CONFLICTS.md and docs/shells/README.md.
+#
+# Masking is safe for ml4w: switch-shell.sh launches it as `swaync & disown`
+# (a direct exec), which a masked unit does not block. Only the D-Bus/systemd
+# activation path is blocked.
+if command -v systemctl >/dev/null 2>&1; then
+    if [ "$(systemctl --user is-enabled swaync.service 2>/dev/null)" != "masked" ]; then
+        systemctl --user mask swaync.service >/dev/null 2>&1 &&
+            echo ":: masked swaync.service (blocks rogue D-Bus activation)"
+    else
+        echo "ok swaync.service (already masked)"
+    fi
+fi
