@@ -126,6 +126,126 @@ order or the picker shows the wrong icon and switches to the wrong shell.
 scrolls the overflow with no on-screen indicator, so a stale value silently
 hides the shells you just added.
 
+## The shared surface (audited 2026-08-20)
+
+A shell's *own* config is cleanly namespaced and a switch never touches it.
+What is not namespaced is the config of the programs a shell re-themes on its
+way past. These are **one global copy with many writers**:
+
+| Shared target | Who writes it |
+|---|---|
+| `gtk-{3,4}.0/gtk.css` | caelestia, ambxst, end4, end4pc |
+| `gtk-{3,4}.0/thunar.css`, `gtk-{3,4}.0/nautilus.css` | caelestia (both `@import`ed from its `gtk.css`) |
+| `gtk-{3,4}.0/settings.ini`, `.gtkrc-2.0` | caelestia, end4pc, dms, ml4w |
+| gsettings `org.gnome.desktop.interface` (gtk/icon/colour/cursor/font) | caelestia, ambxst, end4, end4pc, omarchy, dms |
+| `qt5ct/`, `qt6ct/`, `Kvantum/` | ambxst, dms, end4pc; an omarchy migration *uninstalls* Kvantum |
+| `fuzzel/fuzzel.ini`, `fuzzel_theme.ini` | caelestia / end4 + end4pc |
+| `hypr/hyprlock/colors.conf` | only `matugen-end4pc` — one lock palette for all nine |
+| `swaync/style.css`, `rofi/`, `~/.cache/wal/` | ml4w / ambxst |
+| `/etc/{chromium,brave}/policies/managed/*.json` | caelestia and omarchy, **via sudo** |
+
+`switch-shell.sh` used to handle processes only, so the desktop kept whichever
+look the last shell to run its theme pipeline had left — in practice the login
+shell's, all session. **`scripts/shell-theme-state.sh` now snapshots this
+surface per shell** (`state/shell-theme/<name>/`, gitignored) on switch-out and
+replays it on switch-in, cursor included. Read that script's header for the
+managed set and the three rules it follows; `DCLI_SKIP_THEME_STATE=1` bypasses
+it.
+
+**xenon and noctalia are the model** — xenon writes nothing outside
+`~/.cache/xenon`, and noctalia has no templates enabled, so neither disturbs
+anything. Aim new shells at that standard.
+
+### Rules when adding a shell
+
+* **Audit it for writes outside its own namespace** before wiring it up:
+  `rg -n 'gtk-3\.0|gsettings set|qt5ct|qt6ct|/\.config/(foot|btop|rofi|cava|fuzzel)' <checkout>`.
+  Anything it writes to the table above needs an entry in
+  `shell-theme-state.sh`'s managed set, or it will bleed into the other shells.
+* **Never point `~/.config/<app>` at another shell's checkout.** `foot` and
+  `btop` used to symlink into `~/.local/share/caelestia` — the upstream dots
+  clone that `setup-caelestia.sh` overwrites — so DMS's and noctalia's terminal
+  theming was landing in a directory that gets wiped, and `git status` there was
+  permanently dirty. Both are dcli dotfiles now; see
+  [caelestia.md](caelestia.md).
+* **Check its matugen invocation passes `-c`.** Bare `matugen` reads
+  `~/.config/matugen`, a symlink into the end-4 checkout, so an unqualified call
+  regenerates *end4's* theme. ml4w shipped exactly that bug;
+  `scripts/patch-ml4w.sh` rewrites it, mirroring `scripts/patch-end4pc.sh`.
+* **Nothing tracked in git may be restored.** `shell-theme-state.sh` refuses to
+  write a path that resolves to a tracked file, which is why
+  `fuzzel/fuzzel_theme.ini` (a committed seed) is deliberately unmanaged.
+
+### Known and not fixed: auxiliary daemons
+
+`hl.on("hyprland.start", ...)` fires only at compositor start, **never on
+`hyprctl reload`** — and a switch is a reload. So on a mid-session switch
+nothing in any `hyprland/execs.lua` runs; only what `switch-shell.sh` launches
+explicitly does. It compensates for ml4w alone.
+
+| Daemon | Started at login by | On switch | Killed |
+|---|---|---|---|
+| `hyprpolkitagent` | dms, noctalia, xenon, end4pc, ml4w | no | no |
+| `hypridle` | end4, end4pc | no | no |
+| `gnome-keyring-daemon` | end4, end4pc | no | no |
+| `swaync` | ml4w | yes | **yes** |
+| cliphist `wl-paste` pair | all nine | no | no |
+| `easyeffects`, geoclue | end4 | no | no |
+| `udiskie`, omarchy monitor-watch | omarchy | no | no |
+| `awww-daemon` | ml4w | yes | yes |
+| `mpvpaper` | end4, end4pc, ambxst, caelestia | no | no |
+
+Consequences to expect until this is addressed: **no polkit agent if end4,
+omarchy, caelestia or ambxst is the login shell** (it survives once *any* shell
+has started the systemd unit, which is why it usually looks fine); `hypridle`
+leaks out of end4/end4pc into shells that do their own idle handling; end4's
+clipboard watchers keep piping into a dead shell's IPC; omarchy loses `udiskie`
+on a mid-session switch in.
+
+swaync is the one handled correctly, and its comment in `switch-shell.sh` states
+the principle the rest violate: whoever owns a well-known bus name must be torn
+down before the next shell tries to claim it.
+
+### …except swaync can come back without a switch (2026-08-22)
+
+Tearing it down on a switch is necessary but **not sufficient**. swaync ships a
+D-Bus activation file that claims the notification name directly:
+
+```ini
+# /usr/share/dbus-1/services/org.erikreider.swaync.service
+Name=org.freedesktop.Notifications
+Exec=/usr/bin/swaync
+SystemdService=swaync.service
+```
+
+So any app that sends a notification while *no* daemon holds that name will
+auto-spawn swaync — no switch involved, and `systemctl --user is-enabled
+swaync.service` reporting `disabled` does not prevent it. `switch-shell.sh`
+never sees this happen.
+
+That is exactly how it hijacked notifications after the Qt 6.11.2 ABI break:
+quickshell was dead for ~2h, some app notified into the void, D-Bus started
+swaync (`systemd[1544]: Starting Swaync notification daemon`), and it kept the
+name even once caelestia was running again. Caelestia was **not** queued for the
+name — `ListQueuedOwners` showed swaync alone — so killing swaync alone would
+have left the name unowned; the shell has to be restarted to claim it.
+
+`scripts/link-dotfiles.sh` now masks the unit, which blocks the activation path
+(`Could not activate remote peer ... unit is masked`, with no fallback to
+`Exec=`). ml4w is unaffected: `switch-shell.sh:376` starts it as
+`swaync & disown`, a direct exec that a masked unit does not block.
+
+Diagnosing this class of problem — the toast you see is not from the shell you
+think — always starts with the name owner, never with the process list:
+
+```bash
+owner=$(busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
+  org.freedesktop.DBus GetNameOwner s org.freedesktop.Notifications \
+  | awk '{gsub(/"/,"");print $2}')
+busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
+  org.freedesktop.DBus GetConnectionUnixProcessID s "$owner"
+```
+
 ## Fork divergence (2026-07-25)
 
 | Fork | vs upstream | Update with |
