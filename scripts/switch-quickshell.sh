@@ -45,6 +45,18 @@ provider_module() {
   esac
 }
 
+# What to hand the AUR helper. This is NOT the same as provider_pkg: since
+# 2026-08-22 CachyOS no longer ships a `quickshell-git` binary package, so the
+# bare name resolves to the repo package `noctalia-qs` (Provides=quickshell-git),
+# which Conflicts with the real provider and would offer to remove it. The
+# `aur/` prefix forces the correct source. See docs/PACKAGE-CONFLICTS.md.
+provider_install_target() {
+  case "$1" in
+  stock) echo "quickshell" ;;
+  git) echo "aur/quickshell-git" ;;
+  esac
+}
+
 other() {
   case "$1" in
   stock) echo "git" ;;
@@ -143,11 +155,17 @@ fi
 #    conflicting provider in a single transaction and asks before doing so;
 #    answer yes to that prompt. Uses the host's AUR helper when present because
 #    quickshell-git may come from the AUR on other hosts.
-echo ":: Installing $TARGET_PKG (answer 'y' to the conflict prompt)"
+INSTALL_TARGET=$(provider_install_target "$TARGET")
+echo ":: Installing $INSTALL_TARGET (answer 'y' to the conflict prompt)"
 if command -v paru >/dev/null 2>&1; then
-  paru -S --needed "$TARGET_PKG" || exit 1
+  paru -S --needed "$INSTALL_TARGET" || exit 1
 else
-  sudo pacman -S --needed "$TARGET_PKG" || exit 1
+  # Plain pacman cannot reach the AUR; the git provider needs an AUR helper.
+  if [ "$TARGET" = "git" ]; then
+    echo "switch-quickshell.sh: paru is required for the git provider (AUR-only)." >&2
+    exit 1
+  fi
+  sudo pacman -S --needed "$INSTALL_TARGET" || exit 1
 fi
 
 # 3) Reconcile everything else dcli tracks (caelestia-*, dms-shell, ...).
