@@ -14,8 +14,10 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
 | Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-xenon.sh`, `setup-ml4w.sh`, `setup-wezterm.sh` | clone + install each shell |
+| Checkout patches | `scripts/patch-end4pc.sh`, `scripts/patch-ml4w.sh` | repoint upstream checkouts at their own matugen/config paths; idempotent, re-run by the setup and update hooks |
 | Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh`, `scripts/update-omarchy.sh`, `scripts/update-xenon.sh`, `scripts/update-ml4w.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
 | Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc / omarchy / xenon / ml4w |
+| Theme state | `scripts/shell-theme-state.sh` | per-shell snapshot/restore of the shared GTK/Qt/cursor surface, driven by the switcher |
 | Provider switcher | `scripts/switch-quickshell.sh` | swap the quickshell provider: stock ↔ quickshell-git |
 | Docs | `docs/` | see below |
 
@@ -55,6 +57,7 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 |---|---|---|
 | `~/.config/hypr` → `dcli/dotfiles/hypr` | Hyprland entry point + per-shell configs | `link-dotfiles.sh` |
 | `~/.config/environment.d` → `dcli/dotfiles/environment.d` | session env (`QML2_IMPORT_PATH`, `CAELESTIA_LIB_DIR`) | `link-dotfiles.sh` |
+| `~/.config/{foot,btop}` → `dcli/dotfiles/{foot,btop}` | terminal + TUI config **shared by every shell** — several of them write generated palettes in here, so it cannot live in a shell's own checkout (it used to be caelestia's) | `link-dotfiles.sh` |
 | `~/Projects/shell/real` | **caelestia fork checkout** — origin `plusdrag11/caelestia`, upstream `caelestia-dots/shell`. Source of truth for the shell's QML/C++ | `setup-caelestia.sh` |
 | `~/.config/quickshell/caelestia` | the *installed* caelestia QML; overrides the packaged `/etc/xdg` copy. Refreshed by `~/Projects/shell/real/scripts/sync-live.sh` | fork |
 | `~/.config/caelestia` → `~/Projects/shell/real/caelestia-configs` | caelestia's runtime config (`shell.json`, `keybinds.json`, `hypr-vars.lua`, `hypr-user.lua`) — version-controlled *inside the fork*, not here | `setup-caelestia.sh` |
@@ -138,6 +141,12 @@ Connecting points worth knowing:
   distinctive command lines), rewrites `active.conf`, reloads Hyprland, then
   launches the chosen shell. No argument opens a themed fuzzel picker
   (`dotfiles/fuzzel/shell-picker.ini`).
+- **`scripts/shell-theme-state.sh`** — called by the switcher to snapshot the
+  *shared* app theming surface (GTK, Qt, cursor, Thunar's colours, rofi) per
+  shell and replay it on the way back, since six of the nine shells overwrite
+  one global copy of it. Snapshots live in `state/shell-theme/<name>/`;
+  `DCLI_SKIP_THEME_STATE=1` bypasses it. See
+  [docs/shells/README.md](docs/shells/README.md), "The shared surface".
 - **`shells/<name>-overrides.lua`** — the hook for customising a shell whose
   Hyprland config is owned upstream, since editing the upstream file directly
   would be lost on update. Currently used by ambxst. omarchy does *not* use it:

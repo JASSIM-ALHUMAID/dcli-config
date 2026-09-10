@@ -5,6 +5,29 @@ packages:
   - caelestia-meta
   - caelestia-shell
 
+# Deliberately NOT here: papirus-folders.
+#
+# theme.py::sync_papirus_colors() maps the scheme's primary to a Papirus folder
+# colour and runs `sudo -n papirus-folders -C <colour> -u`. Two reasons we skip it:
+#
+#   1. papirus-folders does not recolour anything. Its change_color() only runs
+#      `ln -sf` to re-point ~1076 symlinks among the 25 colour variants Papirus
+#      already ships, so it can never match the accent — only the nearest preset.
+#      A desaturated accent just lands on white/grey.
+#   2. The `sudo -n` is hardcoded, so it would need a NOPASSWD rule for
+#      /usr/bin/papirus-folders — root, for a coarse approximation.
+#
+# The folder SVGs are full-colour assets with hardcoded fills (#5294e2/#4877b1),
+# so GTK CSS cannot tint them either; only *symbolic* icons get recoloured, and
+# Papirus has just 42 of those for folders, all 16x16.
+#
+# If accent-matched folders are ever wanted, the no-root route is a generated
+# theme in ~/.local/share/icons with Inherits=Papirus-Dark holding recoloured
+# copies of the ~371 folder SVGs that carry the accent fills (~1.5 MB).
+#
+# With the package absent, sync_papirus_colors() short-circuits at its first
+# guard and costs nothing.
+
 # The quickshell provider is no longer declared here — it belongs to
 # modules/shells-quickshell-git.yaml (or shells-quickshell.yaml). caelestia-shell
 # 2.2.0 hard-depends on quickshell-git, so caelestia cannot coexist with the

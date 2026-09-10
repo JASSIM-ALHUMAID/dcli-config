@@ -106,4 +106,8 @@ if [ -f "$SB_FALLBACK" ] && grep -qE '^[[:space:]]*#' "$SB_FALLBACK"; then
     echo ":: Stripped '#' comment lines from $SB_FALLBACK (invalid JSON)"
 fi
 
+# The seeded scripts are refreshed above with cp -n, so an existing patched file
+# survives — but a newly seeded one arrives unpatched. Re-run the patch.
+bash "$(dirname "$(readlink -f "$0")")/patch-ml4w.sh"
+
 echo ":: ml4w shell updated — restart shell with switch-shell.sh ml4w"

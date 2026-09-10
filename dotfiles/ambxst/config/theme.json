@@ -13,7 +13,7 @@
   "shadowColor": "shadow",
   "shadowXOffset": 0,
   "shadowYOffset": 0,
-  "shadowBlur": 1,
+  "shadowBlur": 0.96,
   "srBg": {
     "label": "Background",
     "gradient": [
@@ -93,7 +93,7 @@
     "label": "Bar BG",
     "gradient": [
       [
-        "surfaceDim",
+        "surface",
         0
       ]
     ],
@@ -112,7 +112,7 @@
       0
     ],
     "itemColor": "overBackground",
-    "opacity": 0
+    "opacity": 1
   },
   "srPane": {
     "label": "Pane",

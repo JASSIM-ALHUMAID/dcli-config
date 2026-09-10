@@ -137,9 +137,14 @@ omarchy and xenon.
   [PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).
 - **matugen uses `~/.config/matugen-ml4w`, not `~/.config/matugen`.** The latter
   is a symlink into the end-4 checkout (owned by `shell-end4`) and must not be
-  touched. If you pick a wallpaper through ml4w's WallpaperApp, its script calls
-  the *default* matugen config and would regenerate end4's files — the house
-  wallpaper flow in `execs.lua` uses the ml4w config instead.
+  touched. The house wallpaper flow in `execs.lua` passes `-c` explicitly, but
+  upstream's own scripts called matugen *bare* — so picking a wallpaper through
+  ml4w's WallpaperApp regenerated end4's files (including the shared
+  `hypr/hyprlock/colors.conf`, `fuzzel/fuzzel_theme.ini` and `gtk-3.0/gtk.css`).
+  `scripts/patch-ml4w.sh` now rewrites both call sites —
+  `scripts/ml4w-wallpaper` and `listeners/gtk-theme-switcher.sh` — and runs from
+  `setup-ml4w.sh` and `update-ml4w.sh`. Check it with
+  `grep -c matugen-ml4w ~/.config/ml4w/scripts/ml4w-wallpaper` (expect 1).
 - **SUPER+SPACE is the statusbar**, not the us/ara layout toggle. `input.lua`
   uses `grp:alt_shift_toggle` so the two don't double-fire.
 - **Theme colors load via IPC.** ml4w's `CustomTheme/Theme.qml` has its

@@ -273,4 +273,10 @@ if [ -f "$WALL" ] && command -v matugen >/dev/null 2>&1; then
         || echo "!! matugen failed — the shell will still run; run it after the first wallpaper set"
 fi
 
+# 9) Repoint ml4w's own scripts at ~/.config/matugen-ml4w. Upstream calls
+#    matugen bare, which reads ~/.config/matugen — a symlink into the end-4
+#    checkout — so ml4w's WallpaperApp would regenerate end4's theme.
+#    See scripts/patch-ml4w.sh for what and why. Idempotent.
+bash "$(dirname "$(readlink -f "$0")")/patch-ml4w.sh"
+
 echo ":: ml4w shell ready — launch with 'qs -c ml4w', switch with switch-shell.sh ml4w"

@@ -13,10 +13,17 @@
 #   caelestia — symlink into the my-caelestia fork, owned by setup-caelestia.sh
 #   wezterm   — its own git repo (JASSIM-ALHUMAID/wezterm) is the source of
 #               truth; dcli keeps a snapshot copy only
+#
+# foot and btop used to be symlinks into ~/.local/share/caelestia (the upstream
+# caelestia-dots clone, which setup-caelestia.sh overwrites on update). They are
+# NOT caelestia's: DMS's matugen writes foot/dank-colors.ini and noctalia's
+# optional hooks rewrite btop.conf, so a clone that gets wiped was silently
+# eating other shells' output. They are dcli dotfiles now — remove the old
+# symlinks before the first run, this script refuses to clobber a wrong one.
 set -euo pipefail
 
 DOTFILES="$HOME/.config/dcli/dotfiles"
-TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc matugen-ml4w fuzzel cava nvim yazi lazygit git environment.d)
+TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc matugen-ml4w fuzzel cava foot btop nvim yazi lazygit git environment.d)
 
 ts=$(date +%Y%m%d-%H%M%S)
 for name in "${TARGETS[@]}"; do

@@ -106,6 +106,24 @@ if [ ! -f "$SHELL_CONFIG" ]; then
   exit 1
 fi
 
+PREV_SHELL=$(current_shell)
+
+# Per-shell snapshot/restore of the SHARED app theming surface (GTK, Qt, cursor,
+# Thunar's colours, rofi). Those are one global copy that six of the nine shells
+# overwrite, so without this the desktop keeps whichever look the last shell to
+# run its theme pipeline left behind — usually the login shell, all session.
+# scripts/shell-theme-state.sh has the full reasoning and the managed set.
+#
+# Never allowed to break a switch: a bad snapshot must cost you the theming, not
+# the ability to change shells. This script is `set -u` only, so `|| true` is
+# what keeps a non-zero exit from mattering.
+theme_state() {
+  [ "${DCLI_SKIP_THEME_STATE:-0}" = 1 ] && return 0
+  local helper="$HOME/.config/dcli/scripts/shell-theme-state.sh"
+  [ -x "$helper" ] || return 0
+  "$helper" "$1" "$2" || true
+}
+
 # TERM first, escalate to KILL only for survivors. Patterns must be
 # anchored (-x exact name, or -f with a distinctive phrase) so unrelated
 # processes (e.g. an editor with an ambxst file open) are never matched.
@@ -210,6 +228,13 @@ kill_all_shells() {
   done
 }
 
+# Snapshot the OUTGOING shell before anything is torn down — its theming has to
+# be captured while it is still the live one. Skipped when the target is already
+# active, so re-running the switch cannot overwrite a good snapshot with itself.
+if [ "$PREV_SHELL" != "$SHELL_NAME" ]; then
+  theme_state save "$PREV_SHELL"
+fi
+
 kill_all_shells
 
 # Point active.conf at the chosen shell (read by ~/.config/hypr/hyprland.lua)
@@ -239,6 +264,14 @@ if hyprctl binds | grep -qE '^[[:space:]]*submap: global$'; then
   hyprctl dispatch 'hl.dsp.submap("global")' >/dev/null 2>&1 || hyprctl dispatch submap global
 else
   hyprctl dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1 || hyprctl dispatch submap reset
+fi
+
+# Replay the incoming shell's theming. After the reload so it is not undone by
+# it, and before the launch below so the shell reads the restored files at
+# startup; GTK/Qt apps already running pick the gsettings keys up live. A shell
+# with no snapshot yet (first visit) is left exactly as it is.
+if [ "$PREV_SHELL" != "$SHELL_NAME" ]; then
+  theme_state restore "$SHELL_NAME"
 fi
 
 # Release the lock before launching background processes — they inherit
