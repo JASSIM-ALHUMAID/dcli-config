@@ -179,12 +179,12 @@ kill_all_shells() {
   kill_matching -x "quickshell"
   kill_matching -f "caelestia shell"
   kill_matching -f "caelestia resizer"
-  # AMBXst — the launcher execs into `qs -p .../ambxst/shell.qml`, so the
-  # main process must be matched by command line (-f); -x ambxst/axctl only
-  # catches the wrapper scripts pre-exec. Helpers (comm=bash/tail) need -f
-  # with a distinctive phrase.
+  # AMBXst — /usr/local/bin/ambxst is now a Go daemon that supervises
+  # children (`qs -p .../ambxst/shell.qml`, `axctl daemon`, `tail -f`
+  # on the IPC pipe), so the main UI process must be matched by command
+  # line (-f); -x ambxst/axctl catch the daemon binaries by name.
+  # Helpers (comm=bash/tail) need -f with a distinctive phrase.
   kill_matching -f "ambxst/shell.qml"
-  kill_matching -f "ambxst/cli.sh"
   kill_matching -x "ambxst"
   kill_matching -x "axctl"
   kill_matching -f "ambxst_ipc"
@@ -194,8 +194,6 @@ kill_all_shells() {
   # the whole invocation, not just "omarchy/shell", which would also match an
   # editor holding a file from the checkout open.
   kill_matching -f "quickshell -n -p .*omarchy/shell"
-  kill_matching -f "loginlock.sh"
-  kill_matching -f "sleep_monitor.sh"
   # Old quickshell wallpaper scripts from previous configs
   kill_matching -f "switchwall.sh"
   # Catch-all: no quickshell instance from any previous shell may linger

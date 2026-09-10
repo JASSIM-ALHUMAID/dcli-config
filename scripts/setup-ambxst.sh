@@ -1,8 +1,8 @@
 #!/bin/bash
 # Bootstrap AMBXst from my fork (plusdrag11/Ambxst, branch my-ambxst;
 # upstream Axenide/Ambxst kept as second remote) — clones to ~/.local/src/ambxst
-# and runs THE FORK'S installer, which sets up a launcher at /usr/local/bin/ambxst
-# (it sudos where needed). My AMBXst settings (binds.json, config/,
+# and runs THE FORK'S installer, which installs the Go daemon binary to
+# /usr/local/bin/ambxst (it sudos where needed). My AMBXst settings (binds.json, config/,
 # hypr-user.conf, presets/) are managed by dcli dotfiles -> ~/.config/ambxst.
 #
 # NOTE: that installer's arch package list includes stock `quickshell`, which
@@ -26,10 +26,26 @@ UPSTREAM_URL="https://github.com/Axenide/Ambxst.git"
 REPO_BRANCH="my-ambxst"
 INSTALL_PATH="$REAL_HOME/.local/src/ambxst"
 
+# Already fully set up?
 if [ -d "$INSTALL_PATH/.git" ]; then
     echo ":: AMBXst already installed at $INSTALL_PATH"
     exit 0
 fi
+
+# Clone the fork only if the user opts in. Non-interactive shells skip
+# silently (the user can re-run via `dcli module run-hook ambxst` later).
+reply=""
+if [ -t 0 ]; then
+    read -r -p ":: AMBXst fork not found at $INSTALL_PATH. Clone it? [y/N] " reply
+fi
+case "$reply" in
+    y|Y|yes|YES) ;;
+    *)
+        echo ":: Skipping AMBXst fork setup (no clone). Re-run later with:"
+        echo "     dcli module run-hook ambxst"
+        exit 0
+        ;;
+esac
 
 echo ":: Cloning AMBXst fork (branch $REPO_BRANCH) to $INSTALL_PATH"
 mkdir -p "$(dirname "$INSTALL_PATH")"
