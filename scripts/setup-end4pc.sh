@@ -57,6 +57,18 @@ else
         echo "!! $REPO_DIR exists but is not a git repo — refusing to touch it." >&2
         exit 1
     fi
+    reply=""
+    if [ -t 0 ]; then
+        read -r -p ":: end4-pC fork not found at $REPO_DIR. Clone it? [y/N] " reply
+    fi
+    case "$reply" in
+        y|Y|yes|YES) ;;
+        *)
+            echo ":: Skipping end4-pC fork setup (no clone). Re-run later with:"
+            echo "     dcli module run-hook shell-end4pc"
+            exit 0
+            ;;
+    esac
     echo ":: Cloning end4-pC (branch $REPO_BRANCH)"
     as_user mkdir -p "$(dirname "$REPO_DIR")"
     as_user git clone --branch "$REPO_BRANCH" --recurse-submodules --shallow-submodules "$REPO_URL" "$REPO_DIR"
