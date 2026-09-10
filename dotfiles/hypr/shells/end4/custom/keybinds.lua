@@ -15,14 +15,14 @@ hl.bind("SUPER + SHIFT + W", hl.dsp.global("quickshell:wallpaperSelectorToggle")
     { description = "Shell: Change wallpaper" })
 hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd(qsIsAlive .. " || " .. qsScripts .. "/colors/switchwall.sh"))
 
--- SUPER+Tab / SUPER+SHIFT+Tab: next/prev workspace WITH window (move + follow)
--- Upstream SUPER+Tab is overview toggle.
+-- SUPER+Tab / SUPER+SHIFT+Tab: next/prev occupied workspace WITH window (move + follow)
+-- Upstream SUPER+Tab is overview toggle. e+1/e-1 skips empty workspaces.
 hl.unbind("SUPER + Tab")
 hl.unbind("SUPER + SHIFT + Tab")
-hl.bind("SUPER + Tab", hl.dsp.window.move({ workspace = "r+1", follow = true }),
-    { description = "Workspace: Next with window" })
-hl.bind("SUPER + SHIFT + Tab", hl.dsp.window.move({ workspace = "r-1", follow = true }),
-    { description = "Workspace: Prev with window" })
+hl.bind("SUPER + Tab", hl.dsp.window.move({ workspace = "e+1", follow = true }),
+    { description = "Workspace: Next occupied with window" })
+hl.bind("SUPER + SHIFT + Tab", hl.dsp.window.move({ workspace = "e-1", follow = true }),
+    { description = "Workspace: Prev occupied with window" })
 
 -- SUPER+X / SUPER+Z: next/prev workspace focus only (upstream SUPER+X is text editor)
 hl.unbind("SUPER + X")
