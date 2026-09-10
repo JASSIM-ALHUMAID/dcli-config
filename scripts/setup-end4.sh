@@ -45,10 +45,8 @@ as_user() {
     fi
 }
 
-# 1) Clone the my-ii fork on its custom branch (full clone — the fork's
-#    branch history matters; submodules stay shallow. The ii shell's
-#    modules/common/widgets/shapes is a submodule and the shell fails to
-#    load without it: "module qs.modules.common.widgets.shapes is not installed").
+# Clone the my-ii fork only if the user opts in. Non-interactive shells skip
+# silently (the user can re-run via `dcli module run-hook shell-end4` later).
 if [ -d "$REPO_DIR/.git" ]; then
     echo ":: dots-hyprland already cloned at $REPO_DIR"
 else
@@ -56,6 +54,18 @@ else
         echo "!! $REPO_DIR exists but is not a git repo — refusing to touch it." >&2
         exit 1
     fi
+    reply=""
+    if [ -t 0 ]; then
+        read -r -p ":: my-ii fork not found at $REPO_DIR. Clone it? [y/N] " reply
+    fi
+    case "$reply" in
+        y|Y|yes|YES) ;;
+        *)
+            echo ":: Skipping my-ii fork setup (no clone). Re-run later with:"
+            echo "     dcli module run-hook shell-end4"
+            exit 0
+            ;;
+    esac
     echo ":: Cloning my-ii fork (branch $REPO_BRANCH)"
     as_user mkdir -p "$(dirname "$REPO_DIR")"
     as_user git clone --branch "$REPO_BRANCH" --recurse-submodules --shallow-submodules "$REPO_URL" "$REPO_DIR"

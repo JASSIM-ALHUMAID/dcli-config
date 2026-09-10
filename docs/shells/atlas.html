@@ -279,7 +279,7 @@
   with <code>scripts/switch-quickshell.sh</code>, never by enabling modules by hand.</div>
 
   <nav aria-label="Shells">
-    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a><a href="#ml4w">ml4w</a>
+    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a>
   </nav>
 </header>
 
@@ -296,7 +296,6 @@
     <tr><td><a href="#end4pc">end4pc</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c end4-pC</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/end4-pC</td><td><code>update-end4pc.sh</code></td></tr>
     <tr><td><a href="#omarchy">omarchy</a> <span class="badge b-checkout">checkout</span></td><td><code>quickshell -n -p …/shell</code></td><td>checkout, never its installer</td><td class="path">~/.local/share/omarchy</td><td><code>update-omarchy.sh</code></td></tr>
     <tr><td><a href="#xenon">xenon</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c xenon</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/xenon-shell</td><td><code>update-xenon.sh</code></td></tr>
-    <tr><td><a href="#ml4w">ml4w</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c ml4w</code> ×3</td><td>checkout + settings repo</td><td class="path">~/.local/share/ml4w-dotfiles</td><td><code>update-ml4w.sh</code></td></tr>
   </tbody>
 </table>
 </div>
@@ -453,20 +452,6 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   </ul>
 </section>
 
-<section class="shell" id="ml4w">
-  <div class="shell-head"><h3>ml4w — ML4W OS</h3><span class="badge b-checkout">checkout</span><span class="launch">qs -c ml4w (+2 more)</span></div>
-  <p>Stephan Raabe's <strong>mylinuxforwork/dotfiles</strong>. The odd one out structurally: it is
-  <strong>three Quickshell processes</strong> — the main shell (<code>qs -c ml4w</code>), the workspace
-  overview and the settings app (both path-addressed <code>qs -p</code> instances with no config name) —
-  plus a separate settings-app repo built with <code>make install</code>.</p>
-  <dl class="paths">
-    <dt>Source</dt><dd class="path">~/.local/share/ml4w-dotfiles — upstream <code>main</code>, no personal fork (+ ~/.local/share/ml4w-dotfiles-settings-src for the settings app)</dd>
-    <dt>QS config</dt><dd class="path">~/.config/quickshell/ml4w → checkout's dotfiles/.config/quickshell</dd>
-    <dt>Seeded dirs</dt><dd class="path">~/.config/ml4w, ml4w-overview, ml4w-statusbar, rofi — <em>real copied dirs, not symlinks</em>: apps and matugen write into them, and symlinking them would dirty the checkout on every wallpaper change</dd>
-    <dt>Theming</dt><dd class="path">~/.config/matugen-ml4w → dotfiles/matugen-ml4w — dcli-managed</dd>
-    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/ml4w/hyprland.lua — standalone, in this repo, with IPC binds for all three processes</dd>
-    <dt>Update</dt><dd><code>update-ml4w.sh</code> — pulls and re-seeds the copied dirs</dd>
-  </dl>
 </section>
 
 <h2>Cross-cutting rules</h2>

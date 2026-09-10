@@ -23,6 +23,24 @@ serious breakage so far.
 | `~/.local/lib/caelestia/version` | `beat` version helper lib |
 | `~/.config/caelestia` → `fork/caelestia-configs` | Runtime config, version-controlled **inside the fork** |
 | `~/.local/share/caelestia/hypr/hyprland.lua` | Its Hyprland config (not in this repo) |
+| `~/.config/{foot,btop}` → `dcli/dotfiles/{foot,btop}` | **No longer caelestia's** — see below |
+
+### foot and btop moved out of the clone (2026-08-20)
+
+`~/.config/foot` and `~/.config/btop` used to symlink into
+`~/.local/share/caelestia/{foot,btop}`. That clone is the upstream
+`caelestia-dots/caelestia` dots checkout, which `setup-caelestia.sh` overwrites
+on update — and the two dirs are not caelestia-only:
+
+- DMS's matugen writes `foot/dank-colors.ini`
+  (`/usr/share/quickshell/dms/matugen/configs/foot.toml`)
+- noctalia's optional foot/btop template hooks rewrite `foot.ini` and `btop.conf`
+- caelestia's own CLI writes `btop/themes/caelestia.theme`
+
+So every other shell's terminal/TUI theming was landing in a clone that gets
+wiped, and `git status` there was permanently dirty. They are dcli dotfiles now
+(`link-dotfiles.sh` `TARGETS`); the generated siblings are gitignored, the
+hand-written `foot.ini` and `btop.conf` are tracked.
 
 ## Why it needs `quickshell-git`
 

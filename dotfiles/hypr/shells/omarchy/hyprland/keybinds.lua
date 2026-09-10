@@ -6,7 +6,8 @@
 
 local terminal     = "wezterm-gui"
 local browser      = "brave-browser-nightly"
-local fileExplorer = "thunar"
+local zenBrowser   = "zen-browser"
+local fileExplorer = "nautilus"
 
 -- SUPER+SPACE is the us/ara toggle on every shell here, but omarchy binds it to
 -- its menu. Both would fire. Free the combo and move the menu onto a Super tap,
@@ -19,15 +20,16 @@ hl.bind("SUPER + Super_L", hl.dsp.exec_cmd("omarchy-menu toggle"), { release = t
 hl.unbind("SUPER + SHIFT + O")
 hl.bind("SUPER + SHIFT + O", hl.dsp.exec_cmd(os.getenv("HOME") .. "/.config/dcli/scripts/switch-shell.sh"))
 
--- House app binds on combos omarchy leaves free. SUPER+RETURN already opens a
+-- House app binds. SUPER+RETURN already opens a
 -- terminal via omarchy-launch-terminal -> xdg-terminal-exec, which resolves to
 -- wezterm from the XDG default; SUPER+T is bound below only as the explicit
--- house alias. SUPER+W is NOT rebound to the browser here — omarchy uses it to
--- close windows, and SUPER+Q is added as the house-style close instead.
+-- house alias. SUPER+W is unbound from close-window and rebound to zen;
+-- SUPER+Q remains the close key.
 hl.bind("SUPER + Q", hl.dsp.window.close())
+hl.unbind("SUPER + W")
+hl.bind("SUPER + W", hl.dsp.exec_cmd(zenBrowser))
 hl.bind("SUPER + B", hl.dsp.exec_cmd(browser))
 hl.bind("SUPER + E", hl.dsp.exec_cmd(fileExplorer))
-hl.bind("SUPER + R", hl.dsp.exec_cmd(fileExplorer))
 hl.bind("CTRL + ALT + B", hl.dsp.exec_cmd("blueman-manager"))
 
 -- Terminal alias. omarchy has SUPER+T on float-toggle, so unbind first.

@@ -46,9 +46,24 @@ Several packages provide `quickshell`, and all of them are mutually exclusive:
 | Package | Repo | Provides | Conflicts With |
 |---|---|---|---|
 | `quickshell` | cachyos-extra-v3 / extra | — | — |
-| `quickshell-git` | cachyos | `quickshell` | `quickshell` |
+| `quickshell-git` | **AUR only** (see below) | `quickshell` | `quickshell` |
 | `noctalia-qs` | cachyos | `quickshell`, `quickshell-git` | `quickshell`, `quickshell-git` |
 | `illogical-impulse-quickshell-git` | AUR (end-4) | `quickshell` | `quickshell` |
+
+> **Changed 2026-08-22:** CachyOS **dropped its own `quickshell-git` binary package**. It is
+> now AUR-only, and `noctalia-qs` is the sole *repo* package claiming that name (via
+> `Provides`). Verify with:
+>
+> ```console
+> $ pacman -Sii quickshell-git
+> error: package 'quickshell-git' was not found
+> $ pacman -Sp quickshell-git
+> .../cachyos/noctalia-qs-0.0.12-2-x86_64.pkg.tar.zst      # <- not what you want
+> $ pacman -Qm | grep quickshell
+> quickshell-git 0.3.1.r0.g1a4716c-1                        # foreign: no repo tracks it
+> ```
+>
+> This is why every install/rebuild of it must say `aur/quickshell-git`.
 
 **Exactly one may be installed at a time.** Because `quickshell-git` has
 `Provides=quickshell`, every dependent still resolves under it:
@@ -108,6 +123,24 @@ running `dcli sync` afterwards to reconcile the rest.
 
 Once `quickshell-git` is explicitly declared by an enabled module, the provider is
 determined and the conflict never arises. There is no `IgnorePkg` entry and none is wanted.
+
+> **Amended 2026-08-22:** the second half of that no longer holds. Declaring the *name*
+> `quickshell-git` no longer determines the provider, because CachyOS dropped the repo
+> package and `noctalia-qs` now claims the name via `Provides`. The name is ambiguous again.
+>
+> It is not a live hazard while the package stays installed — `dcli sync` only installs what
+> is *missing*, and `pacman -Qq quickshell-git` matches the installed AUR build, so a normal
+> sync is a no-op (verified with `dcli sync --dry-run`). The ambiguity bites in three cases:
+>
+> 1. bootstrapping this host config on a fresh machine,
+> 2. `switch-quickshell.sh git` when coming back from the stock provider,
+> 3. anything that removes `quickshell-git` first.
+>
+> In all three, the resolver picks `noctalia-qs`. `switch-quickshell.sh` now pins `aur/` for
+> exactly this reason. **`modules/shells-quickshell-git.yaml` cannot be pinned the same way:**
+> dcli does not strip a repo prefix from package names — with `aur/quickshell-git` declared,
+> `dcli sync --dry-run` reports it as a permanently missing package on every run. So the
+> module keeps the bare name and the pin lives in the scripts.
 
 ---
 
@@ -185,3 +218,80 @@ test ! -e ~/.local/opt/noctalia-qs && echo "v4 fork removed"
 - [x] Noctalia migrated to v5, eliminating the `noctalia-qs` workaround
 - [ ] Confirm every shell renders under `quickshell-git` (caelestia fork may need a rebuild)
 - [ ] Confirm the hand-ported Noctalia v5 `config.toml` and rewritten keybinds
+
+---
+
+## Incident 2026-08-22: Qt 6.11.2 ABI Break
+
+**Symptom:** every `qs` invocation died instantly:
+
+```
+qs: symbol lookup error: qs: undefined symbol:
+_ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API
+```
+
+**Root cause:** quickshell links Qt **private** APIs (`Qt_6_PRIVATE_API` symbol version),
+which are only stable within one Qt build. `qt6-base 6.11.1 → 6.11.2` landed at 21:20 while
+the installed `quickshell-git` binary was built on Jul 25 against 6.11.1. The
+`/usr/share/libalpm/hooks/quickshell-check.hook` canary flagged it in the same transaction
+(21:21) but cannot heal it. A reboot is irrelevant; this is an on-disk binary/library
+mismatch, not stale state.
+
+**This is a different failure class from the provider conflicts above:** there the question
+is *which* package owns `quickshell`; here the correct package was already installed and
+merely needed recompiling against new Qt headers.
+
+### The fix
+
+```bash
+paru -S --rebuild aur/quickshell-git   # explicit aur/ prefix is required, see below
+qs --version && qs --private-check-compat
+qs -c caelestia -d
+```
+
+Notes from this incident:
+
+- **Always use the `aur/` prefix.** Plain `paru -S --rebuild quickshell-git` resolves to the
+  CachyOS repo package `noctalia-qs` (`Provides: quickshell-git`) and prompts to remove the
+  AUR package caelestia depends on. Answering `y` there would have broken caelestia and
+  desynced dcli's provider ownership.
+- Upstream had added **cli11** as a new build dependency since the last build; paru pulled
+  it automatically. It remains an orphan afterwards (build-time only) — keep it for future
+  rebuilds.
+- `-git` packages do NOT track dependency ABI changes: paru only auto-rebuilds them when
+  upstream gets new commits. "Qt bumps without upstream commits" is the recurring gap.
+
+### Prevention: post-update self-heal hook
+
+`hosts/cachyos-desktop.yaml` now sets:
+
+```yaml
+update_hooks:
+  pre_update: null
+  post_update: scripts/post-update.sh
+```
+
+The hook runs after every `dcli update`, checks `qs --private-check-compat`, and if the ABI
+check fails, rebuilds `aur/quickshell-git` non-interactively and notifies via
+`notify-send`. Log: `~/.local/state/dcli-quickshell-heal.log`. If the auto rebuild fails
+(e.g. sudo timestamp expired), fall back to the manual command above.
+
+The hook also refuses to run on top of `noctalia-qs` and bails with a critical notification
+instead, since rebuilding cannot succeed while the conflicting provider owns `quickshell`.
+
+#### `update_hooks` schema quirks
+
+`UpdateHooksConfig` has exactly four fields — `pre_update`, `post_update`, `devel`,
+`run_as_user`. **Unknown keys are silently ignored, not rejected.** A `behavior:` key inside
+`update_hooks` therefore does nothing at all: `dcli validate` passes with `behavior: ask`,
+with `behavior: always`, with `behavior: totally-bogus-value`, and with the key removed
+entirely. (`behavior` is real for *module* hooks — `hook_behavior` / `pre_hook_behavior` /
+`post_hook_behavior` in the module schema — which is the likely source of the confusion.)
+
+The practical consequence: **the post-update hook is not gated by any prompt — it always
+runs.** That is what you want for a health check, but do not expect an "ask" step.
+
+`run_as_user` matters here. paru refuses to build as root, and under root `$HOME` is `/root`,
+so the heal log would land in the wrong place and `notify-send` would never reach the user's
+session bus. The script re-execs itself via `runuser -u "$SUDO_USER"` as a backstop, but
+setting `run_as_user: true` is the correct configuration.

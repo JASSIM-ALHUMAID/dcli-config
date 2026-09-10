@@ -13,7 +13,6 @@ enabled_modules:
 - shell-end4pc
 - shell-omarchy
 - shell-xenon
-- shell-ml4w
 - shell-fish
 - terminal-wezterm
 - editor-neovim
@@ -57,10 +56,10 @@ services:
 enabled_service_profiles: []
 update_hooks:
   pre_update: null
-  post_update: null
+  post_update: scripts/post-update.sh
   behavior: ask
   devel: false
-  run_as_user: false
+  run_as_user: true
 default_apps:
   scope: system
   browser: zen

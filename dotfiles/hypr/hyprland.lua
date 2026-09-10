@@ -15,7 +15,6 @@ local shell_paths = {
     -- loader we own that dofile()s it — so it belongs here, not in ~/.local.
     omarchy   = hypr .. "/shells/omarchy/hyprland.lua",
     xenon     = hypr .. "/shells/xenon/hyprland.lua",
-    ml4w      = hypr .. "/shells/ml4w/hyprland.lua",
 }
 
 -- active.conf holds a bare shell name; older versions wrote a

@@ -1,8 +1,5 @@
 {
-  "blurTransition": true,
-  "windowPreview": true,
-  "wavyLine": true,
-  "rotateCoverArt": true,
-  "dashboardPersistTabs": true,
-  "dashboardMaxPersistentTabs": 2
+    "blurTransition": true,
+    "windowPreview": true,
+    "wavyLine": true
 }

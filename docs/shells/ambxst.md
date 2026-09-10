@@ -1,8 +1,10 @@
 # ambxst
 
 Custom fork of [Axenide/Ambxst](https://github.com/Axenide/Ambxst). It uses
-Quickshell (launched as `qs -p .../ambxst/shell.qml`) but installs itself through
-its own installer rather than a package.
+Quickshell, but since the upstream backend rewrite the entry point is a Go
+daemon (`/usr/local/bin/ambxst`, bare invocation) that supervises children —
+`qs -p .../ambxst/shell.qml`, `axctl daemon`, `wl-paste` — rather than a shell
+wrapper. It installs itself through its own installer rather than a package.
 
 | | |
 |---|---|
@@ -17,7 +19,7 @@ its own installer rather than a package.
 |---|---|
 | `~/.local/src/ambxst` | Fork checkout, **source of truth**. origin `plusdrag11/Ambxst`, upstream `Axenide/Ambxst`, branch `my-ambxst` |
 | `~/.local/share/ambxst` → `~/.local/src/ambxst` | Where `hyprland.lua` is loaded from |
-| `/usr/local/bin/ambxst` | Launcher written by the fork's `install.sh` (it sudos where needed) |
+| `/usr/local/bin/ambxst` | Go daemon binary installed by the fork's `install.sh` (it sudos where needed) |
 | `~/.config/ambxst` → `dotfiles/ambxst` | **dcli-managed** settings: `binds.json`, `config/`, `hypr-user.conf`, `presets/` |
 | `dotfiles/hypr/shells/ambxst-overrides.lua` | Local overrides, applied *after* the fork's own Lua |
 
@@ -59,17 +61,20 @@ Never call `ambxst quit` unguarded from a script.
 
 ## Trap: matching its processes
 
-The launcher `exec`s into `qs -p .../ambxst/shell.qml`, so the main process must be
-matched by command line (`pkill -f`), not by name — `pkill -x ambxst` only catches
-the wrapper before it execs. Helper processes appear as `bash`/`tail`, so they too
-need `-f` with a distinctive phrase. `switch-shell.sh` matches
-`ambxst/shell.qml`, `ambxst/cli.sh`, `ambxst_ipc`, `loginlock.sh` and
-`sleep_monitor.sh` for exactly this reason.
+The daemon supervises `qs -p .../ambxst/shell.qml` as a child, so the main UI
+process must be matched by command line (`pkill -f`), not by name — `pkill -x
+ambxst` / `-x axctl` catch only the daemon binaries. The IPC helper appears as
+`tail -f .../ambxst_ipc.pipe` (comm=tail), so it too needs `-f` with a
+distinctive phrase. `switch-shell.sh` matches `ambxst/shell.qml`, `ambxst`,
+`axctl` and `ambxst_ipc` for exactly this reason. (`cli.sh`, `loginlock.sh`
+and `sleep_monitor.sh` were removed upstream and match nothing anymore.)
 
-## Its own import path
+## Its own import path (historical)
 
-The launcher exports `QML2_IMPORT_PATH=~/.local/lib/qml` (note: **not**
-`~/.local/lib/qt6/qml`, which is caelestia's). The two do not collide.
+The old `cli.sh` wrapper exported `QML2_IMPORT_PATH=~/.local/lib/qml` (note:
+**not** `~/.local/lib/qt6/qml`, which is caelestia's). The Go daemon just
+passes its environment through, so no ambxst-specific import path is set
+anymore.
 
 ## Deps
 
@@ -106,14 +111,18 @@ to run.
 The fuzzel picker blurb calls it "Axenide · Astal", which is historical — it runs
 on Quickshell like the others.
 
-## Status (2026-07-25)
+## Status (2026-09-11)
 
-- **Up to date with `upstream/main`** (26 ahead with your customizations, 0 behind)
-  — the only fork here that is current.
-- Loads cleanly under `quickshell-git 0.3.0.r3` → `Configuration Loaded`.
+- Rebased on current `upstream/main` (backend rewrite: Go daemon + `axctl`
+  supervision); fork customizations re-applied as one commit plus fixes.
+- Loads cleanly under `quickshell-git` → `Configuration Loaded`.
 
-The `axctl-1000.sock` connect error seen in a bare `ambxst` test launch is just its
-daemon not being up yet; it is not a fault.
+The `[compositor] axctl socket ... did not appear` error means the backend's
+compositor feed is starved: `axctl` binds `/tmp/axctl-<uid>.sock` even with
+`XDG_RUNTIME_DIR` set, so anything waiting only on `$XDG_RUNTIME_DIR/axctl.sock`
+never connects — and the whole UI goes looks-no-functionality (empty
+workspaces, dead launcher dispatch). Fixed in the fork's
+`backend/pkg/svc/compositor/proc.go` (probe both paths, retry on timeout).
 
 ## Health check
 
