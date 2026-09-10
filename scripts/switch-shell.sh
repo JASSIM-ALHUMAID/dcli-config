@@ -1,5 +1,5 @@
 #!/bin/bash
-# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy | xenon | ml4w
+# Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy | xenon
 # Usage: switch-shell.sh [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
 #
@@ -17,7 +17,7 @@ flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon ml4w)
+KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon)
 
 # Where each shell's Lua config lives — must match hyprland.lua's shell_paths
 config_path() {
@@ -55,7 +55,7 @@ if [ -z "$SHELL_NAME" ]; then
     # omarchy is a .png on purpose: upstream's only SVG is a 1215x285 wordmark
     # in black, unusable at icon size on a dark picker. icon.png is the square
     # 300x300 logo. fuzzel 1.14 is built +png, so it loads either.
-    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png xenon.svg ml4w.svg)
+    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png xenon.svg)
     blurbs=("Material 3 · quickshell"
       "Axenide · Astal"
       "DankMaterialShell"
@@ -63,8 +63,7 @@ if [ -z "$SHELL_NAME" ]; then
       "illogical-impulse"
       "pctrade fork"
       "DHH · v4 quickshell"
-      "MannuVilasara · quickshell"
-      "MyLinuxForWork · quickshell")
+      "MannuVilasara · quickshell")
     args=(--dmenu --index)
     picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
     [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
@@ -174,26 +173,7 @@ kill_all_shells() {
   kill_matching -f "qs -c ii"
   kill_matching -f "qs -c end4-pC"
   kill_matching -f "qs -c xenon"
-  kill_matching -f "qs -c ml4w"
-  # ml4w's overview and settings app are separate `qs -p <path>` processes, so
-  # like ambxst and omarchy they have no config name to match on — anchor on the
-  # path. Killing only `qs -c ml4w` left both running on top of the next shell.
-  kill_matching -f "qs -p .*ml4w-overview"
-  kill_matching -f "qs -p .*ml4w-dotfiles-settings/quickshell"
-  # ml4w's daemons. Killing the quickshell process alone left these behind, so
-  # switching away from ml4w kept a second notification daemon and a second
-  # wallpaper daemon alive on top of the next shell. No other shell here starts
-  # either binary (grep the repo), so they are unambiguously ml4w's.
-  #
-  # swaync is the one that actually breaks things: it owns the
-  # org.freedesktop.Notifications bus name, so while it survives, the incoming
-  # shell's own notification daemon cannot take the name and notifications go to
-  # ml4w's popup — with no ml4w bar left to configure it from.
-  #
-  # nm-applet is deliberately NOT killed: it is a passive tray icon with no bus
-  # conflict, and it is commonly started at login by something outside dcli
-  # (ml4w's exec only starts it when absent). Killing it here would take out a
-  # process this script never started.
+  # Catch-all: no quickshell instance from any previous shell may linger
   kill_matching -x "swaync"
   kill_matching -f "awww-daemon"
   kill_matching -x "quickshell"
@@ -353,48 +333,6 @@ xenon)
     qs -c xenon &
     disown
   }
-  ;;
-ml4w)
-  pgrep -A -f "qs -c ml4w" >/dev/null 2>&1 || {
-    qs -c ml4w &
-    disown
-    # Theme.qml loads colors only via IPC (its onCompleted reload is disabled
-    # upstream), so trigger the reload once quickshell has registered the
-    # handler. Delayed so the failure-free path is silent.
-    #
-    # Re-check active.conf before firing: a switch away from ml4w inside the
-    # 2s window cannot cancel this subshell, so it would otherwise wake up and
-    # fire IPC at a shell that kill_all_shells just tore down.
-    ( sleep 2; grep -qx ml4w "$ACTIVE" 2>/dev/null \
-        && qs -c ml4w ipc call theme-manager reload >/dev/null 2>&1 ) &
-    disown
-  }
-  # The bar's notification/tray/wallpaper daemons are started from
-  # shells/ml4w/hyprland.lua's execs (login-only), so a mid-session switch
-  # would otherwise leave the bar's modules dead. Guarded like the shell so a
-  # switch never double-starts them.
-  pgrep -A -x swaync >/dev/null 2>&1 || { swaync & disown; }
-  pgrep -A -f "awww-daemon" >/dev/null 2>&1 || { awww-daemon & disown; }
-  pgrep -A -f "nm-applet" >/dev/null 2>&1 || { nm-applet --indicator & disown; }
-  # The overview and settings app are separate quickshell processes (see
-  # shells/ml4w/hyprland/execs.lua), started here too because exec-once does not
-  # re-fire on reload. Both are skipped when their path is missing so a partial
-  # install degrades to "that bind does nothing" instead of erroring on switch.
-  OVERVIEW_DIR="$HOME/.config/ml4w-overview"
-  SETTINGS_DIR="$HOME/.local/share/ml4w-dotfiles-settings/quickshell"
-  if [ -d "$OVERVIEW_DIR" ]; then
-    pgrep -A -f "qs -p .*ml4w-overview" >/dev/null 2>&1 || {
-      qs -p "$OVERVIEW_DIR" &
-      disown
-    }
-  fi
-  if [ -d "$SETTINGS_DIR" ]; then
-    pgrep -A -f "qs -p .*ml4w-dotfiles-settings/quickshell" >/dev/null 2>&1 || {
-      # PROFILE selects the settings.json under ~/.config/ml4w-dotfiles-settings.
-      PROFILE="com.ml4w.dotfiles" qs -p "$SETTINGS_DIR" &
-      disown
-    }
-  fi
   ;;
 esac
 

@@ -23,7 +23,7 @@
 set -euo pipefail
 
 DOTFILES="$HOME/.config/dcli/dotfiles"
-TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc matugen-ml4w fuzzel cava foot btop nvim yazi lazygit git environment.d)
+TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc fuzzel cava foot btop nvim yazi lazygit git environment.d)
 
 ts=$(date +%Y%m%d-%H%M%S)
 for name in "${TARGETS[@]}"; do

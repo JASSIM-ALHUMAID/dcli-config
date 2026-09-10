@@ -17,7 +17,7 @@ set -u
 
 SHELLS_DIR="$HOME/.config/hypr/shells"
 ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon ml4w)
+KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon)
 DCONF_KEY=/io/github/bluemancz/hyprmod/config-path
 
 # active.conf holds a bare shell name; older versions wrote a

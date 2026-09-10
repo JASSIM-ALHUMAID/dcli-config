@@ -12,8 +12,7 @@ at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 | [end4](end4.md) | `qs -c ii` | end-4 illogical-impulse, custom fork. |
 | [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, no local fork. |
 | [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (alpha). Checkout, not a package. Never run its `install.sh`. |
-| [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. Was installed system-wide; now user-scope. |
-| [ml4w](ml4w.md) | `qs -c ml4w` | mylinuxforwork/dotfiles (ML4W OS), no local fork. Checkout, not a package. |
+|| [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. Was installed system-wide; now user-scope. |
 
 ## The one rule that breaks everything
 
@@ -69,7 +68,6 @@ entirely**, so that problem is gone — see [noctalia.md](noctalia.md).
 | end4pc | `pctrade/end4-pC` | `main` | none — no personal fork |
 | omarchy | `basecamp/omarchy` | `quattro` | none — no personal fork |
 | xenon | `MannuVilasara/xenon-shell` | `main` | none — no personal fork |
-| ml4w | `mylinuxforwork/dotfiles` | `main` | none — no personal fork |
 
 All three forks pin their branch explicitly. **This matters:** the caelestia
 fork's *default* branch is `main` (a mirror of upstream), so a bare clone lands on
@@ -136,12 +134,12 @@ way past. These are **one global copy with many writers**:
 |---|---|
 | `gtk-{3,4}.0/gtk.css` | caelestia, ambxst, end4, end4pc |
 | `gtk-{3,4}.0/thunar.css`, `gtk-{3,4}.0/nautilus.css` | caelestia (both `@import`ed from its `gtk.css`) |
-| `gtk-{3,4}.0/settings.ini`, `.gtkrc-2.0` | caelestia, end4pc, dms, ml4w |
+| `gtk-{3,4}.0/settings.ini`, `.gtkrc-2.0` | caelestia, end4pc, dms |
 | gsettings `org.gnome.desktop.interface` (gtk/icon/colour/cursor/font) | caelestia, ambxst, end4, end4pc, omarchy, dms |
 | `qt5ct/`, `qt6ct/`, `Kvantum/` | ambxst, dms, end4pc; an omarchy migration *uninstalls* Kvantum |
 | `fuzzel/fuzzel.ini`, `fuzzel_theme.ini` | caelestia / end4 + end4pc |
 | `hypr/hyprlock/colors.conf` | only `matugen-end4pc` — one lock palette for all nine |
-| `swaync/style.css`, `rofi/`, `~/.cache/wal/` | ml4w / ambxst |
+| `swaync/style.css`, `rofi/`, `~/.cache/wal/` | ambxst |
 | `/etc/{chromium,brave}/policies/managed/*.json` | caelestia and omarchy, **via sudo** |
 
 `switch-shell.sh` used to handle processes only, so the desktop kept whichever
@@ -170,8 +168,8 @@ anything. Aim new shells at that standard.
   [caelestia.md](caelestia.md).
 * **Check its matugen invocation passes `-c`.** Bare `matugen` reads
   `~/.config/matugen`, a symlink into the end-4 checkout, so an unqualified call
-  regenerates *end4's* theme. ml4w shipped exactly that bug;
-  `scripts/patch-ml4w.sh` rewrites it, mirroring `scripts/patch-end4pc.sh`.
+  regenerates *end4's* theme.
+  `scripts/patch-end4pc.sh` rewrites it, mirroring the same pattern.
 * **Nothing tracked in git may be restored.** `shell-theme-state.sh` refuses to
   write a path that resolves to a tracked file, which is why
   `fuzzel/fuzzel_theme.ini` (a committed seed) is deliberately unmanaged.
@@ -181,18 +179,18 @@ anything. Aim new shells at that standard.
 `hl.on("hyprland.start", ...)` fires only at compositor start, **never on
 `hyprctl reload`** — and a switch is a reload. So on a mid-session switch
 nothing in any `hyprland/execs.lua` runs; only what `switch-shell.sh` launches
-explicitly does. It compensates for ml4w alone.
+explicitly does.
 
 | Daemon | Started at login by | On switch | Killed |
 |---|---|---|---|
-| `hyprpolkitagent` | dms, noctalia, xenon, end4pc, ml4w | no | no |
+| `hyprpolkitagent` | dms, noctalia, xenon, end4pc | no | no |
 | `hypridle` | end4, end4pc | no | no |
 | `gnome-keyring-daemon` | end4, end4pc | no | no |
-| `swaync` | ml4w | yes | **yes** |
+| `swaync` | — | yes | **yes** |
 | cliphist `wl-paste` pair | all nine | no | no |
 | `easyeffects`, geoclue | end4 | no | no |
 | `udiskie`, omarchy monitor-watch | omarchy | no | no |
-| `awww-daemon` | ml4w | yes | yes |
+| `awww-daemon` | — | yes | yes |
 | `mpvpaper` | end4, end4pc, ambxst, caelestia | no | no |
 
 Consequences to expect until this is addressed: **no polkit agent if end4,
@@ -232,8 +230,7 @@ have left the name unowned; the shell has to be restarted to claim it.
 
 `scripts/link-dotfiles.sh` now masks the unit, which blocks the activation path
 (`Could not activate remote peer ... unit is masked`, with no fallback to
-`Exec=`). ml4w is unaffected: `switch-shell.sh:376` starts it as
-`swaync & disown`, a direct exec that a masked unit does not block.
+`Exec=`).
 
 Diagnosing this class of problem — the toast you see is not from the shell you
 think — always starts with the name owner, never with the process list:
@@ -256,8 +253,7 @@ busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
 | caelestia | 3 behind | rebase by hand — see [caelestia.md](caelestia.md) |
 | omarchy | tracks upstream directly | `scripts/update-omarchy.sh` |
 | xenon | tracks upstream directly | `scripts/update-xenon.sh` |
-| ml4w | tracks upstream directly | `scripts/update-ml4w.sh` |
-
+||
 The update scripts only work where a plain fast-forward is possible. **caelestia
 has no update script on purpose**: it carries 32 local commits, and its last
 rebase is what reverted the plugin target name and broke the shell. It needs a

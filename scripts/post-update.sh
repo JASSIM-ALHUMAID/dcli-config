@@ -4,7 +4,7 @@
 # WHY: quickshell links Qt's *private* API (Qt_6_PRIVATE_API), which carries no
 # ABI guarantee even across patch releases. On 2026-08-22 a routine `dcli update`
 # moved qt6-base 6.11.1 -> 6.11.2 and every quickshell-based shell (caelestia,
-# ambxst, dms, end4, end4pc, ml4w, xenon) died at once with:
+# ambxst, dms, end4, end4pc, xenon) died at once with:
 #
 #   qs: symbol lookup error: undefined symbol:
 #       _ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API
