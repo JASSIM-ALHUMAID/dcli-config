@@ -68,7 +68,7 @@ echo "Done. Backups (if any) are at ~/.config/*.bak-$ts"
 # switch-shell.sh only tears swaync down on a *switch*; it cannot see a rogue
 # activation. See docs/PACKAGE-CONFLICTS.md and docs/shells/README.md.
 #
-# Masking is safe for ml4w: switch-shell.sh launches it as `swaync & disown`
+# Masking is safe: switch-shell.sh launches it as `swaync & disown`
 # (a direct exec), which a masked unit does not block. Only the D-Bus/systemd
 # activation path is blocked.
 if command -v systemctl >/dev/null 2>&1; then

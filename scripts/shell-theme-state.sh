@@ -11,7 +11,7 @@
 # are ONE global copy with six writers:
 #
 #   gtk-{3,4}.0/gtk.css      caelestia, ambxst, end4, end4pc
-#   gtk-{3,4}.0/settings.ini caelestia, end4pc, dms, ml4w
+#   gtk-{3,4}.0/settings.ini caelestia, end4pc, dms
 #   gsettings interface keys caelestia, ambxst, end4, end4pc, omarchy, dms
 #   qt5ct / qt6ct            ambxst, dms, end4pc
 #   gtk-{3,4}.0/thunar.css   caelestia (imported from gtk.css)
