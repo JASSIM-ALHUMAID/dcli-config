@@ -1,7 +1,7 @@
 # end4pc
 
-[pctrade/end4-pC](https://github.com/pctrade/end4-pC), a fork of end-4's
-dots-hyprland, run as an independent Quickshell config named `end4-pC`. It runs
+[plusdrag11/end4-pC](https://github.com/plusdrag11/end4-pC), a personal fork of
+[pctrade/end4-pC](https://github.com/pctrade/end4-pC), run as an independent Quickshell config named `end4-pC`. It runs
 **alongside** [end4](end4.md) without either interfering with the other — that
 separation is deliberate and took work.
 
@@ -18,7 +18,7 @@ separation is deliberate and took work.
 
 | Path | What |
 |---|---|
-| `~/.local/share/end4-pC` | Checkout, **source of truth**. origin `pctrade/end4-pC`, branch `main` — **no personal fork** |
+| `~/.local/share/end4-pC` | Checkout, **source of truth**. origin `plusdrag11/end4-pC` (personal fork), branch `my-end4pc`, upstream `pctrade/end4-pC` |
 | `~/.config/quickshell/end4-pC` → the checkout root | The repo root **is** the config (flat layout — no `dots/.config/...` wrapper like the `ii` fork) |
 | `~/.config/matugen-end4pc` | Its **own** matugen config — dcli-managed dotfile |
 | `~/.config/illogical-impulse-pC` | Runtime state, separate from end4's |
@@ -104,10 +104,8 @@ cd ~/.local/share/end4-pC && git status --porcelain | wc -l    # expect 14
 
 ## Status (2026-07-25)
 
-- **Up to date with `origin/main`** (`6354ea2`), after pulling the 17 commits it
-  had fallen behind. There is no personal fork, so `origin` *is* upstream and a
-  pull is a plain fast-forward with no local commits to rebase — which makes this
-  the lowest-risk shell to update.
+- Personal fork at `plusdrag11/end4-pC` (branch `my-end4pc`), forked from
+  `pctrade/end4-pC`. Has local commits — updates need a rebase like [end4](end4.md); see that page for the procedure.
 - Loads cleanly under `quickshell-git 0.3.0.r3` → `Configuration Loaded`.
 
 ## Health check

@@ -65,7 +65,7 @@ entirely**, so that problem is gone — see [noctalia.md](noctalia.md).
 | caelestia | `plusdrag11/caelestia` | `my-caelestia-rebased` | `caelestia-dots/shell` |
 | ambxst | `plusdrag11/Ambxst` | `my-ambxst` | `Axenide/Ambxst` |
 | end4 | `plusdrag11/dots-hyprland` | `my-ii` | `end-4/dots-hyprland` |
-| end4pc | `pctrade/end4-pC` | `main` | none — no personal fork |
+| end4pc | `plusdrag11/end4-pC` | `my-end4pc` | `pctrade/end4-pC` |
 | omarchy | `basecamp/omarchy` | `quattro` | none — no personal fork |
 | xenon | `MannuVilasara/xenon-shell` | `main` | none — no personal fork |
 
