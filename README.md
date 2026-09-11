@@ -297,6 +297,3 @@ reproduction:**
   uwsm (declared in `base.yaml`) → Hyprland. SDDM itself is not declared in dcli —
   on a fresh non-CachyOS machine install it separately; on CachyOS it is a default
   install.
-
-AUR helper is `paru`. AUR packages: `wezterm-nightly-bin`, `brave-nightly-bin`,
-`caelestia-shell`, `caelestia-cli`. CachyOS repo: `zen-browser-bin` (`cachyos-v3`).
