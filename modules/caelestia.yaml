@@ -2,7 +2,6 @@ description: Caelestia Shell - my custom fork (plusdrag11/caelestia)
 
 packages:
   - caelestia-cli
-  - caelestia-meta
   - caelestia-shell
 
 # Deliberately NOT here: papirus-folders.
