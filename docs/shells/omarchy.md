@@ -304,7 +304,7 @@ from the shell's idle service and needs nothing else.
 omarchy's package repo — build it from the official source instead:
 `cargo install --git https://github.com/omacom-io/ttfx --locked`. (2) Upstream
 `omarchy-launch-screensaver` hard-refuses unless the *default* terminal
-(`xdg-terminal-exec --print-id`) is alacritty/foot/ghostty/kitty — ours is
+(`xdg-terminal-exec --print-id`) is alacritty/foot/ghostty/kitty/wezterm — ours is
 wezterm. `scripts/omarchy-shims/omarchy-launch-screensaver` (on the shell's
 PATH ahead of the checkout bin, wired in switch-shell.sh) feeds the real
 script a private fake `xdg-terminal-exec` that answers `--print-id` with foot,

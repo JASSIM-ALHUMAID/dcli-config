@@ -10,7 +10,7 @@
 #       _ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API
 #
 # Nothing in dcli noticed: update_hooks were null, and `devel: false` means
-# `dcli update` never passes --devel. The only warning was CachyOS's own
+# `dcli update` never passes --devel. The only warning was the distribution's own
 # quickshell-check.hook printing the error mid-transaction, where it scrolled
 # past among 200 other upgrades. See docs/PACKAGE-CONFLICTS.md.
 
@@ -59,7 +59,7 @@ installed_name quickshell-git || exit 0
 command -v qs >/dev/null 2>&1 || exit 0
 
 # ── ABI check ────────────────────────────────────────────────────────────────
-# --private-check-compat is quickshell's own ABI probe — the same one CachyOS's
+# --private-check-compat is quickshell's own ABI probe — the same one the distribution's
 # quickshell-check.hook runs. Exits 0 when the binary matches the installed Qt.
 if qs --private-check-compat >/dev/null 2>&1; then
     exit 0
@@ -84,7 +84,7 @@ if ! sudo -v 2>/dev/null; then
     exit 1
 fi
 
-# `aur/` is REQUIRED. CachyOS dropped its own quickshell-git binary package, so
+# `aur/` is REQUIRED. the distribution dropped its own quickshell-git binary package, so
 # the bare name now resolves to the repo package noctalia-qs via its Provides,
 # and paru would offer to remove the real provider instead of rebuilding it.
 if "$helper" -S --rebuild --noconfirm aur/quickshell-git >>"$log" 2>&1 \

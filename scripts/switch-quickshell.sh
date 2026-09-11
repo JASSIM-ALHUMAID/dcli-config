@@ -46,7 +46,7 @@ provider_module() {
 }
 
 # What to hand the AUR helper. This is NOT the same as provider_pkg: since
-# 2026-08-22 CachyOS no longer ships a `quickshell-git` binary package, so the
+# 2026-08-22 the distribution no longer ships a `quickshell-git` binary package, so the
 # bare name resolves to the repo package `noctalia-qs` (Provides=quickshell-git),
 # which Conflicts with the real provider and would offer to remove it. The
 # `aur/` prefix forces the correct source. See docs/PACKAGE-CONFLICTS.md.

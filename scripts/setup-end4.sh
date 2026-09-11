@@ -82,7 +82,7 @@ QT_DEPS=(qt6-5compat qt6-imageformats qt6-multimedia
          qt6-translations qt6-virtualkeyboard qt6-wayland kirigami kdialog
          syntax-highlighting)
 
-# AUR-only deps (not in official/CachyOS repos) — installed via paru as the
+# AUR-only deps (not in official/distribution repos) — installed via paru as the
 # real user (AUR helpers refuse to run as root); skipped if paru is missing.
 AUR_DEPS=(qt6-avif-image-plugin songrec)
 

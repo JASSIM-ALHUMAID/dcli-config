@@ -56,8 +56,8 @@ before falling back to `pkill -f "dms run"`. (Contrast noctalia v5, which has no
   it rather than leaving it an implicit dependency.
 - A `GeoClue2 unavailable: The name is not activatable` warning at startup is
   normal here (no geoclue provider configured) and harmless.
-- Both `cachyos` and `extra` carry `dms-shell` at the same version; the `extra`
-  one lists `dms-shell-compositor` in its depends, the CachyOS one lists
+- Both `repo` and `extra` carry `dms-shell` at the same version; the `extra`
+  one lists `dms-shell-compositor` in its depends, the `extra` one lists
   `quickshell` directly. Either resolves fine.
 
 ## Status (2026-07-25)

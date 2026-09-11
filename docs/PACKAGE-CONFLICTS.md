@@ -1,7 +1,7 @@
 # Quickshell Provider Conflicts
 
 **Date:** 2026-07-25
-**System:** CachyOS + Hyprland + dcli
+**System:** Hyprland + dcli
 **Issue:** `paru -Syu` / `yay -Syu` fails with `quickshell-git and quickshell are in conflict`
 
 ---
@@ -25,7 +25,7 @@ A system update refuses to proceed:
 
 This is ordinary, correct dependency resolution — not a bug.
 
-> An earlier version of this document blamed "CachyOS repository metadata bugs" (a false
+> An earlier version of this document blamed "distribution repository metadata bugs" (a false
 > `Required By: dms-shell` on `quickshell-git` / `noctalia-qs`) and claimed an `IgnorePkg`
 > fix had been applied. Both claims were wrong:
 >
@@ -45,12 +45,12 @@ Several packages provide `quickshell`, and all of them are mutually exclusive:
 
 | Package | Repo | Provides | Conflicts With |
 |---|---|---|---|
-| `quickshell` | cachyos-extra-v3 / extra | — | — |
+|| `quickshell` | extra-v3 / extra | — | — |
 | `quickshell-git` | **AUR only** (see below) | `quickshell` | `quickshell` |
-| `noctalia-qs` | cachyos | `quickshell`, `quickshell-git` | `quickshell`, `quickshell-git` |
+|| `noctalia-qs` | repo | `quickshell`, `quickshell-git` | `quickshell`, `quickshell-git` |
 | `illogical-impulse-quickshell-git` | AUR (end-4) | `quickshell` | `quickshell` |
 
-> **Changed 2026-08-22:** CachyOS **dropped its own `quickshell-git` binary package**. It is
+> **Changed 2026-08-22:** the distribution **dropped its own `quickshell-git` binary package**. It is
 > now AUR-only, and `noctalia-qs` is the sole *repo* package claiming that name (via
 > `Provides`). Verify with:
 >
@@ -58,7 +58,7 @@ Several packages provide `quickshell`, and all of them are mutually exclusive:
 > $ pacman -Sii quickshell-git
 > error: package 'quickshell-git' was not found
 > $ pacman -Sp quickshell-git
-> .../cachyos/noctalia-qs-0.0.12-2-x86_64.pkg.tar.zst      # <- not what you want
+> .../extra/noctalia-qs-0.0.12-2-x86_64.pkg.tar.zst      # <- not what you want
 > $ pacman -Qm | grep quickshell
 > quickshell-git 0.3.1.r0.g1a4716c-1                        # foreign: no repo tracks it
 > ```
@@ -125,7 +125,7 @@ Once `quickshell-git` is explicitly declared by an enabled module, the provider 
 determined and the conflict never arises. There is no `IgnorePkg` entry and none is wanted.
 
 > **Amended 2026-08-22:** the second half of that no longer holds. Declaring the *name*
-> `quickshell-git` no longer determines the provider, because CachyOS dropped the repo
+> `quickshell-git` no longer determines the provider, because the distribution dropped its own
 > package and `noctalia-qs` now claims the name via `Provides`. The name is ambiguous again.
 >
 > It is not a live hazard while the package stays installed — `dcli sync` only installs what
@@ -252,7 +252,7 @@ qs -c caelestia -d
 Notes from this incident:
 
 - **Always use the `aur/` prefix.** Plain `paru -S --rebuild quickshell-git` resolves to the
-  CachyOS repo package `noctalia-qs` (`Provides: quickshell-git`) and prompts to remove the
+  > the distribution's repo package `noctalia-qs` (`Provides: quickshell-git`) and prompts to remove the
   AUR package caelestia depends on. Answering `y` there would have broken caelestia and
   desynced dcli's provider ownership.
 - Upstream had added **cli11** as a new build dependency since the last build; paru pulled

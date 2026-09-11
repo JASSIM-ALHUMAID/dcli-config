@@ -522,8 +522,8 @@ Check if a package is available in the AUR.
 
 **Example:**
 ```lua
-if dcli.package.aur_available("vscodium-bin") then
-    table.insert(packages, "vscodium-bin")
+if dcli.package.aur_available("zed") then
+    table.insert(packages, "zed")
 end
 ```
 

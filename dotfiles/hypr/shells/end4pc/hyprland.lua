@@ -5,7 +5,7 @@
 local terminal     = "wezterm-gui"
 local browser      = "brave-browser-nightly"
 local defaultBrowser = "zen-browser"
-local editor       = "codium"
+local editor       = "zed"
 local fileExplorer = "thunar"
 
 local sensitivity  = 0.3

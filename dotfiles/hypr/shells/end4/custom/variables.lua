@@ -4,4 +4,4 @@
 terminal = "wezterm-gui"
 fileManager = "thunar"
 browser = "brave-browser-nightly"
-codeEditor = "codium"
+codeEditor = "zed"

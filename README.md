@@ -2,7 +2,7 @@
 
 Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v0.2.2):
 packages, services, default apps, dotfiles, and bootstrap hooks for my
-CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
+Hyprland setup running my **custom Caelestia shell fork**, with
 **AMBXst**, **DankMaterialShell**, **Noctalia**, **end-4**, **end4-pC**,
 **omarchy**, **xenon** as alternate shells.
 
