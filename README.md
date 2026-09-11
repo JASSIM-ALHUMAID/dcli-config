@@ -6,6 +6,14 @@ Hyprland setup running my **custom Caelestia shell fork**, with
 **AMBXst**, **DankMaterialShell**, **Noctalia**, **end-4**, **end4-pC**,
 **omarchy**, **xenon** as alternate shells.
 
+**What this repo reproduces on a fresh machine:** the full session — SDDM login
+→ uwsm (declared in `base.yaml`) → Hyprland → your chosen shell. `dcli sync`
+installs everything: the Hyprland stack, all 9 shell checkouts, their dependencies
+(pacman + AUR via paru), dotfiles, and the switcher/theme-state scripts.
+The one thing it skips is the **Caelestia SDDM theme**, because that step needs
+`sudo` once — run `~/Projects/shell/real/scripts/install.sh` (without `--skip-sddm`)
+after the sync completes.
+
 ## What's in here
 
 | Piece | Where | Notes |
@@ -43,6 +51,10 @@ WezTerm config is mirrored in `dotfiles/wezterm/`; its own history lives at
    `scripts/switch-quickshell.sh`, never `dcli module enable` alone.
 3. Theming regenerates files that are committed here, so unexpected git changes
    after a wallpaper change are normal.
+4. `base.yaml` declares `uwsm` (the session starter) and the rest of the Hyprland
+   stack — nothing in the session needs to be installed by hand. The only thing
+   `dcli sync` does **not** do is the Caelestia SDDM theme, because it needs
+   `sudo` once. Everything else — packages, all 9 shells, dotfiles — is automatic.
 
 # Shell architecture
 
