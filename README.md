@@ -10,13 +10,13 @@ Hyprland setup running my **custom Caelestia shell fork**, with
 
 | Piece | Where | Notes |
 |---|---|---|
-|| Host config | `hosts/all-shells.yaml` | enabled modules, services, default apps |
+| Host config | `hosts/all-shells.yaml` | enabled modules, services, default apps |
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
-|| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-xenon.sh`, `setup-wezterm.sh` | clone + install each shell |
-|| Checkout patches | `scripts/patch-end4pc.sh` | repoint upstream checkouts at their own matugen/config paths; idempotent, re-run by the setup and update hooks |
-|| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh`, `scripts/update-omarchy.sh`, `scripts/update-xenon.sh` | pull latest fork checkouts (noctalia v5 updates via `dcli update`) |
-|| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc / omarchy / xenon |
+| Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-xenon.sh`, `setup-wezterm.sh` | clone + install each shell |
+| Checkout patches | `scripts/patch-end4pc.sh` | repoint upstream checkouts at their own matugen/config paths; idempotent, re-run by the setup and update hooks |
+| Updates | `scripts/update-end4.sh`, `scripts/update-end4pc.sh`, `scripts/update-omarchy.sh`, `scripts/update-xenon.sh` | pull latest fork checkouts (noctalia updates via `dcli update`, since it is a cachyos/extra package) |
+| Shell switcher | `scripts/switch-shell.sh` | switch between caelestia / ambxst / dms / noctalia / end4 / end4pc / omarchy / xenon |
 | Theme state | `scripts/shell-theme-state.sh` | per-shell snapshot/restore of the shared GTK/Qt/cursor surface, driven by the switcher |
 | Provider switcher | `scripts/switch-quickshell.sh` | swap the quickshell provider: stock ↔ quickshell-git |
 | Docs | `docs/` | see below |
@@ -67,20 +67,20 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.config/ambxst` → `dcli/dotfiles/ambxst` | AMBXst user config | `link-dotfiles.sh` |
 | `~/.local/share/dots-hyprland` | end-4 fork (`plusdrag11/dots-hyprland`) | `setup-end4.sh` |
 | `~/.config/quickshell/ii` → `dots-hyprland/dots/.config/quickshell/ii` | end-4's quickshell config | `setup-end4.sh` |
-| `~/.local/share/end4-pC` | end4-pC fork (`pctrade/end4-pC`, branch `main`) — the repo root *is* the quickshell config (flat layout) | `setup-end4pc.sh` |
+| `~/.local/share/end4-pC` | end4-pC fork (`plusdrag11/end4-pC`, branch `my-end4pc`, upstream `pctrade/end4-pC`) — the repo root *is* the quickshell config (flat layout) | `setup-end4pc.sh` |
 | `~/.config/quickshell/end4-pC` → `~/.local/share/end4-pC` | end4-pC's quickshell config | `setup-end4pc.sh` |
-| `/usr/bin/noctalia` (pkg `noctalia`) | Noctalia v5 binary — native C++/Wayland, no Quickshell | pacman/paru |
+| `/usr/bin/noctalia` (pkg `noctalia`, CachyOS `cachyos-extra-v3`) | Noctalia v5 binary — native C++/Wayland, no Quickshell | cachyos/extra (paru) |
 | `~/.config/noctalia` → `dcli/dotfiles/noctalia` | Noctalia v5 config (`config.toml`, TOML, hot-reloaded) | `link-dotfiles.sh` |
 | `/usr/bin/dms` (pkg `dms-shell`) | DankMaterialShell binary | pacman |
 | `~/.config/DankMaterialShell` → `dcli/dotfiles/DankMaterialShell` | DMS user config | `link-dotfiles.sh` |
 | `~/.local/share/omarchy` | omarchy checkout (`basecamp/omarchy`, branch `quattro`, v4.0.0.alpha) — this is `$OMARCHY_PATH`. Its `shell/` is the Quickshell shell and its `bin/` must be on `PATH` | `setup-omarchy.sh` |
 | `~/.config/omarchy` → `dcli/dotfiles/omarchy` | omarchy user config (`shell.json`, hooks, extensions) | `link-dotfiles.sh` |
-| `~/.local/state/omarchy` | omarchy's generated state (current theme, toggles, done markers) — machine-local, **not** in this repo | `omarchy-theme-set` |
+| `~/.local/state/omarchy` | omarchy's generated state (`current/theme`, `toggles/`, `done/`, `indicators/`, `agents/`, `workspace-layouts/`, `notifications/`, `clipboard-history.json`, `monitor-scaling.log`) — machine-local, **not** in this repo | `omarchy-theme-set` |
 | `~/.local/share/xenon-shell` | xenon checkout (`MannuVilasara/xenon-shell`, branch `main`) — the repo root *is* the quickshell config (flat layout) | `setup-xenon.sh` |
 | `~/.config/quickshell/xenon` → `~/.local/share/xenon-shell` | xenon's quickshell config; shadows the hand-made root clone still sitting at `/etc/xdg/quickshell/xenon` | `setup-xenon.sh` |
 | `~/.config/xenon` → `dcli/dotfiles/xenon` | xenon user config (`config.json`) — generated data stays in `~/.cache/xenon` | `link-dotfiles.sh` |
 | `/usr/bin/uwsm` (pkg `uwsm`, `base.yaml`) | User Workspace State Manager — starts the Hyprland session after SDDM login | `dcli sync` |
-| SDDM (`/etc/sddm.conf`, pkg `sddm`) + `/etc/sudoers.d/caelestia-sddm-sync` | display manager for Hyprland + NOPASSWD sudoers for the caelestia wallpaper sync script | `dcli sync` installs SDDM; theme + sudoers are **manual** (see below) |
+| SDDM (`/etc/sddm.conf`, pkg `sddm`) | display manager for Hyprland. NOT declared in any dcli module — on CachyOS it is a default install; on a fresh non-CachyOS machine, install it separately. `/etc/sudoers.d/caelestia-sddm-sync` (NOPASSWD sudoers for the caelestia wallpaper sync script) is set up by the caelestia fork's `install.sh` (without `--skip-sddm`) — see below. | manual / fork `install.sh` |
 
 Rule of thumb: `~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`
 anything this repo owns, so editing the live config edits the repo. The two
@@ -102,7 +102,7 @@ them, and [docs/NOTES.md](docs/NOTES.md) for machine-wide gotchas.
 | **end4** | `qs -c ii` | `shells/end4/hyprland.lua` (standalone) | `~/.config/quickshell/ii` |
 | **end4pc** | `qs -c end4-pC` | `shells/end4pc/hyprland.lua` (standalone) | `~/.config/quickshell/end4-pC` |
 | **omarchy** | `quickshell -n -p $OMARCHY_PATH/shell` | `shells/omarchy/hyprland.lua` — a **loader** that runs omarchy's own `default/hypr/*.lua`, then layers house tweaks | `~/.config/omarchy` |
-|| **xenon** | `qs -c xenon` | `shells/xenon/hyprland.lua` (standalone) | `~/.config/xenon` |
+| **xenon** | `qs -c xenon` | `shells/xenon/hyprland.lua` (standalone) | `~/.config/xenon` |
 
 caelestia, ambxst and omarchy ship complete Hyprland configs, so we load theirs
 and layer local tweaks on top. dms, noctalia, end4, end4pc and xenon don't
@@ -182,20 +182,21 @@ never with `dcli module enable` alone. Full details in
 
 Shells whose own fork packages are deliberately **not** pacman-installed:
 
-|- **end-4** — `illogical-impulse-quickshell-git` is a further conflicting provider.
+- **end-4** — `illogical-impulse-quickshell-git` is a further conflicting provider.
   `setup-end4.sh` runs the `ii` config on whichever provider is enabled, with the
-  extra qt6 deps installed separately. **end4-pC** (pctrade's fork) has the same
-  trap: `setup-end4pc.sh` installs the same dep set (all `--needed`, a no-op when
-  end4 already installed them).
-|- **Noctalia** — a plain `noctalia` package (CachyOS `cachyos-extra-v3`, v5).
+  extra qt6 deps installed separately. **end4-pC** (`plusdrag11/end4-pC`, branch
+  `my-end4pc`, upstream `pctrade/end4-pC`) has the same trap: `setup-end4pc.sh`
+  installs the same dep set (all `--needed`, a no-op when end4 already installed
+  them).
+- **Noctalia** — a plain `noctalia` package (CachyOS `cachyos-extra-v3`, v5).
   Ships native C++/Wayland; no longer touches Quickshell or Qt, so it belongs to
-  neither provider group. See [docs/shells/noctalia.md](docs/shells/noctalia.md).
-|- **omarchy** — lists `quickshell-git` in its own `install/omarchy-base.packages`;
+  neither provider group. Updates via `dcli update` (cachyos/extra).
+- **omarchy** — lists `quickshell-git` in its own `install/omarchy-base.packages`;
   `modules/shell-omarchy.yaml` deliberately omits it so the provider keeps exactly
   one owner. omarchy is not a package at all here: `setup-omarchy.sh` clones the
   repo and **never runs its `install.sh`**, which is a whole-distro installer that
   would overwrite dcli-symlinked configs. See [docs/shells/omarchy.md](docs/shells/omarchy.md).
-- **caelestia** — the `caelestia-shell` package is installed but entirely
+|- **caelestia** — the `caelestia-shell` package is installed but entirely
   shadowed: its QML by `~/.config/quickshell/caelestia`, its C++ plugin by
   `QML2_IMPORT_PATH`. The `caelestia` CLI used by scripts and keybinds is a
   *separate* package, `caelestia-cli`.
@@ -291,9 +292,11 @@ reproduction:**
   (`/etc/sudoers.d/caelestia-sddm-sync`). Needs sudo once.
 
 - **Everything else is automatic.** `dcli sync` handles all packages (pacman +
-  AUR via paru), all 9 shell checkouts, all dotfiles, uwsm (in `base.yaml`), SDDM
-  + xdg-desktop-portal-hyprland, and all hooks. The session is started by SDDM →
-  uwsm (declared in `base.yaml`) → Hyprland.
+  AUR via paru), all 9 shell checkouts, all dotfiles, uwsm (in `base.yaml`), and
+  `xdg-desktop-portal-hyprland` (in `base.yaml`). The session is started by SDDM →
+  uwsm (declared in `base.yaml`) → Hyprland. SDDM itself is not declared in dcli —
+  on a fresh non-CachyOS machine install it separately; on CachyOS it is a default
+  install.
 
 AUR helper is `paru`. AUR packages: `wezterm-nightly-bin`, `brave-nightly-bin`,
 `caelestia-shell`, `caelestia-cli`. CachyOS repo: `zen-browser-bin` (`cachyos-v3`).
