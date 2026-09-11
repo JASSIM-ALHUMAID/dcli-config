@@ -182,17 +182,15 @@ never with `dcli module enable` alone. Full details in
 
 Shells whose own fork packages are deliberately **not** pacman-installed:
 
-- **end-4** — `illogical-impulse-quickshell-git` is a further conflicting provider.
+|- **end-4** — `illogical-impulse-quickshell-git` is a further conflicting provider.
   `setup-end4.sh` runs the `ii` config on whichever provider is enabled, with the
   extra qt6 deps installed separately. **end4-pC** (pctrade's fork) has the same
   trap: `setup-end4pc.sh` installs the same dep set (all `--needed`, a no-op when
   end4 already installed them).
-- **Noctalia** — no longer a trap. v4 needed `noctalia-qs`, which conflicts with
-  *both* `quickshell` and `quickshell-git`, hence the old extract-to-`~/.local/opt`
-  workaround. **v5 dropped Quickshell and Qt entirely** (native C++/Wayland), so it
-  installs as the plain `noctalia` package and belongs to neither provider group.
-  `setup-noctalia.sh` is now a one-shot teardown of the v4 artifacts.
-- **omarchy** — lists `quickshell-git` in its own `install/omarchy-base.packages`;
+|- **Noctalia** — a plain `noctalia` package (CachyOS `cachyos-extra-v3`, v5).
+  Ships native C++/Wayland; no longer touches Quickshell or Qt, so it belongs to
+  neither provider group. See [docs/shells/noctalia.md](docs/shells/noctalia.md).
+|- **omarchy** — lists `quickshell-git` in its own `install/omarchy-base.packages`;
   `modules/shell-omarchy.yaml` deliberately omits it so the provider keeps exactly
   one owner. omarchy is not a package at all here: `setup-omarchy.sh` clones the
   repo and **never runs its `install.sh`**, which is a whole-distro installer that
@@ -261,7 +259,7 @@ Verify any config change with `hyprctl configerrors` — it is empty when clean.
 1. Install [dcli](https://gitlab.com/theblackdon) (build from source → `~/.local/bin/dcli`).
 2. Clone this repo:
    ```sh
-   git clone https://github.com/plusdrag11/dcli-config.git ~/.config/dcli
+   git clone https://github.com/JASSIM-ALHUMAID/dcli-config.git ~/.config/dcli
    ```
 3. Sync everything (installs packages, enables services, runs the module
    hooks — including `link-dotfiles.sh`, which symlinks `~/.config/<dir>` →
@@ -297,5 +295,5 @@ reproduction:**
   + xdg-desktop-portal-hyprland, and all hooks. The session is started by SDDM →
   uwsm (declared in `base.yaml`) → Hyprland.
 
-AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,
-brave-nightly-bin, caelestia-*) come from AUR/chaotic.
+AUR helper is `paru`. AUR packages: `wezterm-nightly-bin`, `brave-nightly-bin`,
+`caelestia-shell`, `caelestia-cli`. CachyOS repo: `zen-browser-bin` (`cachyos-v3`).
