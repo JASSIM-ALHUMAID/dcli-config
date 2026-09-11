@@ -2,6 +2,7 @@ description: WezTerm terminal emulator + my config (mirror of JASSIM-ALHUMAID/we
 
 packages:
   - wezterm-nightly-bin
+  - kitty
 
 # NOTE: flat YAML modules ignore `dotfiles:` keys (see link-dotfiles.sh) —
 # the key below is documentation only. The hook does the real work: it

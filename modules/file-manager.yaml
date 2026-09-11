@@ -6,7 +6,6 @@ packages:
   - thunar-volman
   - tumbler
   - yazi
-  - dolphin
   - file-roller
   - gvfs
 

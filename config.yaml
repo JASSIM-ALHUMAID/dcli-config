@@ -2,7 +2,7 @@
 # This file points to the active host configuration
 
 # Active host
-host: cachyos-desktop
+host: all-shells
 
 # Package manager
 package_manager: pacman

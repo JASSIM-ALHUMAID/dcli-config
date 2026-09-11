@@ -4,6 +4,7 @@ packages:
   - git
   - github-cli
   - lazygit
+  - github-desktop
   - rust
   - go
   - python

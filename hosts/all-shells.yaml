@@ -1,5 +1,5 @@
-host: cachyos-desktop
-description: CachyOS Hyprland Desktop with Caelestia Shell
+host: all-shells
+description: Hyprland desktop running all shells
 import: []
 enabled_modules:
 - base

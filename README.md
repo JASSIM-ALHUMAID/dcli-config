@@ -1,4 +1,4 @@
-# dcli config — cachyos-desktop
+# dcli config — all-shells
 
 Declarative system config managed with [dcli](https://gitlab.com/theblackdon) (v0.2.2):
 packages, services, default apps, dotfiles, and bootstrap hooks for my
@@ -10,7 +10,7 @@ CachyOS + Hyprland setup running my **custom Caelestia shell fork**, with
 
 | Piece | Where | Notes |
 |---|---|---|
-| Host config | `hosts/cachyos-desktop.yaml` | enabled modules, services, default apps |
+|| Host config | `hosts/all-shells.yaml` | enabled modules, services, default apps |
 | Modules | `modules/*.yaml` | packages + dotfile mappings per area |
 | Dotfiles | `dotfiles/` | symlinked to `~/.config/*` by `scripts/link-dotfiles.sh` |
 || Hooks | `scripts/setup-caelestia.sh`, `setup-ambxst.sh`, `setup-end4.sh`, `setup-end4pc.sh`, `setup-noctalia.sh`, `setup-omarchy.sh`, `setup-xenon.sh`, `setup-wezterm.sh` | clone + install each shell |

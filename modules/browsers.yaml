@@ -3,7 +3,6 @@ description: Web browsers and communication
 packages:
   - zen-browser-bin
   - brave-nightly-bin
-  - github-desktop
 
 # No dotfiles: browser profiles (~/.config/zen, ~/.config/BraveSoftware) are
 # hundreds of MB of per-machine/private data — use each browser's own sync.

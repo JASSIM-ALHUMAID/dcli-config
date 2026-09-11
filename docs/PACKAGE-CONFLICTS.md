@@ -263,7 +263,7 @@ Notes from this incident:
 
 ### Prevention: post-update self-heal hook
 
-`hosts/cachyos-desktop.yaml` now sets:
+`hosts/all-shells.yaml` now sets:
 
 ```yaml
 update_hooks:

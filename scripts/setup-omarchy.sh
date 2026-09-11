@@ -124,7 +124,7 @@ as_user mkdir -p "$STATE_DIR" "$STATE_DIR/toggles" "$STATE_DIR/done" "$CONF_DIR/
 #    `omarchy-theme-set` fans out to editors on every theme change; these flag
 #    files are omarchy's own opt-out (bin/omarchy-toggle-enabled), so we set
 #    them rather than patching the checkout — patches would block a ff pull.
-#    VSCodium is this machine's editor (hosts/cachyos-desktop.yaml default_apps).
+#    Neovim is this machine's default editor (hosts/all-shells.yaml default_apps).
 for t in skip-vscode-theme-changes skip-vscode-insiders-theme-changes \
          skip-codium-theme-changes skip-cursor-theme-changes; do
     as_user touch "$STATE_DIR/toggles/$t"
