@@ -56,15 +56,9 @@ before falling back to `pkill -f "dms run"`. (Contrast noctalia v5, which has no
   it rather than leaving it an implicit dependency.
 - A `GeoClue2 unavailable: The name is not activatable` warning at startup is
   normal here (no geoclue provider configured) and harmless.
-- Both `repo` and `extra` carry `dms-shell` at the same version; the `extra`
+- Both `repo` and `extra` carry `dms-shell` at the same version; the `repo`
   one lists `dms-shell-compositor` in its depends, the `extra` one lists
   `quickshell` directly. Either resolves fine.
-
-## Status (2026-07-25)
-
-- `dms-shell 1.5.2-1`, updated via `dcli update` like any package — nothing to
-  rebase or rebuild.
-- Loads cleanly under `quickshell-git 0.3.0.r3` → `Configuration Loaded`.
 
 ## Health check
 

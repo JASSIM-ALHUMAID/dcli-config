@@ -1,5 +1,4 @@
 # end4pc
-
 [plusdrag11/end4-pC](https://github.com/plusdrag11/end4-pC), a personal fork of
 [pctrade/end4-pC](https://github.com/pctrade/end4-pC), run as an independent Quickshell config named `end4-pC`. It runs
 **alongside** [end4](end4.md) without either interfering with the other — that
@@ -101,12 +100,6 @@ updating, the dirty set should match the patch script's file list exactly:
 ```bash
 cd ~/.local/share/end4-pC && git status --porcelain | wc -l    # expect 14
 ```
-
-## Status (2026-07-25)
-
-- Personal fork at `plusdrag11/end4-pC` (branch `my-end4pc`), forked from
-  `pctrade/end4-pC`. Has local commits — updates need a rebase like [end4](end4.md); see that page for the procedure.
-- Loads cleanly under `quickshell-git 0.3.0.r3` → `Configuration Loaded`.
 
 ## Health check
 

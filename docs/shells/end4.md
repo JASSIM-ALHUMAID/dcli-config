@@ -81,11 +81,6 @@ end4pc was repointed at its own `~/.config/matugen-end4pc` copy instead.
 Runtime state is separate (`~/.config/illogical-impulse` vs
 `~/.config/illogical-impulse-pC`), so the two coexist safely.
 
-## Status (2026-07-25)
-
-- **1 commit behind `upstream/main`**, 26 ahead (your customizations).
-- Loads cleanly under `quickshell-git 0.3.0.r3` → `Configuration Loaded`.
-
 ## Health check
 
 ```bash

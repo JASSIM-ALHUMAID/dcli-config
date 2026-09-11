@@ -129,18 +129,6 @@ the shell can produce a git diff here** even if you changed nothing (it
 reformats, and fills in keys it defaulted). That is expected, same as end4pc's
 matugen output; commit or discard as you like.
 
-## Status (2026-08-01)
-
-- Cloned at `c4bc400` (`feat: hide bar feature`), origin *is* upstream, so
-  updates are plain fast-forwards.
-- Loads cleanly: `Configuration Loaded`, config read from
-  `~/.config/xenon/config.json`.
-- Switch round-trip verified — `switch-shell.sh xenon` then back leaves no
-  `qs -c xenon` process behind, despite the missing quit IPC.
-- Startup warnings that are **normal on a fresh cache**: `wallpapers.json` /
-  `wallpreviews_large/*` missing until the wallpaper panel generates thumbnails
-  (needs `imagemagick`, installed), and the one `openrgb --list-devices` probe.
-
 ## Health check
 
 ```bash

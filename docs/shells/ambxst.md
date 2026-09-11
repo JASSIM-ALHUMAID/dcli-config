@@ -111,14 +111,7 @@ to run.
 The fuzzel picker blurb calls it "Axenide · Astal", which is historical — it runs
 on Quickshell like the others.
 
-## Status (2026-09-11)
-
-- Rebased on current `upstream/main` (backend rewrite: Go daemon + `axctl`
-  supervision); fork customizations re-applied as one commit plus fixes.
-- Loads cleanly under `quickshell-git` → `Configuration Loaded`.
-
 The `[compositor] axctl socket ... did not appear` error means the backend's
-compositor feed is starved: `axctl` binds `/tmp/axctl-<uid>.sock` even with
 `XDG_RUNTIME_DIR` set, so anything waiting only on `$XDG_RUNTIME_DIR/axctl.sock`
 never connects — and the whole UI goes looks-no-functionality (empty
 workspaces, dead launcher dispatch). Fixed in the fork's
