@@ -77,10 +77,12 @@ Nothing below is guesswork — these are the actual paths on a synced machine.
 | `~/.config/omarchy` → `dcli/dotfiles/omarchy` | omarchy user config (`shell.json`, hooks, extensions) | `link-dotfiles.sh` |
 | `~/.local/state/omarchy` | omarchy's generated state (current theme, toggles, done markers) — machine-local, **not** in this repo | `omarchy-theme-set` |
 | `~/.local/share/xenon-shell` | xenon checkout (`MannuVilasara/xenon-shell`, branch `main`) — the repo root *is* the quickshell config (flat layout) | `setup-xenon.sh` |
-|| `~/.config/quickshell/xenon` → `~/.local/share/xenon-shell` | xenon's quickshell config; shadows the hand-made root clone still sitting at `/etc/xdg/quickshell/xenon` | `setup-xenon.sh` |
-|| `~/.config/xenon` → `dcli/dotfiles/xenon` | xenon user config (`config.json`) — generated data stays in `~/.cache/xenon` | `link-dotfiles.sh` |
+| `~/.config/quickshell/xenon` → `~/.local/share/xenon-shell` | xenon's quickshell config; shadows the hand-made root clone still sitting at `/etc/xdg/quickshell/xenon` | `setup-xenon.sh` |
+| `~/.config/xenon` → `dcli/dotfiles/xenon` | xenon user config (`config.json`) — generated data stays in `~/.cache/xenon` | `link-dotfiles.sh` |
+| `/usr/bin/uwsm` (pkg `uwsm`, `base.yaml`) | User Workspace State Manager — starts the Hyprland session after SDDM login | `dcli sync` |
+| SDDM (`/etc/sddm.conf`, pkg `sddm`) + `/etc/sudoers.d/caelestia-sddm-sync` | display manager for Hyprland + NOPASSWD sudoers for the caelestia wallpaper sync script | `dcli sync` installs SDDM; theme + sudoers are **manual** (see below) |
 
-Rule of thumb: **`~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`** for
+Rule of thumb: `~/.config/<x>` is a symlink into `dcli/dotfiles/<x>`
 anything this repo owns, so editing the live config edits the repo. The two
 deliberate exceptions are `~/.config/caelestia` (symlink into the fork, which
 
@@ -275,6 +277,25 @@ Verify any config change with `hyprctl configerrors` — it is empty when clean.
    `CAELESTIA_LIB_DIR`) applies, then pick a shell with
    `scripts/switch-shell.sh [caelestia|ambxst|dms|noctalia|end4|end4pc|omarchy|xenon]`.
    (omarchy needs no relogin — it resolves its own paths.)
+
+**After `dcli sync` on a fresh machine — one more step for a full CachyOS/Arch
+reproduction:**
+
+- **Caelestia SDDM theme + wallpaper sync** — `dcli sync` installs the shell +
+  plugin but skips the SDDM theme (it needs `sudo`). From the caelestia clone
+  (`~/Projects/shell/real`), run the full installer **without** `--skip-sddm`:
+  ```sh
+  cd ~/Projects/shell/real
+  ./scripts/install.sh
+  ```
+  This installs the SDDM lockscreen theme to `/usr/share/sddm/themes/caelestia/`,
+  configures wallpaper auto-sync via `cli.json`, and sets up the sudoers drop-in
+  (`/etc/sudoers.d/caelestia-sddm-sync`). Needs sudo once.
+
+- **Everything else is automatic.** `dcli sync` handles all packages (pacman +
+  AUR via paru), all 9 shell checkouts, all dotfiles, uwsm (in `base.yaml`), SDDM
+  + xdg-desktop-portal-hyprland, and all hooks. The session is started by SDDM →
+  uwsm (declared in `base.yaml`) → Hyprland.
 
 AUR helper is `paru`; several packages (wezterm-nightly-bin, zen-browser-bin,
 brave-nightly-bin, caelestia-*) come from AUR/chaotic.
