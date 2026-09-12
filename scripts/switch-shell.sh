@@ -194,13 +194,16 @@ kill_all_shells() {
   # the whole invocation, not just "omarchy/shell", which would also match an
   # editor holding a file from the checkout open.
   kill_matching -f "quickshell -n -p .*omarchy/shell"
+  # omarchy-launch-shell supervises quickshell and respawns it on any exit —
+  # kill the supervisor too or the shell comes right back.
+  kill_matching -f "omarchy-launch-shell"
   # Old quickshell wallpaper scripts from previous configs
   kill_matching -f "switchwall.sh"
   # Catch-all: no quickshell instance from any previous shell may linger
   killall -q qs quickshell 2>/dev/null
   # Wait briefly for OS to reclaim resources from killed processes
   local i=0
-  while [ $i -lt 5 ] && pgrep -A -f "qs -c|quickshell|ambxst|noctalia|dms run|omarchy/shell" >/dev/null 2>&1; do
+  while [ $i -lt 5 ] && pgrep -A -f "qs -c|quickshell|ambxst|noctalia|dms run|omarchy/shell|omarchy-launch-shell" >/dev/null 2>&1; do
     sleep 0.1
     i=$((i + 1))
   done
