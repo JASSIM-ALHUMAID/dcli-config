@@ -105,7 +105,8 @@ is_writable_target() {
 
     top=$(git -C "$resolved" rev-parse --show-toplevel 2>/dev/null) || return 0
     [ -n "$top" ] || return 0
-    local inrepo="${resolved#"$top"/}/$(basename "$abs")"
+    local inrepo
+    inrepo="${resolved#"$top"/}/$(basename "$abs")"
     if git -C "$top" check-ignore -q "$inrepo" 2>/dev/null; then
         return 0 # gitignored — generated output, safe to churn
     fi

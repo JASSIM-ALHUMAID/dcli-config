@@ -15,23 +15,13 @@
 
 set -u
 
-SHELLS_DIR="$HOME/.config/hypr/shells"
-ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon)
-DCONF_KEY=/io/github/bluemancz/hyprmod/config-path
+# Shared registry + active.conf parser (KNOWN, SHELL_RECORDS, current_shell) —
+# resolved off this script's real path so the script works from any cwd or
+# through a symlink.
+# shellcheck source=lib/shell-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/shell-common.sh"
 
-# active.conf holds a bare shell name; older versions wrote a
-# "source = ~/.config/hypr/shells/<name>.conf" line, still accepted here.
-current_shell() {
-  [ -f "$ACTIVE" ] || {
-    echo none
-    return
-  }
-  local src
-  src=$(grep -m1 -v '^[[:space:]]*\(#.*\)\?$' "$ACTIVE" |
-    sed 's/^source[[:space:]]*=[[:space:]]*//; s/.*shells\///; s/\.conf.*//; s/\.lua.*//; s/[[:space:]]*$//')
-  echo "${src:-none}"
-}
+DCONF_KEY=/io/github/bluemancz/hyprmod/config-path
 
 FORCE=0
 SHELL_NAME=""
@@ -60,6 +50,10 @@ command -v dconf >/dev/null 2>&1 || {
   exit 1
 }
 
+# TERM→death wait for the running hyprmod (20 × 0.1s).
+TERM_POLL_ITERS=20
+TERM_POLL_INTERVAL=0.1
+
 # Single-instance GTK app: a second `hyprmod` just activates the running
 # window, which keeps the managed path it started with. Refuse unless forced.
 # -A (--ignore-ancestors) per the repo convention; the process command line is
@@ -67,9 +61,9 @@ command -v dconf >/dev/null 2>&1 || {
 if pgrep -A -f 'bin/hyprmod' >/dev/null 2>&1; then
   if [ "$FORCE" = 1 ]; then
     pkill -A -TERM -f 'bin/hyprmod' # clean quit: hyprmod routes TERM to app.quit()
-    for _ in $(seq 20); do
+    for _ in $(seq "$TERM_POLL_ITERS"); do
       pgrep -A -f 'bin/hyprmod' >/dev/null 2>&1 || break
-      sleep 0.1
+      sleep "$TERM_POLL_INTERVAL"
     done
   else
     echo "hyprmod is already running (pinned to its launch-time shell)."
@@ -94,8 +88,10 @@ disown
 # hyprmod reloads the compositor on window construction; shells that keep
 # their binds in a permanently-active "global" submap lose them on any bare
 # reload. Re-enter it after the reload settles (same dance as switch-shell.sh).
+# Wait for hyprmod's construction-time reload to land before re-entering.
+RELOAD_SETTLE_SECS=3
 (
-  sleep 3
+  sleep "$RELOAD_SETTLE_SECS"
   if hyprctl binds | grep -qE '^[[:space:]]*submap: global$'; then
     hyprctl dispatch 'hl.dsp.submap("global")' >/dev/null 2>&1 || hyprctl dispatch submap global
   fi

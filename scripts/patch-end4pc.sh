@@ -119,6 +119,10 @@ rewrite scripts/hyprland/hyprconfigurator.py \
     "hypr/shells/end4pc/overrides/main.lua" "${OVERRIDE_SED[@]}"
 
 # 3) Monitor layout written by the settings app's Displays page.
+# The tilde needle below is literal upstream QML text (MonitorConfigOption.qml
+# stores "~/..." in its config), NOT a path bash should expand — hence the
+# inline SC2088, keeping the global gate strict.
+# shellcheck disable=SC2088
 rewrite modules/common/models/hyprland/MonitorConfigOption.qml \
     "~/.config/hypr/shells/end4pc/monitors.lua" \
     's|~/.config/hypr/shells/end4pc/monitors.lua|~/.config/hypr/monitors.lua|g' \

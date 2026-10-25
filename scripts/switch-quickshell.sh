@@ -135,9 +135,11 @@ echo ":: Switching quickshell provider to $TARGET ($TARGET_PKG)"
 # doesn't leave a half-dead shell against a replaced library.
 if [ -x "$REPO_DIR/scripts/switch-shell.sh" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
   echo ":: Stopping running shells first"
-  pkill -f "qs -c" 2>/dev/null
-  pkill -x quickshell 2>/dev/null
-  pkill -f "dms run" 2>/dev/null
+  # -A (--ignore-ancestors) per the repo rule (switch-shell.sh:kill_matching):
+  # with -f, any ancestor whose command line contains the pattern is a hit.
+  pkill -A -f "qs -c" 2>/dev/null
+  pkill -A -x quickshell 2>/dev/null
+  pkill -A -f "dms run" 2>/dev/null
 fi
 
 # 1) dcli module state — disable the outgoing provider before enabling the

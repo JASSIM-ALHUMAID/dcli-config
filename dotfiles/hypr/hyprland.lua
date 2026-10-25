@@ -19,6 +19,8 @@ local shell_paths = {
 
 -- active.conf holds a bare shell name; older versions wrote a
 -- "source = ~/.config/hypr/shells/<name>.conf" line, still accepted here.
+-- Cross-reference: the bash parsers of this same contract live in the dcli
+-- repo, scripts/lib/shell-common.sh — keep the accepted forms in sync there.
 local function read_active_shell()
     local f = io.open(hypr .. "/shells/active.conf", "r")
     if not f then return "caelestia" end
@@ -46,14 +48,22 @@ local function file_exists(path)
     return true
 end
 
+-- Failures go to stderr — Hyprland surfaces config stderr on reload — rather
+-- than failing silently and leaving the shell colorless with zero diagnostics.
 local function copy(src, dst)
     local input = io.open(src, "r")
-    if not input then return end
-    local out = io.open(dst, "w")
-    if out then
-        out:write(input:read("*a"))
-        out:close()
+    if not input then
+        io.stderr:write("hyprland.lua: copy: cannot read " .. src .. "\n")
+        return
     end
+    local out = io.open(dst, "w")
+    if not out then
+        io.stderr:write("hyprland.lua: copy: cannot write " .. dst .. "\n")
+        input:close()
+        return
+    end
+    out:write(input:read("*a"))
+    out:close()
     input:close()
 end
 

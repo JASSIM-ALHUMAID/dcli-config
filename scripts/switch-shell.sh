@@ -10,14 +10,18 @@
 
 set -u
 
-# Prevent concurrent runs — only one switch-shell at a time
+# ── Single-instance lock ─────────────────────────────────────────────────────
+# Prevent concurrent runs — only one switch-shell at a time. The fd number is
+# bash-allocated (fd operands cannot come from expansion) and carried in LOCK_FD.
 LOCKFILE="/tmp/switch-shell.lock"
-exec 200>"$LOCKFILE"
-flock -n 200 || { echo "switch-shell.sh: another instance is running"; exit 1; }
+exec {LOCK_FD}>"$LOCKFILE"
+flock -n "$LOCK_FD" || { echo "switch-shell.sh: another instance is running"; exit 1; }
 
-SHELLS_DIR="$HOME/.config/hypr/shells"
-ACTIVE="$SHELLS_DIR/active.conf"
-KNOWN=(caelestia ambxst dms noctalia end4 end4pc omarchy xenon)
+# Shared registry + active.conf parser (KNOWN, SHELL_RECORDS, current_shell) —
+# resolved off this script's real path so the script works from any cwd or
+# through a symlink.
+# shellcheck source=lib/shell-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/shell-common.sh"
 
 # Where each shell's Lua config lives — must match hyprland.lua's shell_paths
 config_path() {
@@ -28,42 +32,26 @@ config_path() {
   esac
 }
 
-# active.conf holds a bare shell name; older versions wrote a
-# "source = ~/.config/hypr/shells/<name>.conf" line, still accepted here.
-current_shell() {
-  [ -f "$ACTIVE" ] || {
-    echo none
-    return
-  }
-  local src
-  src=$(grep -m1 -v '^[[:space:]]*\(#.*\)\?$' "$ACTIVE" |
-    sed 's/^source[[:space:]]*=[[:space:]]*//; s/.*shells\///; s/\.conf.*//; s/\.lua.*//; s/[[:space:]]*$//')
-  echo "${src:-none}"
-}
-
+# ── Target selection ─────────────────────────────────────────────────────────
 SHELL_NAME="${1:-}"
 
 # No argument: fuzzel picker (marks and preselects the current shell)
 if [ -z "$SHELL_NAME" ]; then
   if command -v fuzzel >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
     cur=$(current_shell)
-    # Real per-shell logo (SVG) + blurb, index-aligned with KNOWN. The logos
-    # are committed under dotfiles/fuzzel/shell-icons and land at
-    # ~/.config/fuzzel/shell-icons via the fuzzel dir symlink. Rendered by
+    # Real per-shell logo + blurb, split out of the shared registry's records
+    # (name|icon|blurb — see shell-common.sh for the set and why omarchy is a
+    # .png). The logos are committed under dotfiles/fuzzel/shell-icons and land
+    # at ~/.config/fuzzel/shell-icons via the fuzzel dir symlink. Rendered by
     # fuzzel's dmenu icon protocol (label\0icon\x1f<abs-path>, libresvg).
     icon_dir="$HOME/.config/fuzzel/shell-icons"
-    # omarchy is a .png on purpose: upstream's only SVG is a 1215x285 wordmark
-    # in black, unusable at icon size on a dark picker. icon.png is the square
-    # 300x300 logo. fuzzel 1.14 is built +png, so it loads either.
-    icon_files=(caelestia.svg ambxst.svg dms.svg noctalia.svg end4.svg end4pc.svg omarchy.png xenon.svg)
-    blurbs=("Material 3 · quickshell"
-      "Axenide · Astal"
-      "DankMaterialShell"
-      "v5 · native, no Qt"
-      "illogical-impulse"
-      "pctrade fork"
-      "DHH · v4 quickshell"
-      "MannuVilasara · quickshell")
+    icon_files=()
+    blurbs=()
+    for record in "${SHELL_RECORDS[@]}"; do
+      IFS='|' read -r _ icon blurb <<<"$record"
+      icon_files+=("$icon")
+      blurbs+=("$blurb")
+    done
     args=(--dmenu --index)
     picker_ini="$HOME/.config/fuzzel/shell-picker.ini"
     [ -f "$picker_ini" ] && args+=(--config "$picker_ini") || args+=(--prompt "shell> ")
@@ -107,6 +95,7 @@ fi
 
 PREV_SHELL=$(current_shell)
 
+# ── Shared theming surface ───────────────────────────────────────────────────
 # Per-shell snapshot/restore of the SHARED app theming surface (GTK, Qt, cursor,
 # Thunar's colours, rofi). Those are one global copy that six of the nine shells
 # overwrite, so without this the desktop keeps whichever look the last shell to
@@ -123,6 +112,12 @@ theme_state() {
   "$helper" "$1" "$2" || true
 }
 
+# ── Teardown ─────────────────────────────────────────────────────────────────
+# TERM→KILL escalation and reap-wait limits (10 × 0.1s ≈ 1s; 5 × 0.1s ≈ 0.5s).
+TERM_POLL_ITERS=10
+TERM_POLL_INTERVAL=0.1
+REAP_POLL_ITERS=5
+
 # TERM first, escalate to KILL only for survivors. Patterns must be
 # anchored (-x exact name, or -f with a distinctive phrase) so unrelated
 # processes (e.g. an editor with an ambxst file open) are never matched.
@@ -138,9 +133,9 @@ kill_matching() {
   pkill -A "$flag" "$pattern" 2>/dev/null || return 0
   # Poll up to 1s, bail immediately when process exits
   local i=0
-  while [ $i -lt 10 ]; do
+  while [ "$i" -lt "$TERM_POLL_ITERS" ]; do
     pgrep -A "$flag" "$pattern" >/dev/null 2>&1 || return 0
-    sleep 0.1
+    sleep "$TERM_POLL_INTERVAL"
     i=$((i + 1))
   done
   # Still alive after 1s — escalate to KILL
@@ -203,12 +198,13 @@ kill_all_shells() {
   killall -q qs quickshell 2>/dev/null
   # Wait briefly for OS to reclaim resources from killed processes
   local i=0
-  while [ $i -lt 5 ] && pgrep -A -f "qs -c|quickshell|ambxst|noctalia|dms run|omarchy/shell|omarchy-launch-shell" >/dev/null 2>&1; do
-    sleep 0.1
+  while [ "$i" -lt "$REAP_POLL_ITERS" ] && pgrep -A -f "qs -c|quickshell|ambxst|noctalia|dms run|omarchy/shell|omarchy-launch-shell" >/dev/null 2>&1; do
+    sleep "$TERM_POLL_INTERVAL"
     i=$((i + 1))
   done
 }
 
+# ── Switch over ──────────────────────────────────────────────────────────────
 # Snapshot the OUTGOING shell before anything is torn down — its theming has to
 # be captured while it is still the live one. Skipped when the target is already
 # active, so re-running the switch cannot overwrite a good snapshot with itself.
@@ -221,6 +217,10 @@ kill_all_shells
 # Point active.conf at the chosen shell (read by ~/.config/hypr/hyprland.lua)
 printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME" >"$ACTIVE"
 
+# ── Submap reset + reload ────────────────────────────────────────────────────
+# Settle wait after `hyprctl reload` before the submap re-entry below.
+RELOAD_SETTLE_SECS=0.2
+
 # Clear any leaked config-parser submap state before reloading: caelestia's
 # KeybindApplier applies its JSON binds via `hyprctl keyword submap global;
 # keyword bind ...` and that parser state persists, so without this reset the
@@ -229,7 +229,7 @@ printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME
 # ("keyword can't work with non-legacy parsers"), so this is best-effort.
 hyprctl keyword submap reset >/dev/null 2>&1
 hyprctl reload
-sleep 0.2
+sleep "$RELOAD_SETTLE_SECS"
 
 # Shells that keep their static binds in a permanently-active "global" submap
 # need it re-entered; root-level binds go dead if a submap is left active.
@@ -247,6 +247,7 @@ else
   hyprctl dispatch 'hl.dsp.submap("reset")' >/dev/null 2>&1 || hyprctl dispatch submap reset
 fi
 
+# ── Theme replay ─────────────────────────────────────────────────────────────
 # Replay the incoming shell's theming. After the reload so it is not undone by
 # it, and before the launch below so the shell reads the restored files at
 # startup; GTK/Qt apps already running pick the gsettings keys up live. A shell
@@ -255,13 +256,16 @@ if [ "$PREV_SHELL" != "$SHELL_NAME" ]; then
   theme_state restore "$SHELL_NAME"
 fi
 
+# ── Launch ───────────────────────────────────────────────────────────────────
 # Release the lock before launching background processes — they inherit
-# fd 200 and would hold the lock open after this script exits.
-exec 200>&-
+# the lock fd (LOCK_FD) and would hold the lock open after this script exits.
+exec {LOCK_FD}>&-
 
 # Launch. dms and noctalia are exec-once'd from their shell conf, but
 # exec-once does not re-fire on `hyprctl reload`, so start them here too
 # (guarded so a fresh login doesn't double-start them).
+# Settle wait between starting ambxst and re-asserting its monitor scale.
+AMBXST_MONITOR_SETTLE_SECS=1
 case "$SHELL_NAME" in
 caelestia)
   pgrep -A -f "qs -c caelestia" >/dev/null 2>&1 || {
@@ -282,7 +286,7 @@ ambxst)
     # puts it back at scale 1 on the next reload.
     ambxst &
     disown
-    sleep 1
+    sleep "$AMBXST_MONITOR_SETTLE_SECS"
     hyprctl eval 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })' >/dev/null 2>&1
   }
   ;;
