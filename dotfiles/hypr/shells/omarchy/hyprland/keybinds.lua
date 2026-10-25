@@ -35,3 +35,12 @@ hl.bind("CTRL + ALT + B", hl.dsp.exec_cmd("blueman-manager"))
 -- Terminal alias. omarchy has SUPER+T on float-toggle, so unbind first.
 hl.unbind("SUPER + T")
 hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
+
+-- Scrolling layout column width. omarchy puts SUPER+ALT+LEFT/RIGHT on
+-- "move window into group l/r" — freed for this, matching the caelestia
+-- width scheme now in hyprmod.lua: the binds cycle its explicit_column_widths
+-- (0.35, 0.5, 0.65, 0.95, 1.0) rather than stepping by a fixed delta.
+hl.unbind("SUPER + ALT + LEFT")
+hl.unbind("SUPER + ALT + RIGHT")
+hl.bind("SUPER + ALT + LEFT",  hl.dsp.layout("colresize -conf"))
+hl.bind("SUPER + ALT + RIGHT", hl.dsp.layout("colresize +conf"))

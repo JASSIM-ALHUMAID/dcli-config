@@ -112,6 +112,7 @@ local script_dir = debug.getinfo(1, "S").source:match("^@(.*/)") or (home .. "/.
 
 dofile(script_dir .. "hyprland/monitor.lua")
 dofile(script_dir .. "hyprland/input.lua")
+dofile(script_dir .. "hyprland/animations.lua")
 dofile(script_dir .. "hyprland/keybinds.lua")
 
 -- Runtime toggle state and workspace layouts. Last, exactly as in omarchy's own
