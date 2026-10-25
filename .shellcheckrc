@@ -1,0 +1,6 @@
+# Lint gate: shellcheck scripts/*.sh  (see AGENTS.md → Gates)
+#
+# SC2016: single-quoted programs passed to sed/grep keep $VAR literal on
+# purpose — patch-end4pc.sh rewrites literal text inside upstream checkouts,
+# and expansion there would corrupt the patches.
+disable=SC2016

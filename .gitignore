@@ -1,3 +1,7 @@
+# Standards kit (project-standards skill) — local machine tooling, never synced
+AGENTS.md
+devfiles/
+
 # System packages merged from host (auto-generated, host-specific)
 system-packages-*.yaml
 
