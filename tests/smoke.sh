@@ -8,6 +8,11 @@
 #   lib   — fixture test of shell-common.sh:current_shell() against a temp
 #           active.conf (bare name, legacy "source =" line, comments-only,
 #           missing file)
+#   registry — dotfiles/hypr/shells/registry parses to the 8 shells in picker
+#           order; config-path lookup; an unusable registry fails loudly
+#   lifecycle — every registry name has a MATCH_SPECS entry and a launch_<name>
+#           in switch-shell.sh, and `switch-shell.sh --dry-run <name>` exits 0
+#           and touches nothing (fixture HOME + XDG_RUNTIME_DIR)
 #   drift — every modules/*.yaml `dotfiles:` source must be a link-dotfiles.sh
 #           TARGETS entry or an ALLOWED_DIVERGENCE entry below
 #
@@ -100,6 +105,85 @@ expect_current_shell "comments-only file" \
 
 # nothing active" "none"
 expect_current_shell "missing file" MISSING "none"
+
+# ── registry: the shell list is a data file ────────────────────────────────
+EXPECTED_SHELLS="caelestia ambxst dms noctalia end4 end4pc omarchy xenon"
+got=$(bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && echo "${KNOWN[*]}"')
+if [ "$got" = "$EXPECTED_SHELLS" ]; then
+    ok "registry: parses to 8 names in order"
+else
+    bad "registry: want '$EXPECTED_SHELLS', got '$got'"
+fi
+
+got=$(HOME=/h bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && shell_config_path caelestia && shell_config_path dms')
+if [ "$got" = "/h/.local/share/caelestia/hypr/hyprland.lua
+/h/.config/hypr/shells/dms/hyprland.lua" ]; then
+    ok "registry: shell_config_path resolves ~/ and hypr-relative records"
+else
+    bad "registry: shell_config_path wrong: $got"
+fi
+
+# Fixture registry via SHELL_REGISTRY — the same override path doctor/tests use.
+fixture_registry="$fixture_home/registry"
+printf '# comment\n\nalpha|shells/alpha/hyprland.lua|a.svg|Alpha\nbeta|~/b/hyprland.lua|b.svg|Beta\n' >"$fixture_registry"
+got=$(SHELL_REGISTRY="$fixture_registry" bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && echo "${KNOWN[*]}"')
+if [ "$got" = "alpha beta" ]; then
+    ok "registry: SHELL_REGISTRY fixture, comments and blanks skipped"
+else
+    bad "registry: fixture parse got '$got'"
+fi
+
+if err=$(SHELL_REGISTRY="$fixture_home/nonexistent" bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh"; echo "rc=$? known=${#KNOWN[@]}"' 2>&1) &&
+    grep -q 'not readable' <<<"$err" && grep -q 'rc=1 known=0' <<<"$err"; then
+    ok "registry: missing file fails loudly with empty KNOWN"
+else
+    bad "registry: missing-file behaviour wrong: $err"
+fi
+
+printf 'broken|only-two\n' >"$fixture_registry"
+if SHELL_REGISTRY="$fixture_registry" bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh"' >/dev/null 2>&1; then
+    bad "registry: malformed record was accepted"
+else
+    ok "registry: malformed record rejected"
+fi
+
+# ── lifecycle: switch-shell.sh table covers every registry name ──────────────
+SWITCH="$REPO_DIR/scripts/switch-shell.sh"
+for name in $EXPECTED_SHELLS; do
+    if grep -q "^launch_${name}()" "$SWITCH" && grep -q "^  \[${name}\]=" "$SWITCH"; then
+        ok "lifecycle: $name has launch_$name and a MATCH_SPECS entry"
+    else
+        bad "lifecycle: $name lacks launch_$name or a MATCH_SPECS entry in switch-shell.sh"
+    fi
+done
+
+# --dry-run must not touch anything: fixture HOME with every shell config
+# present, a pre-existing active.conf, and an empty runtime dir (no lock file).
+dry_home="$fixture_home/dry"
+dry_runtime="$fixture_home/dry-runtime"
+mkdir -p "$dry_home/.config/hypr/shells" "$dry_runtime"
+for name in $EXPECTED_SHELLS; do
+    config=$(HOME="$dry_home" bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && shell_config_path '"$name")
+    mkdir -p "$(dirname "$config")"
+    : >"$config"
+done
+printf 'omarchy\n' >"$dry_home/.config/hypr/shells/active.conf"
+tree_state() { (cd "$dry_home" && find . "$dry_runtime" -printf '%p %s %T@\n' | sort; cat .config/hypr/shells/active.conf); }
+before=$(tree_state)
+for name in $EXPECTED_SHELLS; do
+    if out=$(HOME="$dry_home" XDG_RUNTIME_DIR="$dry_runtime" "$SWITCH" --dry-run "$name" 2>&1) &&
+        grep -q "launch_$name" <<<"$out" && [ "$(tree_state)" = "$before" ]; then
+        ok "lifecycle: switch-shell.sh --dry-run $name exits 0, touches nothing"
+    else
+        bad "lifecycle: switch-shell.sh --dry-run $name failed or modified the fixture"
+    fi
+done
+
+if [ -x "$REPO_DIR/scripts/doctor.sh" ] && "$REPO_DIR/scripts/doctor.sh" --versions | grep -q '^| Hyprland '; then
+    ok "doctor.sh --versions prints the stack table"
+else
+    bad "doctor.sh missing, not executable, or --versions broken"
+fi
 
 # ── drift: modules/*.yaml dotfiles: vs link-dotfiles.sh TARGETS ─────────────
 # The YAML `dotfiles:` keys are documentation only — dcli silently ignores
