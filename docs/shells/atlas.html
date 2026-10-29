@@ -258,7 +258,7 @@
 <header>
   <div class="kicker">~/.config/dcli</div>
   <h1>dcli Shell Atlas</h1>
-  <p class="lede">Nine Hyprland desktop shells live side by side on one CachyOS machine and swap at
+  <p class="lede">Eight Hyprland desktop shells live side by side on one CachyOS machine and swap at
   runtime — no relogin, no package churn. This page maps each one: <strong>where it is installed,
   where its configs live, how it launches, and how it updates.</strong></p>
 
@@ -267,15 +267,16 @@
     <div class="arrow">→</div>
     <div class="stage"><b>shells/active.conf</b><span>a bare shell name — the single switch the whole system pivots on</span></div>
     <div class="arrow">→</div>
-    <div class="stage"><b>hypr/hyprland.lua</b><span>reads active.conf and <code>dofile()</code>s that shell's Lua config from its <code>shell_paths</code> table</span></div>
+    <div class="stage"><b>hypr/hyprland.lua</b><span>reads active.conf and <code>dofile()</code>s that shell's Lua config, looked up in <code>shells/registry</code> (the same file the scripts read)</span></div>
     <div class="arrow">→</div>
     <div class="stage"><b>the shell process</b><span>started by the script itself (exec-once never re-fires on reload), guarded by pgrep</span></div>
   </div>
 
   <div class="rule"><b>The one rule that breaks everything:</b> exactly one Quickshell provider may be
   installed. Every packaged fork declares <code>Conflicts=quickshell</code>. The provider here is
-  <code>quickshell-git</code> (module <code>shells-quickshell-git</code>) — it <em>provides</em>
-  <code>quickshell</code>, so all Quickshell-based shells resolve and run under it. Swap providers only
+  <code>quickshell-git</code> (AUR, module <code>shells-quickshell-git</code>) — it <em>provides</em>
+  <code>quickshell</code>, so all Quickshell-based shells resolve and run under it. Stock
+  <code>quickshell</code> 0.3.2 is a pending experiment. Swap providers only
   with <code>scripts/switch-quickshell.sh</code>, never by enabling modules by hand.</div>
 
   <nav aria-label="Shells">
@@ -288,37 +289,37 @@
 <table>
   <thead><tr><th>Shell</th><th>Launch</th><th>Source</th><th>Installed at</th><th>Update with</th></tr></thead>
   <tbody>
-    <tr><td><a href="#caelestia">caelestia</a> <span class="badge b-fork">custom fork</span></td><td><code>caelestia shell -d</code></td><td>AUR pkgs + local C++ build</td><td class="path">~/Projects/shell/real</td><td>rebase by hand</td></tr>
+    <tr><td><a href="#caelestia">caelestia</a> <span class="badge b-fork">custom fork</span></td><td><code>caelestia shell -d</code></td><td>fork + local C++ build (no <code>caelestia-shell</code> package)</td><td class="path">~/Projects/shell/real</td><td>rebase by hand (<code>update-shells.sh --status</code> reports)</td></tr>
     <tr><td><a href="#ambxst">ambxst</a> <span class="badge b-fork">custom fork</span></td><td><code>ambxst</code></td><td>fork's own installer</td><td class="path">~/.local/src/ambxst</td><td>fork's installer</td></tr>
-    <tr><td><a href="#dms">dms</a> <span class="badge b-pkg">package</span></td><td><code>dms run</code></td><td><code>dms-shell</code> + <code>dgop</code></td><td class="path">pacman-owned</td><td><code>dcli update</code></td></tr>
-    <tr><td><a href="#noctalia">noctalia</a> <span class="badge b-native">native C++</span></td><td><code>noctalia</code></td><td>AUR source build</td><td class="path">pacman-owned</td><td><code>dcli update</code></td></tr>
-    <tr><td><a href="#end4">end4</a> <span class="badge b-fork">custom fork</span></td><td><code>qs -c ii</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/dots-hyprland</td><td><code>update-end4.sh</code></td></tr>
-    <tr><td><a href="#end4pc">end4pc</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c end4-pC</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/end4-pC</td><td><code>update-end4pc.sh</code></td></tr>
+    <tr><td><a href="#dms">dms</a> <span class="badge b-pkg">package</span></td><td><code>dms run</code></td><td><code>dux-shell</code></td><td class="path">pacman-owned</td><td><code>dcli update</code></td></tr>
+    <tr><td><a href="#noctalia">noctalia</a> <span class="badge b-native">native C++</span></td><td><code>noctalia</code></td><td><code>noctalia</code> 5.4.0 (extra)</td><td class="path">pacman-owned</td><td><code>dcli update</code></td></tr>
+    <tr><td><a href="#end4">end4</a> <span class="badge b-fork">custom fork</span></td><td><code>qs -c ii</code></td><td>fork checkout, deps in module</td><td class="path">~/.local/share/dots-hyprland</td><td><code>update-end4.sh</code></td></tr>
+    <tr><td><a href="#end4pc">end4pc</a> <span class="badge b-fork">custom fork</span></td><td><code>qs -c end4-pC</code></td><td>fork checkout, deps in module</td><td class="path">~/.local/share/end4-pC</td><td><code>update-end4pc.sh</code></td></tr>
     <tr><td><a href="#omarchy">omarchy</a> <span class="badge b-checkout">checkout</span></td><td><code>quickshell -n -p …/shell</code></td><td>checkout, never its installer</td><td class="path">~/.local/share/omarchy</td><td><code>update-omarchy.sh</code></td></tr>
-    <tr><td><a href="#xenon">xenon</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c xenon</code></td><td>checkout, deps by hook</td><td class="path">~/.local/share/xenon-shell</td><td><code>update-xenon.sh</code></td></tr>
+    <tr><td><a href="#xenon">xenon</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c xenon</code></td><td>checkout, deps in module</td><td class="path">~/.local/share/xenon-shell</td><td><code>update-xenon.sh</code></td></tr>
   </tbody>
 </table>
 </div>
 <p class="legend">Badges say where the code comes from: <span class="badge b-fork">custom fork</span> tracks a personal
-fork (<code>plusdrag11/…</code>) with local commits, <span class="badge b-checkout">checkout</span> tracks upstream
+fork (<code>JASSIM-ALHUMAID/my-…</code>) with local commits, <span class="badge b-checkout">checkout</span> tracks upstream
 directly with no fork, <span class="badge b-pkg">package</span> is pacman-managed, and
 <span class="badge b-native">native C++</span> is the one shell with no Quickshell at all. In path rows,
 "→" means a symlink.</p>
 
-<h2>The nine shells</h2>
+<h2>The shells</h2>
 
 <section class="shell" id="caelestia">
   <div class="shell-head"><h3>caelestia</h3><span class="badge b-fork">custom fork</span><span class="launch">caelestia shell -d</span></div>
   <p>Fork of <strong>caelestia-dots/shell</strong>, and the most maintenance-heavy shell here: it is the only
   one whose C++ plugin is compiled locally, and that plugin is the source of every serious breakage so far.
-  Hard-requires the <code>quickshell-git</code> provider.</p>
+  The fork's README asks for the <code>quickshell-git</code> provider; stock is an untested experiment.</p>
   <dl class="paths">
-    <dt>Source</dt><dd class="path">~/Projects/shell/real — origin <code>plusdrag11/caelestia</code>, branch <code>my-caelestia-rebased</code> (the fork's default branch is a plain upstream mirror; the branch must be pinned)</dd>
-    <dt>Installed QML</dt><dd class="path">~/.config/quickshell/caelestia (overrides the package's /etc/xdg copy)</dd>
-    <dt>C++ plugin</dt><dd class="path">~/.local/lib/qt6/qml/{Caelestia,M3Shapes} (overrides the package's /usr/lib copy)</dd>
+    <dt>Source</dt><dd class="path">~/Projects/shell/real — origin <code>JASSIM-ALHUMAID/my-caelestia</code> (upstream <code>caelestia-dots/shell</code>), branch <code>my-caelestia</code> (the fork's default branch is a plain upstream mirror; the branch must be pinned)</dd>
+    <dt>Installed QML</dt><dd class="path">~/.config/quickshell/caelestia (the live QML config)</dd>
+    <dt>C++ plugin</dt><dd class="path">~/.local/lib/qt6/qml/{Caelestia,M3Shapes} (found via QML2_IMPORT_PATH; no caelestia-shell package is installed)</dd>
     <dt>Config</dt><dd class="path">~/.config/caelestia → the fork's <code>caelestia-configs</code> (version-controlled inside the fork, not in dcli)</dd>
     <dt>Hyprland</dt><dd class="path">~/.local/share/caelestia/hypr/hyprland.lua — supplied by the checkout, not this repo</dd>
-    <dt>Update</dt><dd>no script on purpose — 32 local commits mean a real rebase, rebuild, and verify</dd>
+    <dt>Update</dt><dd>no script on purpose — local commits mean a real rebase, rebuild, and verify</dd>
   </dl>
   <ul class="notes">
     <li><span class="trap">trap</span>CMake target must stay <code>qml_module(caelestia-core</code> — a rebase reverted it once and Qt aborted with "Cannot add multiple registrations".</li>
@@ -332,11 +333,11 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   <code>install.sh</code>, which writes the launcher to <code>/usr/local/bin/ambxst</code> — the one shell
   binary that is neither pacman's nor dcli's.</p>
   <dl class="paths">
-    <dt>Source</dt><dd class="path">~/.local/src/ambxst — origin <code>plusdrag11/Ambxst</code>, branch <code>my-ambxst</code></dd>
+    <dt>Source</dt><dd class="path">~/.local/src/ambxst — origin <code>JASSIM-ALHUMAID/my-Ambxst</code> (upstream <code>Axenide/Ambxst</code>), branch <code>my-ambxst</code></dd>
     <dt>Runtime link</dt><dd class="path">~/.local/share/ambxst → the checkout (where its hyprland.lua loads from)</dd>
     <dt>Config</dt><dd class="path">~/.config/ambxst → dotfiles/ambxst — dcli-managed: binds.json, config/, presets/</dd>
-    <dt>Hyprland</dt><dd class="path">its own hyprland.lua from the checkout, then dotfiles/hypr/shells/ambxst-overrides.lua layered on top (monitor scale, us,ara layout, pointer accel)</dd>
-    <dt>Update</dt><dd>re-run the fork's installer</dd>
+    <dt>Hyprland</dt><dd class="path">its own hyprland.lua from the checkout, then dotfiles/hypr/shells/ambxst-overrides.lua layered on top (pulls in the shared common/ layer: monitor, us,ara input, scrolling, gestures)</dd>
+    <dt>Update</dt><dd>a development fork — reported by <code>update-shells.sh --status</code>, never pulled; the fork's installer for dependencies</dd>
   </dl>
   <ul class="notes">
     <li><span class="trap">trap</span>Rewrites the monitor config at startup; switch-shell.sh re-applies scale 1 a second later.</li>
@@ -345,12 +346,12 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
 </section>
 
 <section class="shell" id="dms">
-  <div class="shell-head"><h3>dms — DankMaterialShell</h3><span class="badge b-pkg">package</span><span class="launch">dms run</span></div>
+  <div class="shell-head"><h3>dms — Dux Shell (ex-DankMaterialShell)</h3><span class="badge b-pkg">package</span><span class="launch">dms run</span></div>
   <p>The only shell with <strong>no fork and no build step</strong> — fully packaged, lowest maintenance,
-  and the control case: when everything breaks at once and dms breaks too, the problem is the provider or
+  and the control case: when everything breaks at once and dms breaks too, the problem is the provider, Qt or
   Hyprland, not a fork.</p>
   <dl class="paths">
-    <dt>Packages</dt><dd><code>dms-shell</code>, <code>dgop</code> (+ <code>dms-shell-hyprland</code> as compositor backend)</dd>
+    <dt>Packages</dt><dd><code>dux-shell</code> 2.0.0 (replaced <code>dms-shell</code> on 2026-10-30; CLI is still <code>dms</code>). Its packaged <code>dms.service</code> must stay disabled</dd>
     <dt>Config</dt><dd class="path">~/.config/DankMaterialShell → dotfiles/DankMaterialShell — dcli-managed</dd>
     <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/dms/hyprland.lua — standalone, in this repo (+ hyprmod.lua overlay from the HyprMod GUI)</dd>
     <dt>IPC</dt><dd><code>dms ipc call &lt;object&gt; &lt;method&gt;</code> — spotlight, clipboard, notifications, settings, powermenu, lock</dd>
@@ -367,14 +368,13 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   The only shell immune to the provider conflict. Its v4 ancestor needed <code>noctalia-qs</code>, the worst
   of the Quickshell forks; all of that machinery is gone.</p>
   <dl class="paths">
-    <dt>Package</dt><dd><code>noctalia</code> (AUR, source build via paru) — 5.0.0 beta</dd>
+    <dt>Package</dt><dd><code>noctalia</code> 5.4.0 stable (<code>extra</code>)</dd>
     <dt>Config</dt><dd class="path">~/.config/noctalia/config.toml → dotfiles/noctalia — TOML, hot-reloaded via inotify, hand-ported from v4 (v5 does not read v4's settings.json)</dd>
     <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/noctalia/hyprland.lua — standalone, in this repo</dd>
-    <dt>Setup hook</dt><dd><code>setup-noctalia.sh</code> — v4 teardown only (removes the old extracted fork and its wrapper)</dd>
     <dt>Update</dt><dd><code>dcli update</code></dd>
   </dl>
   <ul class="notes">
-    <li><span class="trap">trap</span>Upstream's <code>example.toml</code> on main is ahead of the released beta — always <code>noctalia config validate</code> after editing.</li>
+    <li><span class="trap">trap</span>Upstream's <code>example.toml</code> on main can be ahead of the released build — always <code>noctalia config validate</code> after editing.</li>
   </ul>
 </section>
 
@@ -382,14 +382,14 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   <div class="shell-head"><h3>end4 — illogical impulse</h3><span class="badge b-fork">custom fork</span><span class="launch">qs -c ii</span></div>
   <p>end-4's <strong>dots-hyprland</strong>, run from a personal fork as the Quickshell config named
   <code>ii</code>. Its upstream installer is never run: it would install a conflicting Quickshell provider
-  and replace the whole hypr stack with -git builds. The setup hook installs the fork's extra deps itself.</p>
+  and replace the whole hypr stack with -git builds. The fork's extra deps are declared as module packages.</p>
   <dl class="paths">
-    <dt>Source</dt><dd class="path">~/.local/share/dots-hyprland — origin <code>plusdrag11/dots-hyprland</code>, branch <code>my-ii</code></dd>
+    <dt>Source</dt><dd class="path">~/.local/share/dots-hyprland — origin <code>JASSIM-ALHUMAID/my-end4</code> (upstream <code>end-4/dots-hyprland</code>), branch <code>my-ii</code></dd>
     <dt>QS config</dt><dd class="path">~/.config/quickshell/ii → checkout's dots/.config/quickshell/ii</dd>
     <dt>Theming</dt><dd class="path">~/.config/matugen → the checkout — this shell <em>owns</em> the matugen path</dd>
     <dt>State</dt><dd class="path">~/.config/illogical-impulse — written by the shell itself</dd>
-    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/end4/hyprland.lua — standalone, in this repo</dd>
-    <dt>Update</dt><dd><code>update-end4.sh</code> (fast-forward only)</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/end4/hyprland.lua — end4's own tree + custom/ overrides, plus the settings app's shellOverrides/main.lua</dd>
+    <dt>Update</dt><dd><code>update-end4.sh</code> (fast-forward only; <code>update-shells.sh end4</code>)</dd>
   </dl>
   <ul class="notes">
     <li>The two config symlinks point into the checkout and are not dcli <code>dotfiles:</code> entries — a dotfiles sync must not replace them.</li>
@@ -397,20 +397,20 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
 </section>
 
 <section class="shell" id="end4pc">
-  <div class="shell-head"><h3>end4pc</h3><span class="badge b-checkout">checkout</span><span class="launch">qs -c end4-pC</span></div>
-  <p><strong>pctrade/end4-pC</strong>, a fork of end-4's dots, run as an independent config alongside end4
+  <div class="shell-head"><h3>end4pc</h3><span class="badge b-fork">custom fork</span><span class="launch">qs -c end4-pC</span></div>
+  <p><strong>JASSIM-ALHUMAID/my-end4-pC</strong>, a personal fork of <strong>pctrade/end4-pC</strong> (itself a fork of end-4's dots), run as an independent config alongside end4
   without either touching the other — that separation took deliberate work, because upstream expects the
   <code>~/.config/matugen</code> path that end4 already owns.</p>
   <dl class="paths">
-    <dt>Source</dt><dd class="path">~/.local/share/end4-pC — upstream <code>main</code>, no personal fork</dd>
+    <dt>Source</dt><dd class="path">~/.local/share/end4-pC — origin <code>JASSIM-ALHUMAID/my-end4-pC</code>, branch <code>my-end4pc</code>, upstream <code>pctrade/end4-pC</code></dd>
     <dt>QS config</dt><dd class="path">~/.config/quickshell/end4-pC → the checkout root (flat layout — the repo root <em>is</em> the config)</dd>
     <dt>Theming</dt><dd class="path">~/.config/matugen-end4pc — its own matugen config, dcli-managed</dd>
     <dt>State</dt><dd class="path">~/.config/illogical-impulse-pC — separate from end4's</dd>
     <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/end4pc/hyprland.lua — standalone, in this repo</dd>
-    <dt>Update</dt><dd><code>update-end4pc.sh</code> — pulls, then re-runs <code>patch-end4pc.sh</code></dd>
+    <dt>Update</dt><dd><code>update-end4pc.sh</code> — runs <code>git checkout -- .</code> (discards uncommitted work; <code>update-shells.sh</code> refuses a dirty tree), pulls, re-runs <code>patch-end4pc.sh</code></dd>
   </dl>
   <ul class="notes">
-    <li><span class="trap">trap</span>Every upstream pull restores upstream's matugen paths — <code>patch-end4pc.sh</code> (idempotent) must re-run after any manual pull, or end4pc and end4 start fighting over one directory.</li>
+    <li><span class="trap">trap</span>The fork now carries the path rewrites as commits, so <code>patch-end4pc.sh</code> is currently a no-op safety net; re-run it after merging from upstream, or end4pc and end4 can fight over one matugen directory.</li>
   </ul>
 </section>
 
@@ -457,13 +457,14 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
 <h2>Cross-cutting rules</h2>
 <ul class="notes">
   <li><strong>Hyprland loads <code>hyprland.conf</code> or <code>hyprland.lua</code>, never both.</strong> This machine is all-Lua; under a Lua config <code>hyprctl keyword</code> is rejected — use <code>hyprctl eval 'hl.…'</code>.</li>
-  <li><strong>Two shells bring their own Hyprland config</strong> (caelestia, ambxst — from their checkouts); six use standalone configs in this repo; omarchy is the hybrid loader.</li>
+  <li><strong>Two shells bring their own Hyprland config</strong> (caelestia, ambxst — from their checkouts); the rest use configs in this repo that share the <code>common/</code> layer; omarchy is the hybrid loader.</li>
   <li><strong>SUPER+SPACE is reserved everywhere</strong> for the us/ara keyboard-layout toggle; launchers live on a Super tap or SUPER+D per shell. <strong>SUPER+SHIFT+O is the way out</strong> — it opens the shell picker from any shell.</li>
   <li><strong>Per-shell Hyprland settings GUI:</strong> <code>scripts/edit-hypr.sh [shell]</code> retargets HyprMod at the shell's managed overlay, <code>dotfiles/hypr/shells/&lt;name&gt;/hyprmod.lua</code>.</li>
   <li><strong>Stale processes are the usual "new shell looks broken" cause</strong> — anything in <code>pgrep -a -f "qs -c|quickshell|ambxst|dms run|noctalia"</code> that isn't the active shell shouldn't be there.</li>
-  <li><strong>Adding a shell touches four index-aligned things:</strong> <code>KNOWN</code>, <code>icon_files</code>, <code>blurbs</code> in switch-shell.sh, and <code>lines=</code> in the fuzzel picker config.</li>
+  <li><strong>Adding a shell</strong> is a record in <code>dotfiles/hypr/shells/registry</code> plus per-script entries (switch-shell.sh MATCH_SPECS/launch, update-shells.sh, doctor.sh, link-dotfiles.sh) and <code>lines=</code> in the fuzzel picker config — the full checklist is in docs/ARCHITECTURE.md.</li>
+  <li><strong>Health:</strong> <code>scripts/doctor.sh</code> (read-only), <code>scripts/update-shells.sh --status</code>, <code>bash tests/smoke.sh</code>.</li>
 </ul>
 
-<footer>Generated 2026-08-13 from <code>~/.config/dcli</code> — sources: docs/shells/*.md, modules/*.yaml,
-scripts/switch-shell.sh. The per-shell markdown docs remain the authoritative deep-dives.</footer>
+<footer>Updated 2026-10-30 from <code>~/.config/dcli</code> — sources: docs/shells/*.md, modules/*.yaml,
+scripts/switch-shell.sh, dotfiles/hypr/shells/registry. The per-shell markdown docs remain the authoritative deep-dives.</footer>
 </main>

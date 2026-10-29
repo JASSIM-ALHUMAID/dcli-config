@@ -7,12 +7,12 @@ therefore the only one immune to the provider conflict.
 | | |
 |---|---|
 | Module | `modules/shell-noctalia.yaml` |
-| Package | `noctalia` (AUR, source build via paru) |
-| Version | `5.0.0_beta.4-1` — **still beta** |
+| Package | `noctalia` (`extra`, a plain binary package; not an AUR source build) |
+| Version | `5.4.0` — stable |
 | Launch | `noctalia` |
 | Config | `~/.config/noctalia/config.toml` (TOML, hot-reloaded via inotify) |
 | Upstream | [noctalia-dev/noctalia](https://github.com/noctalia-dev/noctalia) |
-| Setup hook | `scripts/setup-noctalia.sh` — v4 teardown only |
+| Setup hook | none (the one-shot v4 teardown hook was deleted) |
 
 ## The v4 → v5 break
 
@@ -25,10 +25,11 @@ provider module. The old workaround downloaded the package and extracted it
 *unpackaged* to `~/.local/opt/noctalia-qs` behind a `~/.local/bin/noctalia`
 wrapper. **All of that is gone.** v5 is an ordinary package.
 
-`setup-noctalia.sh` is now a one-shot teardown that removes the three v4
-artifacts. Removing the wrapper matters: `~/.local/bin` normally precedes
-`/usr/bin` on `PATH`, so it would shadow the real v5 binary and keep launching the
-old fork. Once every machine has run it, drop the hook and delete the script.
+A one-shot teardown hook (`setup-noctalia.sh`) removed the v4 artifacts on the only
+machine that ever had them, and has been deleted along with its module hook. The
+wrapper mattered: `~/.local/bin` normally precedes `/usr/bin` on `PATH`, so a
+leftover `~/.local/bin/noctalia` would shadow the real v5 binary and keep launching
+the old fork — the health check below still verifies it.
 
 ## Config: hand-ported, not migrated
 
@@ -50,8 +51,9 @@ noctalia config validate ~/.config/noctalia/config.toml
 noctalia config export full            # the effective config, post-merge
 ```
 
-**Upstream's `example.toml` on `main` is ahead of the released beta.** Keys copied
-from it may not exist in the installed build — `validate` caught three:
+**Upstream's `example.toml` on `main` can be ahead of the released build.** Keys
+copied from it may not exist in the installed version — `validate` caught three
+back on 5.0.0 beta 4 (re-check against 5.4.0 when touching them):
 
 | `example.toml` (main) | 5.0.0_beta.4 |
 |---|---|
@@ -113,14 +115,14 @@ The official replacement for video wallpapers is **`noctalia/mpvpaper`
 noctalia msg plugins list
 ```
 
-## Beta caveats
+## Update caveats
 
-- Config keys and IPC command names can shift between betas. Re-run
-  `noctalia config validate` and re-check `noctalia msg --help` after each update.
-- Upstream flags v5 as beta in its own README; only the latest version is
-  maintained, and bug reports must reproduce on it.
-- The catalog already advertises `plugin_api = 9` while beta.4's notes say API 8 —
-  expect that kind of drift.
+- v5 is stable now (5.4.0 in `extra`, updated by `dcli update`), but config keys and
+  IPC command names still move between releases. Re-run `noctalia config validate`
+  and re-check `noctalia msg --help` after each update.
+- Only the latest version is maintained upstream; bug reports must reproduce on it.
+- The plugin catalog's `plugin_api` can run ahead of the installed build — expect
+  that kind of drift.
 
 ## Health check
 
@@ -129,4 +131,5 @@ command -v noctalia            # must be /usr/bin/noctalia, NOT ~/.local/bin
 noctalia --version
 noctalia config validate ~/.config/noctalia/config.toml
 test ! -e ~/.local/opt/noctalia-qs && echo "v4 fork removed"
+scripts/doctor.sh
 ```

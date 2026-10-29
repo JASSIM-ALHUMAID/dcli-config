@@ -8,10 +8,10 @@ moves it to user scope like every other shell here.
 | | |
 |---|---|
 | Module | `modules/shell-xenon.yaml` |
-| Packages | none declared — the hook installs deps directly |
+| Packages | declared in the module (`python`, `imagemagick`, `brightnessctl`, `cliphist`, `wl-clipboard`, fonts, `papirus-icon-theme`) |
 | Launch | `qs -c xenon` |
 | Setup hook | `scripts/setup-xenon.sh` |
-| Update | `scripts/update-xenon.sh` |
+| Update | `scripts/update-xenon.sh` (or `scripts/update-shells.sh xenon`) |
 
 ## Layout
 
@@ -64,9 +64,9 @@ qs -c xenon ipc call lock lock
 ```
 
 So `switch-shell.sh` kills it purely by command line
-(`kill_matching -f "qs -c xenon"` — TERM, then KILL after 1s), the same way
-noctalia is handled. **Do not "fix" this by adding a `qs -c xenon kill` line** to
-the graceful-IPC block: that verb does not exist.
+(`MATCH_SPECS[xenon]` = `-f qs -c xenon`, run through `kill_matching` — TERM, then
+KILL after 1s), the same way noctalia is handled. **Do not "fix" this by adding a
+`quit_xenon` that calls `qs -c xenon kill`**: that verb does not exist.
 
 ## Keybinds
 
@@ -91,7 +91,7 @@ and the shell's OSD follows.
 
 ## Dependencies
 
-Installed by the hook: `python`, `imagemagick`, `brightnessctl`, `cliphist`,
+Declared in `modules/shell-xenon.yaml` (re-checked every sync): `python`, `imagemagick`, `brightnessctl`, `cliphist`,
 `wl-clipboard`, `ttf-jetbrains-mono-nerd`, `ttf-nerd-fonts-symbols`,
 `papirus-icon-theme`. The bundled `Scripts/*.py` (Material colour generation,
 wallpaper previews) are **stdlib-only** — there is no pip step.
@@ -132,6 +132,8 @@ matugen output; commit or discard as you like.
 ## Health check
 
 ```bash
+scripts/doctor.sh
+scripts/update-shells.sh --status xenon
 git -C ~/.local/share/xenon-shell status --short
 readlink -f ~/.config/quickshell/xenon
 readlink -f ~/.config/xenon

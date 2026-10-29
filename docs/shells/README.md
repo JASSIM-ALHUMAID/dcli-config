@@ -1,18 +1,24 @@
 # Shells
 
-Nine graphical shells live side by side on this machine. Any one can be made active
+Eight graphical shells live side by side on this machine. Any one can be made active
 at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
+The list itself is `dotfiles/hypr/shells/registry`; how it all fits together is in
+[../ARCHITECTURE.md](../ARCHITECTURE.md), which also holds the checklist for adding
+a shell.
 
 | Shell | Launch | Notes |
 |---|---|---|
 | [caelestia](caelestia.md) | `caelestia shell -d` | Custom fork, built from source. The most involved one. |
 | [ambxst](ambxst.md) | `ambxst` | Custom fork, own installer. |
-| [dms](dms.md) | `dms run` | Packaged, no fork. Lowest maintenance. |
-| [noctalia](noctalia.md) | `noctalia` | v5 — native C++, **no Quickshell**. |
+| [dms](dms.md) | `dms run` | Packaged (`dux-shell`), no fork. Lowest maintenance. |
+| [noctalia](noctalia.md) | `noctalia` | v5 — native C++, **no Quickshell**. Packaged. |
 | [end4](end4.md) | `qs -c ii` | end-4 illogical-impulse, custom fork. |
-| [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, no local fork. |
-| [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (alpha). Checkout, not a package. Never run its `install.sh`. |
-|| [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. Was installed system-wide; now user-scope. |
+| [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, via a personal fork. |
+| [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (`quattro`). Checkout, not a package. Never run its `install.sh`. |
+| [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. |
+
+[hyprmod.md](hyprmod.md) covers the per-shell Hyprland settings GUI;
+[atlas.html](atlas.html) is a one-page visual overview.
 
 ## The one rule that breaks everything
 
@@ -21,32 +27,36 @@ at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 
 | Provider | Provides | Conflicts with |
 |---|---|---|
-| `quickshell` | — | — |
-| `quickshell-git` | `quickshell` | `quickshell` |
+| `quickshell` (stock, 0.3.2 in `extra`) | — | — |
+| `quickshell-git` (AUR, installed) | `quickshell` | `quickshell` |
 | `noctalia-qs` | `quickshell`, `quickshell-git` | both |
 | `illogical-impulse-quickshell-git` | `quickshell` | `quickshell` |
 
 The provider is owned declaratively by one of two dcli modules —
 `shells-quickshell` or `shells-quickshell-git` — which list each other in
-`conflicts:`. **`shells-quickshell-git` is the enabled default**, because
-`caelestia-shell` >= 2.2.0 hard-depends on it and, since `quickshell-git` provides
+`conflicts:`. **`shells-quickshell-git` is the enabled default**, because the
+caelestia fork's README asks for it (the `caelestia-shell` package that used to
+hard-depend on it is no longer installed) and, since `quickshell-git` provides
 `quickshell`, every other shell resolves and runs under it too.
 
-That is what keeps all nine shells runtime-switchable: they share one provider, so
-switching shells never touches packages.
+That is what keeps every Quickshell shell runtime-switchable: they share one
+provider, so switching shells never touches packages. Whether stock `quickshell`
+0.3.2 would do for all of them is an open experiment — see
+[../PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).
 
 omarchy is the newest case of the same trap: `quickshell-git` appears in its own
 `install/omarchy-base.packages`, and `modules/shell-omarchy.yaml` deliberately
 omits it so the provider keeps exactly one owner.
 
-Switch providers with `scripts/switch-quickshell.sh [stock|git]` — **never** with
+Switch providers with `scripts/switch-quickshell.sh [stock|git] [--yes]` — **never** with
 `dcli module enable` alone. Full reasoning in
 [../PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).
 
 Verified 2026-08-01: xenon reports `Configuration Loaded` from its user checkout
 and survives a switch round-trip.
-Verified 2026-07-25: the other five Quickshell-based shells report
-`Configuration Loaded` under `quickshell-git 0.3.0.r3`.
+Verified 2026-07-25: the other Quickshell-based shells report
+`Configuration Loaded` under `quickshell-git 0.3.0.r3`. `scripts/doctor.sh` re-checks
+the provider and `qs --private-check-compat` any time.
 
 ## Never install a packaged Quickshell fork
 
@@ -56,23 +66,27 @@ dependencies as regular packages. The configs run fine on either provider.
 
 Noctalia used to be the worst offender (`noctalia-qs` conflicts with *both*
 providers, hence the old extract-to-`~/.local/opt` hack). **v5 removed Quickshell
-entirely**, so that problem is gone — see [noctalia.md](noctalia.md).
+entirely**, so that problem is gone — see [noctalia.md](noctalia.md). End4 and end4pc
+dependencies are declared as module `packages:` (not installed from the hook).
 
 ## Every setup hook clones MY fork, never upstream
 
 | Shell | origin | branch | `upstream` remote |
 |---|---|---|---|
-| caelestia | `plusdrag11/caelestia` | `my-caelestia-rebased` | `caelestia-dots/shell` |
-| ambxst | `plusdrag11/Ambxst` | `my-ambxst` | `Axenide/Ambxst` |
-| end4 | `plusdrag11/dots-hyprland` | `my-ii` | `end-4/dots-hyprland` |
-| end4pc | `plusdrag11/end4-pC` | `my-end4pc` | `pctrade/end4-pC` |
-| omarchy | `basecamp/omarchy` | `quattro` | none — no personal fork |
-| xenon | `MannuVilasara/xenon-shell` | `main` | none — no personal fork |
+| caelestia | `JASSIM-ALHUMAID/my-caelestia` | `my-caelestia` | `caelestia-dots/shell` |
+| ambxst | `JASSIM-ALHUMAID/my-Ambxst` | `my-ambxst` | `Axenide/Ambxst` |
+| end4 | `JASSIM-ALHUMAID/my-end4` | `my-ii` | `end-4/dots-hyprland` |
+| end4pc | `JASSIM-ALHUMAID/my-end4-pC` | `my-end4pc` | `pctrade/end4-pC` |
+| omarchy | `basecamp/omarchy` | `quattro` | none — tracked directly |
+| xenon | `MannuVilasara/xenon-shell` | `main` | none — tracked directly |
 
-All three forks pin their branch explicitly. **This matters:** the caelestia
-fork's *default* branch is `main` (a mirror of upstream), so a bare clone lands on
+The four forks pin their branch explicitly. **This matters:** a fork's *default*
+branch can be a mirror of upstream (caelestia's is `main`), so a bare clone lands on
 the wrong branch and none of the customizations are present. Upstream is kept as a
-second remote purely so `git fetch upstream` works for rebasing.
+second remote purely so `git fetch upstream` works for rebasing. All the clones go
+through `scripts/lib/hook-common.sh:clone_checkout`; the four forks are opt-in
+(a non-interactive `dcli sync` skips them until you run
+`dcli module run-hook <module>`).
 
 ### Do NOT run upstream's installer first
 
@@ -85,7 +99,7 @@ running upstream's installer is actively harmful:
   setup hook installs the fork's extra deps itself.
 - **caelestia** — the installer we use (`devfiles/install-user.fish`) **only exists
   in the fork**. Upstream's `install.fish` installs system-wide with sudo and
-  collides with the `caelestia-shell` package.
+  would collide with a `caelestia-shell` package (not installed any more).
 - **omarchy** — `install.sh` is a whole-distro installer: sddm, plymouth, snapper,
   ufw, docker, PAM limits, `/etc` and `/usr` writes, and a `config/` tree that
   overwrites `~/.config` for alacritty, foot, btop, git, tmux, lazygit and nvim,
@@ -102,12 +116,15 @@ running upstream's installer is actively harmful:
    `~/.config/hypr/shells/active.conf`, kills every running shell, reloads
    Hyprland, then launches the chosen one.
 2. `~/.config/hypr/hyprland.lua` reads `active.conf` and `dofile()`s the matching
-   per-shell Lua config from its `shell_paths` table.
+   per-shell Lua config, looked up in `dotfiles/hypr/shells/registry` (the same file
+   `switch-shell.sh` reads).
 3. Two shells supply their own Hyprland config from their checkout
-   (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the other six use
+   (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the rest use
    `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo. omarchy is a hybrid:
    that file is a *loader* which runs omarchy's own Lua config from its checkout
    and layers the house preferences on top, so it needs no `-overrides.lua`.
+   Standalone configs share `dotfiles/hypr/common/` and require everything by
+   fully-qualified name — see [../HYPRLAND-LUA.md](../HYPRLAND-LUA.md).
 
 Each shell's Hyprland settings can be edited in a GUI with
 `scripts/edit-hypr.sh [shell]` (no argument = active shell), which retargets
@@ -115,14 +132,11 @@ Each shell's Hyprland settings can be edited in a GUI with
 `dotfiles/hypr/shells/<name>/hyprmod.lua` — see [hyprmod.md](hyprmod.md) for
 the mechanism and its caveats.
 
-Adding or removing a shell means editing **three index-aligned arrays** in
-`switch-shell.sh`: `KNOWN`, `icon_files`, and `blurbs`. They must stay in the same
-order or the picker shows the wrong icon and switches to the wrong shell.
-
-**And a fourth thing, in a different file:** `lines=` in
-`dotfiles/fuzzel/shell-picker.ini` must equal the number of shells. fuzzel
-scrolls the overflow with no on-screen indicator, so a stale value silently
-hides the shells you just added.
+Adding or removing a shell is a registry record plus the per-script entries in the
+checklist in [../ARCHITECTURE.md](../ARCHITECTURE.md) — the picker's order, icons and
+blurbs all come from the registry now. One thing lives outside it: `lines=` in
+`dotfiles/fuzzel/shell-picker.ini` must be at least the number of shells, because
+fuzzel scrolls the overflow with no on-screen indicator.
 
 ## The shared surface (audited 2026-08-20)
 
@@ -138,7 +152,7 @@ way past. These are **one global copy with many writers**:
 | gsettings `org.gnome.desktop.interface` (gtk/icon/colour/cursor/font) | caelestia, ambxst, end4, end4pc, omarchy, dms |
 | `qt5ct/`, `qt6ct/`, `Kvantum/` | ambxst, dms, end4pc; an omarchy migration *uninstalls* Kvantum |
 | `fuzzel/fuzzel.ini`, `fuzzel_theme.ini` | caelestia / end4 + end4pc |
-| `hypr/hyprlock/colors.conf` | only `matugen-end4pc` — one lock palette for all nine |
+| `hypr/hyprlock/colors.conf` | only `matugen-end4pc` — one lock palette for every shell |
 | `swaync/style.css`, `rofi/`, `~/.cache/wal/` | ambxst |
 | `/etc/{chromium,brave}/policies/managed/*.json` | caelestia and omarchy, **via sudo** |
 
@@ -187,7 +201,7 @@ explicitly does.
 | `hypridle` | end4, end4pc | no | no |
 | `gnome-keyring-daemon` | end4, end4pc | no | no |
 | `swaync` | — | yes | **yes** |
-| cliphist `wl-paste` pair | all nine | no | no |
+| cliphist `wl-paste` pair | every shell | no | no |
 | `easyeffects`, geoclue | end4 | no | no |
 | `udiskie`, omarchy monitor-watch | omarchy | no | no |
 | `awww-daemon` | — | yes | yes |
@@ -243,21 +257,26 @@ busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
   org.freedesktop.DBus GetConnectionUnixProcessID s "$owner"
 ```
 
-## Fork divergence (2026-07-25)
+## Keeping the checkouts current
 
-| Fork | vs upstream | Update with |
-|---|---|---|
-| ambxst | up to date | fork's own installer |
-| end4-pC | up to date | `scripts/update-end4pc.sh` |
-| dots-hyprland (end4) | 1 behind | `scripts/update-end4.sh` |
-| caelestia | 3 behind | rebase by hand — see [caelestia.md](caelestia.md) |
-| omarchy | tracks upstream directly | `scripts/update-omarchy.sh` |
-| xenon | tracks upstream directly | `scripts/update-xenon.sh` |
-||
-The update scripts only work where a plain fast-forward is possible. **caelestia
-has no update script on purpose**: it carries 32 local commits, and its last
-rebase is what reverted the plugin target name and broke the shell. It needs a
-real rebase plus a rebuild-and-verify.
+```bash
+scripts/update-shells.sh --status     # branch, dirty count, ahead/behind of @{u} (after a fetch)
+scripts/update-shells.sh [name|all]   # run each shell's updater
+```
+
+| Shell | Update with |
+|---|---|
+| caelestia | report only — a development fork, rebased by hand ([caelestia.md](caelestia.md)) |
+| ambxst | report only — a development fork; the fork's own installer for dependencies |
+| end4 | `scripts/update-end4.sh` |
+| end4pc | `scripts/update-end4pc.sh` (see the warning in [end4pc.md](end4pc.md)) |
+| omarchy | `scripts/update-omarchy.sh` |
+| xenon | `scripts/update-xenon.sh` |
+
+`update-shells.sh` refuses to run an updater on a checkout with local changes. The
+updaters only work where a plain fast-forward is possible. **caelestia has no update
+script on purpose**: it carries local commits, and a rebase once reverted the plugin
+target name and broke the shell. It needs a real rebase plus a rebuild-and-verify.
 
 `dms` and `noctalia` are packages and track their repos via `dcli update`.
 
@@ -272,4 +291,4 @@ real rebase plus a rebuild-and-verify.
   starts the shell itself, guarded by `pgrep` to avoid double-starting.
 - **Stale processes are the usual cause of "the new shell looks broken."** Check
   with `pgrep -a -f "qs -c|quickshell|ambxst|dms run|noctalia"` — anything other
-  than your active shell should not be there.
+  than your active shell should not be there. `scripts/doctor.sh` checks the rest.

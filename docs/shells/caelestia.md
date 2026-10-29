@@ -8,21 +8,23 @@ serious breakage so far.
 | | |
 |---|---|
 | Module | `modules/caelestia.yaml` |
-| Packages | `caelestia-cli`, `caelestia-meta`, `caelestia-shell` |
+| Packages | runtime deps declared in the module (`caelestia-cli`, `libcava`, `ddcutil`, fonts, Qt bits, …); **no `caelestia-shell` package** (removed 2026-09-11) |
 | Launch | `caelestia shell -d` |
-| Setup hook | `scripts/setup-caelestia.sh` |
-| Provider | **`quickshell-git` only** — see below |
+| Setup hook | `scripts/setup-caelestia.sh` (opt-in clone, via `lib/hook-common.sh`) |
+| Update | none by design — rebase by hand; `scripts/update-shells.sh --status` reports it |
+| Provider | the fork's README asks for **`quickshell-git`**; stock is an open experiment — see below |
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `~/Projects/shell/real` | Fork checkout, **source of truth**. origin `plusdrag11/caelestia`, upstream `caelestia-dots/shell`, branch **`my-caelestia-rebased`** — the fork's *default* branch is `main`, a mirror of upstream, so the branch must be pinned explicitly or a fresh clone has none of the customizations |
-| `~/.config/quickshell/caelestia` | Installed QML — overrides the package's `/etc/xdg` copy |
-| `~/.local/lib/qt6/qml/{Caelestia,M3Shapes}` | Locally built C++ plugin — overrides the package's `/usr/lib` copy |
+| `~/Projects/shell/real` | Fork checkout, **source of truth**. origin `JASSIM-ALHUMAID/my-caelestia`, upstream `caelestia-dots/shell`, branch **`my-caelestia`** — the fork's *default* branch is `main`, a mirror of upstream, so the branch must be pinned explicitly or a fresh clone has none of the customizations |
+| `~/.config/quickshell/caelestia` | Installed QML — the shell's live config |
+| `~/.local/lib/qt6/qml/{Caelestia,M3Shapes}` | Locally built C++ plugin; found through `QML2_IMPORT_PATH` |
 | `~/.local/lib/caelestia/version` | `beat` version helper lib |
 | `~/.config/caelestia` → `fork/caelestia-configs` | Runtime config, version-controlled **inside the fork** |
-| `~/.local/share/caelestia/hypr/hyprland.lua` | Its Hyprland config (not in this repo) |
+| `~/.local/share/caelestia/hypr/hyprland.lua` | Its Hyprland config (upstream caelestia-dots clone, not in this repo). caelestia does **not** use `dotfiles/hypr/common/`; its input lives in the fork's `hypr-vars.lua` |
+| `~/.config/{fish,fastfetch}` | Symlinks into `~/.local/share/caelestia`; **not created by this repo** (unmanaged) |
 | `~/.config/{foot,btop}` → `dcli/dotfiles/{foot,btop}` | **No longer caelestia's** — see below |
 
 ### foot and btop moved out of the clone (2026-08-20)
@@ -42,12 +44,23 @@ wiped, and `git status` there was permanently dirty. They are dcli dotfiles now
 (`link-dotfiles.sh` `TARGETS`); the generated siblings are gitignored, the
 hand-written `foot.ini` and `btop.conf` are tracked.
 
-## Why it needs `quickshell-git`
+## Provider: `quickshell-git`, stock untested
 
-AUR `caelestia-shell` 2.2.0 changed its dependency from `quickshell` to
-`quickshell-git`. `modules/caelestia.yaml` therefore declares
-`conflicts: [shells-quickshell]` — caelestia cannot run on the stock provider, and
-`scripts/switch-quickshell.sh stock` refuses while this module is enabled.
+The fork's README asks for `quickshell-git`, so that is the default provider
+(`modules/shells-quickshell-git.yaml`). Until 2026-09-11 the `caelestia-shell`
+package hard-depended on it, and `modules/caelestia.yaml` declared
+`conflicts: [shells-quickshell]`; neither holds any more. `scripts/switch-quickshell.sh
+stock` now warns and asks for confirmation (`--yes` without a tty) instead of
+refusing. Whether stock 0.3.2 runs the fork is the pending experiment in
+[../PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).
+
+## Packaging traps (history — apply only if the package is reinstalled)
+
+Traps 1-3 below were written while the `caelestia-shell` package was installed and
+shadowed by the fork. The package is gone, so the "multiple registrations" and
+"LogindManager" failures cannot recur unless it is reinstalled; the CMake target name
+(trap 1) and the stale-`.so` rule (trap 2) are still correct build hygiene for the
+fork itself.
 
 ## Trap 1: the plugin target name
 
@@ -103,21 +116,20 @@ cd ~/Projects/shell/real
 ./scripts/install.sh --skip-sddm     # QML + C++ plugin, no sudo needed
 ```
 
-Installs entirely under `~/.local` and `~/.config`, so pacman-owned files are
-never touched and a `caelestia-shell` package upgrade cannot clobber the build.
-Confirm with `pacman -Qkk caelestia-shell` → `0 altered files`.
+Installs entirely under `~/.local` and `~/.config`, so pacman-owned files are never
+touched. Run it without `--skip-sddm` once on a fresh machine for the SDDM lock
+theme (needs sudo; also writes `/etc/sudoers.d/caelestia-sddm-sync`).
 
 `devfiles/install-user.fish` does the same thing and additionally writes the
 session env blocks (`hypr-user.conf`, `~/.config/uwsm/env`). Keep the three
 `INSTALL_*` vars in sync between it and `scripts/install.sh`.
 
 **Avoid `devfiles/install-system.fish`** on this machine — it installs to `/usr`
-with sudo and collides with the package.
+with sudo.
 
 **Never run upstream's `install.fish`.** `devfiles/` exists only in the fork;
-upstream's own installer installs system-wide with sudo and collides with the
-`caelestia-shell` package. There is no "upstream first, then fork" step — the fork
-is the only thing to install.
+upstream's own installer installs system-wide with sudo. There is no "upstream
+first, then fork" step — the fork is the only thing to install.
 
 ## Day-to-day
 
@@ -133,26 +145,28 @@ is almost always that you needed `install.sh`.**
 ## Launch environment
 
 Both vars are required, and Hyprland only applies its own `env` at startup — so a
-session started before they were added never has them. `switch-shell.sh` sets them
-explicitly:
+session started before they were added never has them.
+`dotfiles/environment.d/50-caelestia-qml.conf` provides them session-wide, and
+`switch-shell.sh`'s `launch_caelestia` sets them explicitly:
 
 ```bash
 QML2_IMPORT_PATH="$HOME/.local/lib/qt6/qml"    # fork plugin, not the package's
 CAELESTIA_LIB_DIR="$HOME/.local/lib/caelestia"
 ```
 
-Without the first, the packaged plugin is used and the shell dies with
-`LogindManager is not a type` — the fork replaced upstream's `sessionmanager` with
-its own `logindmanager`, its one intentional plugin divergence.
+Without the first, Qt does not search `~/.local/lib/qt6/qml` and the shell cannot
+load its own plugin; with the `caelestia-shell` package installed it would pick up
+the packaged one and die with `LogindManager is not a type` — the fork replaced
+upstream's `sessionmanager` with its own `logindmanager`, its one intentional plugin
+divergence.
 
 ## Other notes
 
 - **Keybinds live in `~/.config/caelestia/keybinds.json`** (editable in Nexus),
   applied at runtime by `services/KeybindApplier.qml`. They are in no Hyprland
   config and **vanish if the shell dies**.
-- `caelestia-shell` the package is installed but entirely shadowed. The
-  `caelestia` CLI used by scripts and keybinds is a *separate* package,
-  `caelestia-cli`.
+- There is no `caelestia-shell` package. The `caelestia` CLI used by scripts and
+  keybinds is the separate package `caelestia-cli`.
 - Shaders are committed as `.qsb` next to their `.frag`. After editing a `.frag`,
   run `scripts/compile-shaders.sh` and commit both.
 - `plugin/cmake/qml-module.cmake` prints a nonsense `QML install dir:` line
@@ -164,7 +178,9 @@ its own `logindmanager`, its one intentional plugin divergence.
 cd ~/Projects/shell/real                                     # paths below are fork-relative
 grep -n '^qml_module' plugin/src/Caelestia/CMakeLists.txt    # -> qml_module(caelestia-core
 find ~/.local/lib/qt6/qml ! -newermt "$(date +%F)" -type f   # stale files: expect none
-pacman -Qkk caelestia-shell                                  # -> 0 altered files
+pacman -Q caelestia-shell                                    # -> not found (expected)
+
+~/.config/dcli/scripts/doctor.sh                                  # checkout, links, provider, configerrors
 
 # Launches the shell — run it when you can see the screen, not from a script.
 env QML2_IMPORT_PATH=~/.local/lib/qt6/qml CAELESTIA_LIB_DIR=~/.local/lib/caelestia \

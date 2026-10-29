@@ -53,7 +53,7 @@ wrong:
 - `systemctl --user enable --now` on five units (`bt-agent`,
   `omarchy-sleep-lock`, …) that only exist if the omarchy package installed them
 - **gsettings the GTK theme, colour scheme and icon theme for the whole user
-  session** — i.e. for the other six shells too
+  session** — i.e. for every other shell too
 - applies "speaker tuning" aimed at specific laptop hardware
 
 The hook pre-creates `~/.local/state/omarchy/done/first-run-user`, which is
@@ -163,9 +163,15 @@ bootstrap.lua          sets package.path to three roots:
                        ~/.local/state/?.lua, ~/.config/?.lua, $OMARCHY_PATH/?.lua
 default.hypr.omarchy   helpers, autostart, bindings, envs, looknfeel, input,
                        windows, + require_optional omarchy.current.theme.hyprland
-<house layer>          monitor, input, four binds (below)
+<house layer>          monitor, input (+ gestures), animations, four binds (below)
 default.hypr.toggles   runtime toggle state; must be last
 ```
+
+The house layer is `shells/omarchy/hyprland/{monitor,input,animations,keybinds}.lua`,
+`dofile()`d from the loader. `monitor.lua` and `input.lua` in turn `dofile()` the
+shared `dotfiles/hypr/common/{monitor,input,gestures}.lua` by absolute path (never
+`require`, for the reason below), so the `us,ara` layout and monitor default are
+written once for every standalone shell.
 
 ### Trap: `~/.config/?.lua` is on package.path
 
@@ -190,7 +196,7 @@ tiny for that reason, and every override `hl.unbind`s first:
 | `SUPER + Q`, `+B`, `+E`, `+R` | free | close / brave / thunar / thunar | free combos, no unbind needed |
 
 **Everything else stays omarchy's.** That is the point of loading its config at
-all. Worth knowing, because it differs from the other six shells:
+all. Worth knowing, because it differs from the other shells:
 
 - `SUPER + W` closes the window (it opens zen elsewhere here)
 - `SUPER + RETURN` opens a terminal via `omarchy-launch-terminal` →
@@ -202,11 +208,12 @@ all. Worth knowing, because it differs from the other six shells:
 
 Check for accidental doubles with:
 
-**`hyprctl binds -j` does not work here** — it emits invalid JSON whenever binds
-carry descriptions (it shifts keys against values: `"keycode": XF86AudioRaiseVolume`
+**`hyprctl binds -j` did not work here on 0.56** — it emitted invalid JSON whenever
+binds carried descriptions (it shifts keys against values: `"keycode": XF86AudioRaiseVolume`
 unquoted, `"allow_input_capture": Volume up`). omarchy sets a description on
-nearly all of its binds, so every `hyprctl binds -j | jq …` recipe fails under it. Parse
-the plain-text output instead:
+nearly all of its binds, so every `hyprctl binds -j | jq …` recipe failed under it.
+Hyprland 0.57 parses `-j` fine under caelestia (168 binds), but that is untested
+under omarchy, so the plain-text recipe stays as the defensive default:
 
 ```bash
 hyprctl binds | awk '
@@ -229,9 +236,14 @@ house layer adds none.
 
 ## Packages
 
-The module installs runtime deps only — the shell is a checkout, not a package.
-`aur/omarchy` is a placeholder stub, and omarchy's real packages live in its own
-repo at `pkgs.omarchy.org`, which this machine does not add.
+The module installs runtime deps only — the shell is a checkout, not a package —
+and declares them all in `packages:` (not in the setup hook: hooks run once, module
+packages are re-checked every sync). That includes `imv` (image viewer), `dua-cli`
+(disk-usage action), `xdg-terminal-exec` (`extra`; how `omarchy-launch-terminal`
+resolves a terminal), `foot` (screensaver terminal), and the AUR packages
+`yaru-icon-theme` and `tensaku` (screenshot annotator). `aur/omarchy` is a
+placeholder stub, and omarchy's real packages live in its own repo at
+`pkgs.omarchy.org`, which this machine does not add.
 
 **`quickshell-git` is in omarchy's package list and deliberately not in the
 module's.** The provider has exactly one owner
@@ -239,10 +251,10 @@ module's.** The provider has exactly one owner
 [../PACKAGE-CONFLICTS.md](../PACKAGE-CONFLICTS.md).
 
 Also excluded, and why: the apps omarchy is opinionated about (chromium,
-obsidian, libreoffice, nautilus, evince, imv, kdenlive, obs-studio, …), the
+obsidian, libreoffice, nautilus, evince, kdenlive, obs-studio, …), the
 toolchains it preinstalls (docker, ruby, rust, mise, luarocks, dotnet), the
 system decisions (sddm, plymouth, uwsm, hyprland itself — all already handled
-here), and its own repo packages (`aether`, `omacut`, `omawrite`, `tensaku`,
+here), and its other repo-only packages (`aether`, `omacut`, `omawrite`,
 `cliamp`, `tobi-try`, `omarchy-nvim`), which back entries in `omarchy-menu`
 rather than the shell. If one of those turns out to be load-bearing for the bar,
 record it here before adding it to the module.
@@ -250,11 +262,15 @@ record it here before adding it to the module.
 ## Health check
 
 ```bash
+scripts/doctor.sh                        # checkout, links, provider, configerrors
+scripts/update-shells.sh --status omarchy
+DCLI_HYPRMOD_SHELL=omarchy Hyprland --verify-config -c ~/.config/hypr/hyprland.lua   # "config ok"
+
 # checkout and version
 git -C ~/.local/share/omarchy log -1 --oneline
 cat ~/.local/share/omarchy/version
 
-# the binds are the real health signal: 230 (as of 4.0.0 RC), not 3.
+# the binds are the real health signal: hundreds (230 as of 4.0.0 RC), not 3.
 hyprctl binds | grep -c '^bind'
 hyprctl configerrors                     # empty when clean
 

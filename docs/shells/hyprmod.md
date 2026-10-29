@@ -3,7 +3,7 @@
 [HyprMod](https://github.com/BlueManCZ/hyprmod) (GTK4, `yay -S hyprmod`) edits
 Hyprland options, binds, rules, monitors and animations through a schema-driven
 GUI. Stock HyprMod owns exactly **one** managed file for the whole machine —
-useless here, where nine shells each carry their own Hyprland config. The
+useless here, where every shell carries their own Hyprland config. The
 integration below gives every shell its own isolated HyprMod file.
 
 **Always launch it through `scripts/edit-hypr.sh`, never bare `hyprmod`.**
@@ -24,10 +24,10 @@ hyprmod  ──reads/writes──►  shells/<name>/hyprmod.lua
 ```
 
 - The managed file is `dotfiles/hypr/shells/<name>/hyprmod.lua` — a naming
-  convention, no registry arrays to keep in sync. It is committed like any
+  convention; the shell list itself comes from `dotfiles/hypr/shells/registry`. It is committed like any
   other dotfile; expect git churn after saving in the GUI.
 - `DCLI_HYPRMOD_SHELL` is set only in hyprmod's process environment.
-  `hyprland.lua` honors it (validated against `shell_paths`), so hyprmod's
+  `hyprland.lua` honors it (validated against the shell registry), so hyprmod's
   config reader evaluates the *target* shell's whole tree even when another
   shell is active: hand-written binds/settings show up read-only with correct
   file attribution, and overriding one writes `unbind` + `bind` (or the
@@ -51,8 +51,8 @@ by hand.
 - **Never launch bare `hyprmod`.** Its setup check runs against whichever
   shell is active and, if it can't see the managed file, shows an onboarding
   dialog. Click **Cancel** — clicking through appends a *global*
-  `require("hyprland-gui")` to `hyprland.lua` (one shared file for all nine
-  shells; that already happened once and was reverted). Damage is a visible
+  `require("hyprland-gui")` to `hyprland.lua` (one shared file for every
+  shell; that already happened once and was reverted). Damage is a visible
   3-line git diff on `dotfiles/hypr/hyprland.lua`.
 - **Never change the config path from HyprMod's own Settings page.** That
   calls its migration routine, which *moves* the file and rewrites

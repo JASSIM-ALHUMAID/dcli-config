@@ -1,227 +1,174 @@
-# Quickshell Provider Conflicts
+# Quickshell provider and package conflicts
 
-**Date:** 2026-07-25
-**System:** Hyprland + dcli
-**Issue:** `paru -Syu` / `yay -Syu` fails with `quickshell-git and quickshell are in conflict`
+Current state first, then the dated incident log. Packages move under this
+document — before trusting a table here, run `scripts/doctor.sh` or
+`pacman -Q quickshell-git quickshell noctalia dux-shell`.
+
+## Current state (verified 2026-10-30)
+
+**Exactly one quickshell provider may be installed.** Every provider
+`Conflicts=quickshell`, and each one `Provides=quickshell`, so every dependent
+resolves under whichever is installed.
+
+| Package | Repo | Provides | Conflicts with | Status here |
+|---|---|---|---|---|
+| `quickshell-git` | **AUR only** | `quickshell` | `quickshell` | **installed**: 0.3.2.r11 |
+| `quickshell` | `extra` / `cachyos-extra-v3` | — | — | stock 0.3.2 — the pending experiment, below |
+| `noctalia-qs` | `cachyos` repo | `quickshell`, `quickshell-git` | both | must stay **absent** (see ambiguity below) |
+| `illogical-impulse-quickshell-git` | AUR | `quickshell` | `quickshell` | never installed |
+
+| Shell | Quickshell? | Runtime provider requirement |
+|---|---|---|
+| caelestia | yes | the fork's README asks for `quickshell-git`; stock is untested (experiment below). No `caelestia-shell` package is installed — the fork runs from `~/.config/quickshell/caelestia` + `~/.local/lib/qt6/qml` |
+| ambxst | yes | either |
+| dms | yes | `dux-shell` (Provides `dms-shell`, replaces `dms-shell`/`dms-shell-hyprland`) depends on plain `quickshell`: either |
+| end4 (`ii`) | yes | either; extra deps are module packages |
+| end4pc | yes | either; same dep set |
+| omarchy | yes | either (its own package list names `quickshell-git`; the module omits it on purpose) |
+| xenon | yes | either |
+| noctalia | **no** | v5 is native C++/Wayland — belongs to neither provider group |
+
+The provider is owned by one of two modules that list each other in `conflicts:`:
+`modules/shells-quickshell-git.yaml` (enabled) and `modules/shells-quickshell.yaml`.
+`modules/caelestia.yaml` no longer declares `conflicts: [shells-quickshell]`; it
+declares its own runtime dependencies instead (including `libcava`, which nothing
+else requires and orphan pruning would otherwise take).
+
+### The `noctalia-qs` ambiguity
+
+Since 2026-08-22 the distribution has no `quickshell-git` binary package; the only
+repo package claiming that name is `noctalia-qs` (via `Provides`). So the *name*
+`quickshell-git` no longer picks a provider:
+
+```console
+$ pacman -Sii quickshell-git
+error: package 'quickshell-git' was not found
+$ pacman -Sp quickshell-git
+.../cachyos/noctalia-qs-0.0.12-2-x86_64.pkg.tar.zst    # not what you want
+```
+
+Therefore every install or rebuild must say **`aur/quickshell-git`**
+(`paru -S --rebuild aur/quickshell-git`). `scripts/switch-quickshell.sh` and
+`scripts/post-update.sh` pin `aur/` for exactly this reason. The module YAML cannot:
+dcli does not strip a repo prefix, so with `aur/quickshell-git` declared
+`dcli sync --dry-run` lists it as permanently missing. The module keeps the bare
+name and the pin lives in the scripts. A normal sync is a no-op while the AUR build
+stays installed; the ambiguity bites when bootstrapping a fresh machine, when
+switching back from stock, and when anything removes `quickshell-git` first — the
+resolver then picks `noctalia-qs`. `scripts/doctor.sh` fails if `noctalia-qs` is
+installed, and `post-update.sh` refuses to run on top of it.
+
+### Switching providers
+
+```bash
+scripts/switch-quickshell.sh                 # report the current provider
+scripts/switch-quickshell.sh git             # -> aur/quickshell-git
+scripts/switch-quickshell.sh stock [--yes]   # -> quickshell; warns and confirms while caelestia is enabled
+```
+
+The script stops running `qs -c` shells first. The confirmation applies while the
+`caelestia` module is enabled; without a tty it refuses unless `--yes` is given. Do not do this with
+`dcli module enable` alone: module `conflicts:` only prompts at enable time and never
+uninstalls anything; `auto_prune: false` on this host, so a sync never removes the
+outgoing provider; and dcli installs with `pacman -S --noconfirm`, which cannot
+answer pacman's `Remove quickshell? [y/N]` conflict prompt. The script does the
+swap as one interactive pacman transaction (removing the old provider first would
+break dependents), updates dcli module state around it, then runs `dcli sync`.
+
+### Pending experiment: stock quickshell 0.3.2 (runbook)
+
+Stock `quickshell` 0.3.2 is now in `extra`, and the distribution rebuilds it on every
+Qt bump. If the caelestia fork runs on it, the `aur/` pins, the `noctalia-qs` guard
+and most of `post-update.sh`'s self-heal become unnecessary. Qt is 6.12.0 now.
+
+```bash
+scripts/switch-quickshell.sh stock           # warns, asks (or --yes)
+scripts/switch-shell.sh <name>               # for every shell, one at a time
+qs -c <config> 2>&1 | head -30               # errors: Configuration Loaded vs FATAL / not a type
+scripts/doctor.sh
+```
+
+Configs: `caelestia`, `ii`, `end4-pC`, `xenon`; ambxst, omarchy, dms and noctalia
+start through `switch-shell.sh` (see each shell page's health check). If caelestia
+and the rest load, keep stock and clean up the pins. If anything fails, go back:
+`scripts/switch-quickshell.sh git`. Record the outcome here.
+
+### Why the setup hooks never install a packaged fork
+
+`setup-end4.sh` and `setup-end4pc.sh` do not install
+`illogical-impulse-quickshell-git`: it is a fourth mutually exclusive provider. Both
+configs run on stock or `quickshell-git`, so their extra dependencies are plain
+module `packages:` in `modules/shell-end4.yaml` and `modules/shell-end4pc.yaml`
+(declared in both on purpose: dcli has no module-to-module dependency and dedups the
+overlap). They live in modules rather than the hook because hooks run once; module
+packages are re-checked every sync.
+
+### Noctalia v5 removed one provider entirely
+
+Noctalia v4 required `noctalia-qs`, which conflicts with both providers, hence the
+old extract-to-`~/.local/opt` workaround. **v5 is a rewrite with no Quickshell and no
+Qt**; the package is `noctalia` (5.4.0 stable, in `extra`; its only `Conflicts` are
+`noctalia-git` / `noctalia-bin`), so `shell-noctalia` is an ordinary module. The
+v4 teardown hook `setup-noctalia.sh` has been deleted.
+Migration notes (config format, IPC, plugins) are in
+[shells/noctalia.md](shells/noctalia.md).
+
+### Verification
+
+```bash
+pacman -Q quickshell quickshell-git          # exactly one (pacman -Q resolves Provides; doctor matches names)
+qs --version && qs --private-check-compat    # exit 0 = built against the installed Qt
+scripts/doctor.sh                            # provider, noctalia-qs, dcli sync --dry-run
+dcli sync --dry-run
+pacman -Qdt                                  # leftovers
+```
+
+### Status of the original action items
+
+- [x] Root cause identified (2026-07-25) and two provider modules created, with
+  `switch-quickshell.sh`.
+- [x] Noctalia migrated to v5; `config.toml` hand-ported and in daily use (validate
+  with `noctalia config validate ~/.config/noctalia/config.toml`).
+- [x] Every shell renders under `quickshell-git` (verified 2026-07-25 and
+  2026-08-01; `qs --private-check-compat` re-checked 2026-10-30 after Qt 6.12.0).
+- [ ] Stock-provider experiment above.
 
 ---
 
-## Problem Statement
+## Incident log
 
-A system update refuses to proceed:
+### 2026-07-25 — `paru -Syu` deadlocks on `quickshell-git and quickshell are in conflict`
 
 ```
 :: quickshell-git and quickshell are in conflict. Remove quickshell? [y/N]
 ```
 
----
+**Root cause:** AUR `caelestia-shell` 2.2.0 changed its dependency from `quickshell`
+to `quickshell-git`. The host had 2.1.0 on stock `quickshell`; the upgrade pulled
+`quickshell-git` (`Conflicts=quickshell`) and the transaction deadlocked against the
+installed provider. Ordinary dependency resolution, not a bug.
 
-## Root Cause
+Two things an earlier version of this document got wrong: `dms-shell`'s "Required By"
+on `quickshell-git` / `noctalia-qs` is normal provider resolution (not a repo
+metadata bug), and the claimed `IgnorePkg` fix was never applied and would not have
+helped (it only skips upgrades of installed packages; no `pacman.conf` change is
+wanted).
 
-**AUR `caelestia-shell` 2.2.0 changed its dependency from `quickshell` to
-`quickshell-git`.** This host had `caelestia-shell` 2.1.0 installed, which used stock
-`quickshell`. On upgrade the new version pulls `quickshell-git`, which declares
-`Conflicts=quickshell`, so the transaction deadlocks against the installed provider.
+**Fix:** the two provider modules and `scripts/switch-quickshell.sh` (above).
 
-This is ordinary, correct dependency resolution — not a bug.
+The same day, packaging traps in the caelestia fork surfaced because the provider
+swap exposed them (see below for when they apply today):
 
-> An earlier version of this document blamed "distribution repository metadata bugs" (a false
-> `Required By: dms-shell` on `quickshell-git` / `noctalia-qs`) and claimed an `IgnorePkg`
-> fix had been applied. Both claims were wrong:
->
-> - `dms-shell` depends on plain `quickshell`; `quickshell-git` and `noctalia-qs` legitimately
->   satisfy that via `Provides=quickshell`. The "Required By" line is normal provider
->   resolution.
-> - The `IgnorePkg` line was never actually added to `/etc/pacman.conf`, and it would not
->   have helped: `IgnorePkg` only skips *upgrades of already-installed packages*, and
->   neither `quickshell-git` nor `noctalia-qs` was installed. It has no effect on provider
->   selection during install.
+1. The fork's `plugin/src/Caelestia/CMakeLists.txt` target must be named
+   `caelestia-core` (upstream's name since v2.1.0). A differently named `.so` next
+   to the package's registers `module Caelestia` twice and Qt aborts with *"Cannot
+   add multiple registrations for Caelestia"*. Stock quickshell tolerated this;
+   `quickshell-git` does not. A rebase had silently reverted the name.
+2. Stale `.so` files left in `~/.local/lib/qt6/qml/Caelestia/*/` beat the fresh one
+   via the plugin's `$ORIGIN` rpath (*"ButtonRow is not a type"*). The fork's
+   `scripts/install.sh` now wipes those dirs before every install.
 
----
-
-## The Provider Landscape
-
-Several packages provide `quickshell`, and all of them are mutually exclusive:
-
-| Package | Repo | Provides | Conflicts With |
-|---|---|---|---|
-|| `quickshell` | extra-v3 / extra | — | — |
-| `quickshell-git` | **AUR only** (see below) | `quickshell` | `quickshell` |
-|| `noctalia-qs` | repo | `quickshell`, `quickshell-git` | `quickshell`, `quickshell-git` |
-| `illogical-impulse-quickshell-git` | AUR (end-4) | `quickshell` | `quickshell` |
-
-> **Changed 2026-08-22:** the distribution **dropped its own `quickshell-git` binary package**. It is
-> now AUR-only, and `noctalia-qs` is the sole *repo* package claiming that name (via
-> `Provides`). Verify with:
->
-> ```console
-> $ pacman -Sii quickshell-git
-> error: package 'quickshell-git' was not found
-> $ pacman -Sp quickshell-git
-> .../extra/noctalia-qs-0.0.12-2-x86_64.pkg.tar.zst      # <- not what you want
-> $ pacman -Qm | grep quickshell
-> quickshell-git 0.3.1.r0.g1a4716c-1                        # foreign: no repo tracks it
-> ```
->
-> This is why every install/rebuild of it must say `aur/quickshell-git`.
-
-**Exactly one may be installed at a time.** Because `quickshell-git` has
-`Provides=quickshell`, every dependent still resolves under it:
-
-| Shell | Needs | Runs on stock? | Runs on -git? |
-|---|---|---|---|
-| caelestia | `caelestia-shell` 2.2.0 → **`quickshell-git`** | no | yes |
-| dms | `dms-shell` → `quickshell` | yes | yes (via Provides) |
-| ambxst | unpackaged config | yes | yes |
-| end4 (`ii`) | unpackaged config | yes | yes |
-| end4pc | unpackaged config | yes | yes |
-| noctalia | v5 needs **no quickshell at all** | n/a | n/a |
-
----
-
-## Solution: Two Provider Modules
-
-The quickshell provider is now owned declaratively by one of two dcli modules, which
-declare each other in `conflicts:`:
-
-| Module | Package |
-|---|---|
-| `modules/shells-quickshell.yaml` | `quickshell` |
-| `modules/shells-quickshell-git.yaml` | `quickshell-git` |
-
-`shells-quickshell-git` is the enabled default on this host, because caelestia requires it
-and every other shell works under it. The six per-shell modules (`caelestia`, `ambxst`,
-`shell-dms`, `shell-end4`, `shell-end4pc`, `shell-noctalia`) are unchanged and stay
-independently enable-able; `modules/caelestia.yaml` additionally declares
-`conflicts: [shells-quickshell]` since it cannot run on the stock provider.
-
-Because all six shells run under `quickshell-git`, runtime switching with
-`scripts/switch-shell.sh` still works across all of them without touching packages.
-
-### Switching providers
-
-```bash
-scripts/switch-quickshell.sh          # report the current provider
-scripts/switch-quickshell.sh git      # -> quickshell-git
-scripts/switch-quickshell.sh stock    # -> quickshell (refuses while caelestia is enabled)
-```
-
-**Do not try to do this with `dcli module enable` alone.** Three dcli behaviours prevent it:
-
-1. Module-level `conflicts:` only *prompts* at enable time
-   (`Disable conflicting module(s)? [y/N]`) — it never uninstalls anything.
-2. `auto_prune: false` on this host, so `dcli sync` will not remove the outgoing provider.
-3. dcli installs with `pacman -S --noconfirm`, which cannot answer pacman's
-   `Remove quickshell? [y/N]` conflict prompt — the sync just fails.
-
-`switch-quickshell.sh` therefore performs the swap as one **interactive** pacman
-transaction (the only safe order — removing the old provider first would break
-`dms-shell`'s dependency and pacman would refuse), updating dcli module state around it and
-running `dcli sync` afterwards to reconcile the rest.
-
-### No pacman.conf change is needed
-
-Once `quickshell-git` is explicitly declared by an enabled module, the provider is
-determined and the conflict never arises. There is no `IgnorePkg` entry and none is wanted.
-
-> **Amended 2026-08-22:** the second half of that no longer holds. Declaring the *name*
-> `quickshell-git` no longer determines the provider, because the distribution dropped its own
-> package and `noctalia-qs` now claims the name via `Provides`. The name is ambiguous again.
->
-> It is not a live hazard while the package stays installed — `dcli sync` only installs what
-> is *missing*, and `pacman -Qq quickshell-git` matches the installed AUR build, so a normal
-> sync is a no-op (verified with `dcli sync --dry-run`). The ambiguity bites in three cases:
->
-> 1. bootstrapping this host config on a fresh machine,
-> 2. `switch-quickshell.sh git` when coming back from the stock provider,
-> 3. anything that removes `quickshell-git` first.
->
-> In all three, the resolver picks `noctalia-qs`. `switch-quickshell.sh` now pins `aur/` for
-> exactly this reason. **`modules/shells-quickshell-git.yaml` cannot be pinned the same way:**
-> dcli does not strip a repo prefix from package names — with `aur/quickshell-git` declared,
-> `dcli sync --dry-run` reports it as a permanently missing package on every run. So the
-> module keeps the bare name and the pin lives in the scripts.
-
----
-
-## Why the Shell Setup Scripts Never Install a Fork
-
-`scripts/setup-end4.sh` and `scripts/setup-end4pc.sh` deliberately do **not** install
-`illogical-impulse-quickshell-git`: it is a fourth mutually-exclusive provider that would
-fight whichever one the provider module owns. Both configs run fine on stock `quickshell`
-or `quickshell-git`, so the hooks install only the fork's *extra* dependencies as regular
-packages.
-
----
-
-## Noctalia v5 Removes One Provider Entirely
-
-Noctalia v4 required `noctalia-qs`, the worst of the forks — it conflicts with **both**
-`quickshell` and `quickshell-git`, so it could never coexist with either provider module.
-`scripts/setup-noctalia.sh` worked around that by downloading the `noctalia-qs` package and
-extracting it *unpackaged* to `~/.local/opt/noctalia-qs` behind a `~/.local/bin/noctalia`
-wrapper.
-
-**Noctalia v5 is a ground-up rewrite with no Quickshell and no Qt** — native C++23/Meson on
-Wayland + OpenGL ES. Upstream moved `noctalia-dev/noctalia-shell` → `noctalia-dev/noctalia`
-and renamed the package `noctalia-shell` → `noctalia` (AUR source build; its only
-`Conflicts` are `noctalia-git` / `noctalia-bin`).
-
-So `shell-noctalia` is now an ordinary module belonging to neither provider group, and
-`setup-noctalia.sh` has become a one-shot teardown of the v4 artifacts. Removing the
-`~/.local/bin/noctalia` wrapper matters: `~/.local/bin` normally precedes `/usr/bin` on
-`PATH`, so it would shadow the real v5 binary.
-
-Migration notes:
-
-- Config moved from `settings.json` to TOML at `~/.config/noctalia/config.toml`. v5 does
-  **not** read the v4 JSON (`src/config/config_migrations.cpp` only migrates between TOML
-  config versions), so `dotfiles/noctalia/config.toml` was hand-ported. The v4 files are in
-  git history — `git show c2789e8:dotfiles/noctalia/settings.json`.
-- IPC changed from `noctalia ipc call <object> <method>` to flat kebab-case
-  `noctalia msg <command>`; `dotfiles/hypr/shells/noctalia/hyprland.lua` was rewritten.
-  Note v5's CLI accepts only `theme`, `msg`, `config`, `dmenu`, `plugins` and
-  `firefox-theme` — **there is no `kill` subcommand**, and an unrecognised bare argument
-  falls through and *starts the shell*.
-- The vendored QML `video-wallpaper` plugin is gone (v5 plugins are Luau). Its official
-  replacement is `noctalia/mpvpaper` ("Video Wallpaper") from the plugin store.
-- **v5 is still beta** (`5.0.0_beta.4`).
-
----
-
-## Verification
-
-```bash
-# Exactly one provider installed
-pacman -Q quickshell quickshell-git
-
-# Dependents resolve against it
-pacman -Qi quickshell-git | grep 'Required By'
-
-# The original failure is gone
-paru -Syu
-
-# Noctalia is the packaged v5 binary, not the old wrapper
-command -v noctalia && noctalia --version
-
-# No leftovers
-pacman -Qdt
-test ! -e ~/.local/opt/noctalia-qs && echo "v4 fork removed"
-```
-
----
-
-## Status
-
-- [x] Correct root cause identified (`caelestia-shell` 2.2.0 → `quickshell-git`)
-- [x] Two provider modules created, with `scripts/switch-quickshell.sh`
-- [x] Noctalia migrated to v5, eliminating the `noctalia-qs` workaround
-- [ ] Confirm every shell renders under `quickshell-git` (caelestia fork may need a rebuild)
-- [ ] Confirm the hand-ported Noctalia v5 `config.toml` and rewritten keybinds
-
----
-
-## Incident 2026-08-22: Qt 6.11.2 ABI Break
+### 2026-08-22 — Qt 6.11.2 ABI break, and the distribution drops `quickshell-git`
 
 **Symptom:** every `qs` invocation died instantly:
 
@@ -230,68 +177,70 @@ qs: symbol lookup error: qs: undefined symbol:
 _ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API
 ```
 
-**Root cause:** quickshell links Qt **private** APIs (`Qt_6_PRIVATE_API` symbol version),
-which are only stable within one Qt build. `qt6-base 6.11.1 → 6.11.2` landed at 21:20 while
-the installed `quickshell-git` binary was built on Jul 25 against 6.11.1. The
-`/usr/share/libalpm/hooks/quickshell-check.hook` canary flagged it in the same transaction
-(21:21) but cannot heal it. A reboot is irrelevant; this is an on-disk binary/library
-mismatch, not stale state.
+**Root cause:** quickshell links Qt **private** APIs, stable only within one Qt build.
+`qt6-base 6.11.1 -> 6.11.2` landed while the installed `quickshell-git` was built
+against 6.11.1. The distribution's `quickshell-check.hook` canary flagged it in the
+same transaction but cannot heal it. A reboot is irrelevant: it is an on-disk
+binary/library mismatch. This is a different failure class from the provider
+conflict: the right package was installed and merely needed recompiling.
 
-**This is a different failure class from the provider conflicts above:** there the question
-is *which* package owns `quickshell`; here the correct package was already installed and
-merely needed recompiling against new Qt headers.
+**Fix:** `paru -S --rebuild aur/quickshell-git` (the `aur/` prefix is mandatory, see
+the ambiguity section; answering `y` to the prompt a bare name triggers would have
+removed the provider). Upstream had added **cli11** as a build dependency; keep it
+as an orphan for future rebuilds. `-git` packages do not track dependency ABI
+changes, so "Qt bumps without upstream commits" is the recurring gap.
 
-### The fix
+**Also that day:** the distribution dropped its own `quickshell-git` binary package
+(it became AUR-only and `noctalia-qs` started claiming the name), and swaync
+hijacked notifications while quickshell was dead (see
+[shells/README.md](shells/README.md)).
 
-```bash
-paru -S --rebuild aur/quickshell-git   # explicit aur/ prefix is required, see below
-qs --version && qs --private-check-compat
-qs -c caelestia -d
-```
+**Prevention:** `hosts/all-shells.yaml` sets `update_hooks.post_update:
+scripts/post-update.sh` with `run_as_user: true`. After every `dcli update` it
+checks `qs --private-check-compat`, and on failure rebuilds `aur/quickshell-git`
+non-interactively and notifies (log: `~/.local/state/dcli-quickshell-heal.log`).
+On the stock provider it exits 0 — the distribution rebuilds stock itself. It
+refuses to run on top of `noctalia-qs`, and needs a live sudo timestamp for the
+rebuild; if that fails, run the manual command.
 
-Notes from this incident:
+`update_hooks` has exactly four fields (`pre_update`, `post_update`, `devel`,
+`run_as_user`). **Unknown keys are silently ignored**: the host file still carries a
+`behavior: ask` there that does nothing, so the post-update hook is never gated by a
+prompt. (`behavior` is real for *module* hooks, which is the likely source of the
+confusion.) `run_as_user` matters: paru refuses to build as root, and under root
+`$HOME` is `/root`.
 
-- **Always use the `aur/` prefix.** Plain `paru -S --rebuild quickshell-git` resolves to the
-  > the distribution's repo package `noctalia-qs` (`Provides: quickshell-git`) and prompts to remove the
-  AUR package caelestia depends on. Answering `y` there would have broken caelestia and
-  desynced dcli's provider ownership.
-- Upstream had added **cli11** as a new build dependency since the last build; paru pulled
-  it automatically. It remains an orphan afterwards (build-time only) — keep it for future
-  rebuilds.
-- `-git` packages do NOT track dependency ABI changes: paru only auto-rebuilds them when
-  upstream gets new commits. "Qt bumps without upstream commits" is the recurring gap.
+### 2026-09-11 — `caelestia-shell` package removed
 
-### Prevention: post-update self-heal hook
+The fork already ran entirely from `~/.config/quickshell/caelestia` and
+`~/.local/lib/qt6/qml`, with the package fully shadowed. The package was uninstalled,
+`modules/caelestia.yaml` now declares its runtime dependencies directly, and its
+`conflicts: [shells-quickshell]` was dropped (the package's hard `quickshell-git`
+dependency was the only reason for it).
 
-`hosts/all-shells.yaml` now sets:
+The two caelestia traps above (*multiple registrations*, and the packaged plugin
+shadowing the fork, *LogindManager is not a type*) are now **history**: they only
+matter again if the `caelestia-shell` package is ever reinstalled. `QML2_IMPORT_PATH`
+in `dotfiles/environment.d/50-caelestia-qml.conf` still matters, because the fork's
+plugin lives outside Qt's default import path.
 
-```yaml
-update_hooks:
-  pre_update: null
-  post_update: scripts/post-update.sh
-```
+### 2026-10-30 — `dux-shell` replaces `dms-shell`; Qt 6.12.0
 
-The hook runs after every `dcli update`, checks `qs --private-check-compat`, and if the ABI
-check fails, rebuilds `aur/quickshell-git` non-interactively and notifies via
-`notify-send`. Log: `~/.local/state/dcli-quickshell-heal.log`. If the auto rebuild fails
-(e.g. sudo timestamp expired), fall back to the manual command above.
+The routine update replaced `dms-shell` with `dux-shell` 2.0.0
+(`duxlabs-dev/dux-shell`; Provides `dms-shell`, Conflicts/Replaces
+`dms-shell`, `dms-shell-hyprland`, `dms-shell-niri`). The `dms` CLI and
+`~/.config/DankMaterialShell` are unchanged, so `modules/shell-dms.yaml` just
+declares `dux-shell` and keeps its name. `dgop` is gone from the repos
+(`dux-gop` Provides it and arrived as a dependency; nothing requires it). The new
+package ships `/usr/lib/systemd/user/dms.service`, which must stay disabled —
+`switch-shell.sh` owns start/stop and a second launcher double-starts DMS;
+`scripts/doctor.sh` checks it. Qt moved to 6.12.0 and quickshell-git to
+0.3.2.r11 (private-ABI check still passes), and stock `quickshell` 0.3.2 appeared in
+`extra`, which started the experiment above. The packages moved overnight; this is
+why AGENTS.md says to run `scripts/doctor.sh` before trusting package docs.
 
-The hook also refuses to run on top of `noctalia-qs` and bails with a critical notification
-instead, since rebuilding cannot succeed while the conflicting provider owns `quickshell`.
+### Lessons
 
-#### `update_hooks` schema quirks
-
-`UpdateHooksConfig` has exactly four fields — `pre_update`, `post_update`, `devel`,
-`run_as_user`. **Unknown keys are silently ignored, not rejected.** A `behavior:` key inside
-`update_hooks` therefore does nothing at all: `dcli validate` passes with `behavior: ask`,
-with `behavior: always`, with `behavior: totally-bogus-value`, and with the key removed
-entirely. (`behavior` is real for *module* hooks — `hook_behavior` / `pre_hook_behavior` /
-`post_hook_behavior` in the module schema — which is the likely source of the confusion.)
-
-The practical consequence: **the post-update hook is not gated by any prompt — it always
-runs.** That is what you want for a health check, but do not expect an "ask" step.
-
-`run_as_user` matters here. paru refuses to build as root, and under root `$HOME` is `/root`,
-so the heal log would land in the wrong place and `notify-send` would never reach the user's
-session bus. The script re-execs itself via `runuser -u "$SUDO_USER"` as a backstop, but
-setting `run_as_user: true` is the correct configuration.
+The trigger is not always the cause (a latent fork bug sat harmless for six days until
+a provider swap exposed it), and "it worked before" is evidence, not proof — check
+`/var/log/pacman.log` to establish what changed and when.

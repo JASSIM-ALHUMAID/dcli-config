@@ -6,20 +6,21 @@ impulse"), run from a custom fork as the Quickshell config named `ii`.
 | | |
 |---|---|
 | Module | `modules/shell-end4.yaml` |
-| Packages | none declared — the hook installs deps directly |
+| Packages | declared in the module (Qt deps, runtime tools, two AUR) — duplicated in `shell-end4pc` on purpose |
 | Launch | `qs -c ii` |
 | Setup hook | `scripts/setup-end4.sh` |
-| Update | `scripts/update-end4.sh` |
+| Update | `scripts/update-end4.sh` (or `scripts/update-shells.sh end4`) |
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `~/.local/share/dots-hyprland` | Fork checkout, **source of truth**. origin `plusdrag11/dots-hyprland`, upstream `end-4/dots-hyprland`, branch `my-ii` |
+| `~/.local/share/dots-hyprland` | Fork checkout, **source of truth**. origin `JASSIM-ALHUMAID/my-end4`, upstream `end-4/dots-hyprland`, branch `my-ii` |
 | `~/.config/quickshell/ii` → `dots-hyprland/dots/.config/quickshell/ii` | The Quickshell config |
 | `~/.config/matugen` → `dots-hyprland/dots/.config/matugen` | Theming config, **owned by this shell** |
 | `~/.config/illogical-impulse` | Runtime state written by the shell itself |
-| `dotfiles/hypr/shells/end4/hyprland.lua` | Its Hyprland config (standalone, in this repo) |
+| `dotfiles/hypr/shells/end4/hyprland.lua` | Its Hyprland config: end4's own tree under `shells/end4/hyprland/`, house overrides under `shells/end4/custom/`, all `require`d as `shells.end4.*` |
+| `~/.config/hypr/hyprland/shellOverrides/main.lua` | What the ii settings app writes (`HyprlandConfig.qml`, `shellOverridesPath`); loaded last so the app's edits apply. The house `kb_layout` and `layout` lines were stripped from it and will return if the app rewrites those keys |
 
 Neither symlink is a dcli `dotfiles:` entry — both point into the checkout, and a
 dotfiles sync must not replace them.
@@ -35,14 +36,15 @@ this machine:
 | 20 | Replaces the entire hypr stack with `-git` builds: `hyprland`, `hyprlock`, `hypridle`, `hyprutils`, `hyprlang`, `hyprpicker`, `hyprcursor`, `xdg-desktop-portal-hyprland`, … |
 
 There is no "run upstream's installer, then apply my fork" step. `setup-end4.sh`
-clones the fork and installs the fork's **extra dependencies** itself, as regular
-packages:
+clones the fork; the fork's **extra dependencies** are declared as regular packages
+in `modules/shell-end4.yaml` (not in the hook: hooks run once, module packages are
+re-checked every sync):
 
 - **Qt deps** from the fork's PKGBUILD: `qt6-5compat`, `qt6-imageformats`,
   `qt6-multimedia`, `qt6-positioning`, `qt6-quicktimeline`, `qt6-sensors`,
   `qt6-svg`, `qt6-tools`, `qt6-translations`, `qt6-virtualkeyboard`,
   `qt6-wayland`, `kirigami`, `kdialog`, `syntax-highlighting`
-- **AUR** (via paru, skipped if absent): `qt6-avif-image-plugin`, `songrec`
+- **AUR:** `qt6-avif-image-plugin`, `songrec`
 - **Runtime tools** curated from the illogical-impulse meta packages: `cliphist`,
   `cava`, `playerctl`, `fuzzel`, `hypridle`, `hyprlock`, `hyprpicker`,
   `hyprshot`, `hyprsunset`, `wl-clipboard`, `wf-recorder`, `tesseract`, …
@@ -84,6 +86,8 @@ Runtime state is separate (`~/.config/illogical-impulse` vs
 ## Health check
 
 ```bash
+scripts/doctor.sh
+scripts/update-shells.sh --status end4
 git -C ~/.local/share/dots-hyprland status --short
 git -C ~/.local/share/dots-hyprland submodule status
 readlink -f ~/.config/quickshell/ii     # must point into the checkout

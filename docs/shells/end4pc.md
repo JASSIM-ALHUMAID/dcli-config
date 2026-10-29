@@ -1,5 +1,5 @@
 # end4pc
-[plusdrag11/end4-pC](https://github.com/plusdrag11/end4-pC), a personal fork of
+[JASSIM-ALHUMAID/my-end4-pC](https://github.com/JASSIM-ALHUMAID/my-end4-pC), a personal fork of
 [pctrade/end4-pC](https://github.com/pctrade/end4-pC), run as an independent Quickshell config named `end4-pC`. It runs
 **alongside** [end4](end4.md) without either interfering with the other — that
 separation is deliberate and took work.
@@ -7,44 +7,45 @@ separation is deliberate and took work.
 | | |
 |---|---|
 | Module | `modules/shell-end4pc.yaml` |
-| Packages | none declared — the hook installs deps directly |
+| Packages | declared in the module — the same list as `shell-end4`, duplicated on purpose |
 | Launch | `qs -c end4-pC` |
 | Setup hook | `scripts/setup-end4pc.sh` |
-| Patch script | `scripts/patch-end4pc.sh` |
+| Patch script | `scripts/patch-end4pc.sh` — currently a no-op safety net, see below |
 | Update | `scripts/update-end4pc.sh` |
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `~/.local/share/end4-pC` | Checkout, **source of truth**. origin `plusdrag11/end4-pC` (personal fork), branch `my-end4pc`, upstream `pctrade/end4-pC` |
+| `~/.local/share/end4-pC` | Checkout, **source of truth**. origin `JASSIM-ALHUMAID/my-end4-pC`, branch `my-end4pc`, upstream `pctrade/end4-pC` |
 | `~/.config/quickshell/end4-pC` → the checkout root | The repo root **is** the config (flat layout — no `dots/.config/...` wrapper like the `ii` fork) |
 | `~/.config/matugen-end4pc` | Its **own** matugen config — dcli-managed dotfile |
 | `~/.config/illogical-impulse-pC` | Runtime state, separate from end4's |
-| `dotfiles/hypr/shells/end4pc/hyprland.lua` | Its Hyprland config (standalone, in this repo) |
+| `dotfiles/hypr/shells/end4pc/hyprland.lua` | Its Hyprland config (standalone, in this repo; opts into `common.*`, but leaves gaps, decoration, layout and animations to the settings app) |
 
-## Why `patch-end4pc.sh` exists
+## Why `patch-end4pc.sh` exists (and why it is now a no-op)
 
 Upstream end4-pC expects `~/.config/matugen` — but [end4](end4.md) **owns** that
 path as a symlink into its own checkout. Running both meant end4pc died with end4.
 
-`patch-end4pc.sh` repoints the checkout at end4pc-owned paths. It rewrites the
-fork's `scripts/colors/switchwall.sh` to use `~/.config/matugen-end4pc`, points the shell's
+`patch-end4pc.sh` repoints a checkout at end4pc-owned paths. It rewrites the fork's
+`scripts/colors/switchwall.sh` to use `~/.config/matugen-end4pc`, points the shell's
 settings app at end4pc's own files, and seeds
-`~/.config/illogical-impulse-pC/config.json`. It is **idempotent** and is called
-at the end of `setup-end4pc.sh`.
+`~/.config/illogical-impulse-pC/config.json`. It is idempotent and is called at the
+end of `setup-end4pc.sh` and `update-end4pc.sh`.
 
-`setup-end4pc.sh` invokes it directly rather than via its `as_user` helper —
-`patch-end4pc.sh` does its own `SUDO_USER` handling, and re-sudoing would make it
-resolve `REAL_USER` as root.
-
-**Any upstream pull must be followed by re-running it**, since a pull restores
-upstream's paths. `scripts/update-end4pc.sh` does that for you — only run it by
-hand after a manual `git pull`:
+**The `my-end4pc` fork now carries those rewrites as commits**, so on the current
+checkout `patch-end4pc.sh` reports "already patched — nothing to do". It, and
+`update-end4pc.sh`, are kept as a safety net (for a clone of plain upstream, or an
+upstream merge that restores the old paths) — not because anything needs them today.
+Run it by hand after a manual merge from upstream:
 
 ```bash
 bash ~/.config/dcli/scripts/patch-end4pc.sh
 ```
+
+`setup-end4pc.sh` invokes it directly rather than through `as_user` — the patch
+script does its own `SUDO_USER` handling.
 
 ## Theming writes into this repo
 
@@ -58,9 +59,9 @@ in-shell settings edits produce **git changes in this repo**. That is expected.
 Same rule as [end4](end4.md) — it is a conflicting Quickshell provider. The config
 runs on whichever provider is enabled.
 
-`setup-end4pc.sh` installs the **same dependency set** as `setup-end4.sh`,
-duplicated on purpose and all `--needed`, so it is a no-op when end4 already ran
-and end4pc still stands alone if `shell-end4` is disabled.
+`shell-end4pc` declares the **same dependency set**
+as `shell-end4`, as module `packages:` duplicated on purpose (dcli dedups the overlap), so end4pc
+still stands alone if `shell-end4` is disabled.
 
 ## Submodules are mandatory
 
@@ -80,32 +81,28 @@ is needed for end4pc to run, so the two shells are effectively independent.
 ## Updating
 
 ```bash
-~/.config/dcli/scripts/update-end4pc.sh
+~/.config/dcli/scripts/update-shells.sh end4pc     # refuses on a dirty tree
 ```
 
-That is the whole procedure — it discards the path patches, pulls, updates
-submodules, and re-applies `patch-end4pc.sh`. Nothing to do by hand afterwards
-except restart the shell.
+which runs `scripts/update-end4pc.sh`: `git checkout -- .`, `git pull --ff-only`, a
+submodule update, then `patch-end4pc.sh`. Restart the shell afterwards.
 
-**Why it discards first:** `patch-end4pc.sh` leaves 14 files modified in the
-working tree, which would make the pull non-fast-forward. So the script runs
-`git checkout -- .` before pulling.
-
-That is safe *only because* every modified file is one the patch script owns and
-will recreate. **Any manual edit you make in this checkout will be destroyed** —
-there is no personal fork here, so there is nowhere for local changes to live.
-Keep customizations in `dotfiles/hypr/shells/end4pc/` instead. To confirm before
-updating, the dirty set should match the patch script's file list exactly:
-
-```bash
-cd ~/.local/share/end4-pC && git status --porcelain | wc -l    # expect 14
-```
+> **Warning: `update-end4pc.sh` runs `git checkout -- .`, which discards every
+> uncommitted change in the checkout.** That was designed for the era when the path
+> patches were uncommitted working-tree edits. The checkout is now a real fork with
+> its own commits and branch, so any uncommitted work there is exactly what would be
+> lost. `update-shells.sh` refuses to run the script on a dirty tree; running the
+> script directly does not. Commit or stash first, or prefer
+> `git -C ~/.local/share/end4-pC pull --ff-only` plus the submodule update. (Whether
+> to simplify or retire the script is the user's open decision.)
 
 ## Health check
 
 ```bash
+scripts/doctor.sh
+scripts/update-shells.sh --status end4pc
 git -C ~/.local/share/end4-pC status --short
 git -C ~/.local/share/end4-pC submodule status
-grep -c matugen-end4pc ~/.local/share/end4-pC/scripts/colors/switchwall.sh  # patch applied?
+grep -c matugen-end4pc ~/.local/share/end4-pC/scripts/colors/switchwall.sh  # patch applied? (>0)
 qs -c end4-pC 2>&1 | grep -E "Configuration Loaded|FATAL|not installed"
 ```

@@ -11,13 +11,14 @@ wrapper. It installs itself through its own installer rather than a package.
 | Module | `modules/ambxst.yaml` |
 | Packages | none declared — its own installer handles deps |
 | Launch | `ambxst` (`/usr/local/bin/ambxst`) |
-| Setup hook | `scripts/setup-ambxst.sh` |
+| Setup hook | `scripts/setup-ambxst.sh` (opt-in clone) |
+| Update | none — a development fork; `scripts/update-shells.sh --status` reports it |
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `~/.local/src/ambxst` | Fork checkout, **source of truth**. origin `plusdrag11/Ambxst`, upstream `Axenide/Ambxst`, branch `my-ambxst` |
+| `~/.local/src/ambxst` | Fork checkout, **source of truth**. origin `JASSIM-ALHUMAID/my-Ambxst`, upstream `Axenide/Ambxst`, branch `my-ambxst` |
 | `~/.local/share/ambxst` → `~/.local/src/ambxst` | Where `hyprland.lua` is loaded from |
 | `/usr/local/bin/ambxst` | Go daemon binary installed by the fork's `install.sh` (it sudos where needed) |
 | `~/.config/ambxst` → `dotfiles/ambxst` | **dcli-managed** settings: `binds.json`, `config/`, `hypr-user.conf`, `presets/` |
@@ -28,15 +29,17 @@ or `~/.local/bin` — written by the fork's installer, not by pacman or dcli.
 
 ## It supplies its own Hyprland config
 
-Unlike dms/noctalia/end4/end4pc, ambxst's `hyprland.lua` comes from its checkout,
-not from `dotfiles/hypr/shells/`. `~/.config/hypr/hyprland.lua` `dofile()`s
-`~/.local/share/ambxst/hyprland.lua`, then — uniquely — loads
+Unlike the standalone shells, ambxst's `hyprland.lua` comes from its checkout, not
+from `dotfiles/hypr/shells/`. `~/.config/hypr/hyprland.lua` `dofile()`s
+`~/.local/share/ambxst/hyprland.lua` (registry record `ambxst`), then loads
 `dotfiles/hypr/shells/ambxst-overrides.lua` on top.
 
 The overrides file exists because the fork's config sets things this machine wants
-different: monitor scale, `us,ara` keyboard layout with `grp:win_space_toggle` and
-`ctrl:nocaps`, pointer sensitivity/accel, scrolling column widths, and gesture
-behaviour. **Put local tweaks there, not in the checkout** — the checkout is the
+different. It pulls in the shared house layer — `require("common.monitor")`,
+`common.input` (`us,ara`, `grp:win_space_toggle`, `ctrl:nocaps`, pointer
+sensitivity/accel), `common.scrolling`, `common.workspace-slide`,
+`common.gestures` — and sets repeat rate and gesture behaviour itself. **Put local
+tweaks there, not in the checkout** — the checkout is the
 fork and edits there become fork commits.
 
 ## Trap: it rewrites the monitor on startup
@@ -54,7 +57,7 @@ ambxst's CLI trusts a cached PID in `/tmp/ambxst.pid`. **A stale entry there mak
 actually running:
 
 ```bash
-pgrep -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit
+pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit
 ```
 
 Never call `ambxst quit` unguarded from a script.
@@ -65,7 +68,7 @@ The daemon supervises `qs -p .../ambxst/shell.qml` as a child, so the main UI
 process must be matched by command line (`pkill -f`), not by name — `pkill -x
 ambxst` / `-x axctl` catch only the daemon binaries. The IPC helper appears as
 `tail -f .../ambxst_ipc.pipe` (comm=tail), so it too needs `-f` with a
-distinctive phrase. `switch-shell.sh` matches `ambxst/shell.qml`, `ambxst`,
+distinctive phrase. `switch-shell.sh`'s `MATCH_SPECS[ambxst]` matches `ambxst/shell.qml`, `ambxst`,
 `axctl` and `ambxst_ipc` for exactly this reason. (`cli.sh`, `loginlock.sh`
 and `sleep_monitor.sh` were removed upstream and match nothing anymore.)
 
@@ -120,6 +123,8 @@ workspaces, dead launcher dispatch). Fixed in the fork's
 ## Health check
 
 ```bash
+scripts/doctor.sh                       # checkout, links, provider
+scripts/update-shells.sh --status ambxst
 git -C ~/.local/src/ambxst status --short
 readlink -f ~/.local/share/ambxst        # -> ~/.local/src/ambxst
 readlink -f ~/.config/ambxst            # -> dcli/dotfiles/ambxst
