@@ -12,22 +12,22 @@ local editor       = "zed"
 local fileExplorer = "thunar"
 local xenonCmd     = "qs -c xenon ipc call"
 
--- Default monitor conf
-hl.monitor({
-    output   = "",
-    mode     = "preferred",
-    position = "auto",
-    scale    = 1,
-})
+-- Modules are fully qualified: ~/.config/hypr/hyprland/ is a real directory
+-- other shells' upstreams write into, so a bare "hyprland.<name>" could be
+-- shadowed there. Preferences shared by every standalone shell are in
+-- ~/.config/hypr/common/.
+require("common.monitor")
 
--- Modules
-require("hyprland.env")
-require("hyprland.general")
-require("hyprland.input")
-require("hyprland.scrolling")
-require("hyprland.decoration")
-require("hyprland.animations")
-require("hyprland.misc")
-require("hyprland.rules")
-require("hyprland.execs")
-require("hyprland.keybinds")
+require("common.env")
+require("common.general")
+require("common.input")
+require("common.bind-options")
+require("common.gestures")
+require("common.scrolling")
+require("common.decoration")
+require("common.animations")
+require("common.workspace-slide")
+require("common.misc")
+require("common.rules")
+require("shells.xenon.hyprland.execs")
+require("shells.xenon.hyprland.keybinds")

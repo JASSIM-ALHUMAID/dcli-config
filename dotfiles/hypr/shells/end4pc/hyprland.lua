@@ -8,10 +8,6 @@ local defaultBrowser = "zen-browser"
 local editor       = "zed"
 local fileExplorer = "thunar"
 
-local sensitivity  = 0.3
-local accelProfile = "flat"
-local kbOptions    = "grp:win_space_toggle, ctrl:nocaps"
-
 -- NOTE: gaps, border size, rounding, blur, tiling layout, kb_layout and the
 -- animation set are NOT set here — the end4-pC settings app owns them and
 -- writes them to overrides/main.lua + overrides/animations.lua, which are
@@ -22,21 +18,20 @@ local kbOptions    = "grp:win_space_toggle, ctrl:nocaps"
 
 -- Default monitor conf (overridden by monitors.lua once the app's Displays
 -- page has been used)
-hl.monitor({
-    output   = "",
-    mode     = "preferred",
-    position = "auto",
-    scale    = 1,
-})
+require("common.monitor")
 
--- Modules
-require("hyprland.env")
-require("hyprland.input")
-require("hyprland.scrolling")
-require("hyprland.misc")
-require("hyprland.rules")
-require("hyprland.execs")
-require("hyprland.keybinds")
+-- Modules are fully qualified: ~/.config/hypr/hyprland/ is a real directory
+-- the upstream shell writes into, so a bare "hyprland.<name>" could be
+-- shadowed there.
+require("common.env")
+require("common.input")
+require("common.bind-options")
+require("common.gestures")
+require("common.scrolling")
+require("common.misc")
+require("common.rules")
+require("shells.end4pc.hyprland.execs")
+require("shells.end4pc.hyprland.keybinds")
 
 -- Files owned by the end4-pC shell rather than by this config, loaded last so
 -- they win over everything above:
