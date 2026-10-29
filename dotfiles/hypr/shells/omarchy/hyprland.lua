@@ -19,7 +19,7 @@
 --
 -- 1. bootstrap.lua puts ~/.config/?.lua on package.path, so a require("hypr.x")
 --    from anywhere in omarchy resolves into ~/.config/hypr — this repo's SHARED
---    hypr directory, used by all seven shells. Never `require` our own code from
+--    hypr directory, used by every shell. Never `require` our own code from
 --    here (use dofile), and never create dotfiles/hypr/{monitors,input,bindings,
 --    looknfeel,autostart}.lua: those are the names omarchy's user config uses
 --    and they would silently start loading for every shell.
