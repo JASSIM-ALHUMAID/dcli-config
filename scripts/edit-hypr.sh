@@ -19,7 +19,7 @@ set -u
 # resolved off this script's real path so the script works from any cwd or
 # through a symlink.
 # shellcheck source=lib/shell-common.sh disable=SC1091
-. "$(dirname "$(readlink -f "$0")")/lib/shell-common.sh"
+. "$(dirname "$(readlink -f "$0")")/lib/shell-common.sh" || exit 1
 
 DCONF_KEY=/io/github/bluemancz/hyprmod/config-path
 
@@ -50,9 +50,9 @@ command -v dconf >/dev/null 2>&1 || {
   exit 1
 }
 
-# TERM→death wait for the running hyprmod (20 × 0.1s).
-TERM_POLL_ITERS=20
-TERM_POLL_INTERVAL=0.1
+# TERM→death wait for the running hyprmod (20 × TERM_POLL_INTERVAL, the
+# interval shared with kill_matching in shell-common.sh).
+HYPRMOD_TERM_POLL_ITERS=20
 
 # Single-instance GTK app: a second `hyprmod` just activates the running
 # window, which keeps the managed path it started with. Refuse unless forced.
@@ -61,7 +61,7 @@ TERM_POLL_INTERVAL=0.1
 if pgrep -A -f 'bin/hyprmod' >/dev/null 2>&1; then
   if [ "$FORCE" = 1 ]; then
     pkill -A -TERM -f 'bin/hyprmod' # clean quit: hyprmod routes TERM to app.quit()
-    for _ in $(seq "$TERM_POLL_ITERS"); do
+    for _ in $(seq "$HYPRMOD_TERM_POLL_ITERS"); do
       pgrep -A -f 'bin/hyprmod' >/dev/null 2>&1 || break
       sleep "$TERM_POLL_INTERVAL"
     done
@@ -72,7 +72,7 @@ if pgrep -A -f 'bin/hyprmod' >/dev/null 2>&1; then
   fi
 fi
 
-# Per-shell managed file, by naming convention (no registry entry needed).
+# Per-shell managed file, by naming convention (no registry field needed).
 # Absolute expanded path on purpose: hyprmod applies the stored string via
 # Path(path) without expanduser().
 MANAGED="$SHELLS_DIR/$SHELL_NAME/hyprmod.lua"

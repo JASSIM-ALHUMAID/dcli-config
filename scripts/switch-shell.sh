@@ -1,54 +1,63 @@
 #!/bin/bash
 # Switch between Hyprland shells: caelestia | ambxst | dms | noctalia | end4 | end4pc | omarchy | xenon
-# Usage: switch-shell.sh [shell]
+# Usage: switch-shell.sh [--dry-run] [shell]
 #   no argument = interactive fuzzel picker (falls back to usage text)
+#   --dry-run   = print the teardown/launch plan and the active.conf that would
+#                 be written; touches nothing (no lock, no kill, no hyprctl, no
+#                 theme snapshots)
 #
 # Mechanism: ~/.config/hypr/hyprland.lua reads shells/active.conf, extracts
 # the shell name, and dofile()'s the matching Lua config. This script
 # rewrites active.conf and reloads hyprland. The per-shell Lua configs live
-# in the dcli repo (dotfiles/hypr/shells/).
+# in the dcli repo (dotfiles/hypr/shells/); the shell list itself is the
+# registry file next to them (read via lib/shell-common.sh).
 
 set -u
+
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+DRY_RUN=0
+SHELL_NAME=""
+for arg in "$@"; do
+  case "$arg" in
+  --dry-run) DRY_RUN=1 ;;
+  *) SHELL_NAME="$arg" ;;
+  esac
+done
 
 # ── Single-instance lock ─────────────────────────────────────────────────────
 # Prevent concurrent runs — only one switch-shell at a time. The fd number is
 # bash-allocated (fd operands cannot come from expansion) and carried in LOCK_FD.
-LOCKFILE="/tmp/switch-shell.lock"
-exec {LOCK_FD}>"$LOCKFILE"
-flock -n "$LOCK_FD" || { echo "switch-shell.sh: another instance is running"; exit 1; }
+# $XDG_RUNTIME_DIR is per-user and 0700; /tmp is the fallback for sessions
+# without one. A dry run takes no lock: it mutates nothing, so it must not
+# contend with (or be blocked by) a real switch.
+if [ "$DRY_RUN" = 0 ]; then
+  LOCKFILE="${XDG_RUNTIME_DIR:-/tmp}/switch-shell.lock"
+  exec {LOCK_FD}>"$LOCKFILE"
+  flock -n "$LOCK_FD" || { echo "switch-shell.sh: another instance is running"; exit 1; }
+fi
 
-# Shared registry + active.conf parser (KNOWN, SHELL_RECORDS, current_shell) —
-# resolved off this script's real path so the script works from any cwd or
-# through a symlink.
+# Shared registry + active.conf parser (KNOWN, SHELL_RECORDS, current_shell,
+# shell_config_path, kill_matching) — resolved off this script's real path so
+# the script works from any cwd or through a symlink.
 # shellcheck source=lib/shell-common.sh disable=SC1091
-. "$(dirname "$(readlink -f "$0")")/lib/shell-common.sh"
-
-# Where each shell's Lua config lives — must match hyprland.lua's shell_paths
-config_path() {
-  case "$1" in
-  caelestia) echo "$HOME/.local/share/caelestia/hypr/hyprland.lua" ;;
-  ambxst) echo "$HOME/.local/share/ambxst/hyprland.lua" ;;
-  *) echo "$SHELLS_DIR/$1/hyprland.lua" ;;
-  esac
-}
+. "$SCRIPT_DIR/lib/shell-common.sh" || exit 1
 
 # ── Target selection ─────────────────────────────────────────────────────────
-SHELL_NAME="${1:-}"
-
 # No argument: fuzzel picker (marks and preselects the current shell)
 if [ -z "$SHELL_NAME" ]; then
   if command -v fuzzel >/dev/null 2>&1 && [ -n "${WAYLAND_DISPLAY:-}" ]; then
     cur=$(current_shell)
     # Real per-shell logo + blurb, split out of the shared registry's records
-    # (name|icon|blurb — see shell-common.sh for the set and why omarchy is a
-    # .png). The logos are committed under dotfiles/fuzzel/shell-icons and land
+    # (name|config|icon|blurb — see the registry file for the set and why
+    # omarchy is a .png). The logos are committed under dotfiles/fuzzel/shell-icons and land
     # at ~/.config/fuzzel/shell-icons via the fuzzel dir symlink. Rendered by
     # fuzzel's dmenu icon protocol (label\0icon\x1f<abs-path>, libresvg).
     icon_dir="$HOME/.config/fuzzel/shell-icons"
     icon_files=()
     blurbs=()
     for record in "${SHELL_RECORDS[@]}"; do
-      IFS='|' read -r _ icon blurb <<<"$record"
+      IFS='|' read -r _ _ icon blurb <<<"$record"
       icon_files+=("$icon")
       blurbs+=("$blurb")
     done
@@ -87,7 +96,7 @@ case " ${KNOWN[*]} " in
   ;;
 esac
 
-SHELL_CONFIG=$(config_path "$SHELL_NAME")
+SHELL_CONFIG=$(shell_config_path "$SHELL_NAME")
 if [ ! -f "$SHELL_CONFIG" ]; then
   echo "Error: $SHELL_CONFIG not found (run dcli sync?)"
   exit 1
@@ -97,7 +106,7 @@ PREV_SHELL=$(current_shell)
 
 # ── Shared theming surface ───────────────────────────────────────────────────
 # Per-shell snapshot/restore of the SHARED app theming surface (GTK, Qt, cursor,
-# Thunar's colours, rofi). Those are one global copy that six of the nine shells
+# Thunar's colours, rofi). Those are one global copy that most of the shells
 # overwrite, so without this the desktop keeps whichever look the last shell to
 # run its theme pipeline left behind — usually the login shell, all session.
 # scripts/shell-theme-state.sh has the full reasoning and the managed set.
@@ -107,102 +116,233 @@ PREV_SHELL=$(current_shell)
 # what keeps a non-zero exit from mattering.
 theme_state() {
   [ "${DCLI_SKIP_THEME_STATE:-0}" = 1 ] && return 0
-  local helper="$HOME/.config/dcli/scripts/shell-theme-state.sh"
+  local helper="$SCRIPT_DIR/shell-theme-state.sh"
   [ -x "$helper" ] || return 0
   "$helper" "$1" "$2" || true
 }
 
-# ── Teardown ─────────────────────────────────────────────────────────────────
-# TERM→KILL escalation and reap-wait limits (10 × 0.1s ≈ 1s; 5 × 0.1s ≈ 0.5s).
-TERM_POLL_ITERS=10
-TERM_POLL_INTERVAL=0.1
-REAP_POLL_ITERS=5
-
-# TERM first, escalate to KILL only for survivors. Patterns must be
-# anchored (-x exact name, or -f with a distinctive phrase) so unrelated
-# processes (e.g. an editor with an ambxst file open) are never matched.
-#
-# -A (--ignore-ancestors) is not optional: with -f, pgrep/pkill match the whole
-# command line, so ANY ancestor of this script whose command line merely contains
-# the pattern is a hit — including the shell that invoked us. That is not
-# theoretical: a `bash -c` whose text mentioned "quickshell -n -p .../omarchy/shell"
-# was TERMed by this function mid-switch, killing the script that was running it.
-# -A excludes our own ancestors and costs nothing.
-kill_matching() {
-  local flag="$1" pattern="$2"
-  pkill -A "$flag" "$pattern" 2>/dev/null || return 0
-  # Poll up to 1s, bail immediately when process exits
-  local i=0
-  while [ "$i" -lt "$TERM_POLL_ITERS" ]; do
-    pgrep -A "$flag" "$pattern" >/dev/null 2>&1 || return 0
-    sleep "$TERM_POLL_INTERVAL"
-    i=$((i + 1))
-  done
-  # Still alive after 1s — escalate to KILL
-  pkill -9 -A "$flag" "$pattern" 2>/dev/null
-}
-
-kill_all_shells() {
-  # Ask nicely via each shell's own IPC first (skip if binary not installed)
-  command -v qs >/dev/null 2>&1 && qs -c caelestia kill 2>/dev/null
-  # No graceful-quit IPC for noctalia v5: its CLI only accepts theme/msg/config/
-  # dmenu/plugins/firefox-theme, and an unrecognised bare argument falls through
-  # and STARTS the shell — so `noctalia kill` would launch it. Killed by name in
-  # kill_matching below instead.
-  command -v dms >/dev/null 2>&1 && dms kill 2>/dev/null
-  command -v qs >/dev/null 2>&1 && qs -c ii kill 2>/dev/null
-  command -v qs >/dev/null 2>&1 && qs -c end4-pC kill 2>/dev/null
-  # No graceful-quit IPC for xenon either: its handlers are launcher, clipboard,
-  # sidePanel, wallpaperpanel, powermenu, infopanel, settings, cliphistService,
-  # wallpaper and lock — there is no kill/quit verb to call. It is TERMed by
-  # command line below.
-  # Only ask ambxst to quit if it's actually running: its CLI trusts a
-  # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
-  # whatever unrelated process now owns that recycled PID.
-  pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null
-  # Caelestia / generic quickshell stragglers
-  kill_matching -f "qs -c caelestia"
-  # Noctalia v5 is its own binary (no quickshell fork) — match it by name.
-  kill_matching -x "noctalia"
-  kill_matching -f "dms run"
-  kill_matching -f "qs -c ii"
-  kill_matching -f "qs -c end4-pC"
-  kill_matching -f "qs -c xenon"
-  # Catch-all: no quickshell instance from any previous shell may linger
-  kill_matching -x "swaync"
-  kill_matching -f "awww-daemon"
-  kill_matching -x "quickshell"
-  kill_matching -f "caelestia shell"
-  kill_matching -f "caelestia resizer"
+# ── Shell lifecycle table ────────────────────────────────────────────────────
+# Per registry name, everything switch-shell.sh knows about running that shell:
+#   MATCH_SPECS     newline-separated "<pgrep flag> <pattern>" lines. The FIRST
+#                   line is the "is it running" guard before launching; ALL
+#                   lines are killed on teardown. Patterns must not contain '|'
+#                   (they are joined into the reap-wait regex).
+#   quit_<name>     optional graceful-quit through the shell's own IPC
+#   launch_<name>   required; starts the shell in the background
+# Adding a shell = a registry record + an entry in each of these (smoke.sh
+# fails if a registry name lacks a spec or a launch function).
+declare -A MATCH_SPECS=(
+  [caelestia]='-f qs -c caelestia
+-f caelestia shell
+-f caelestia resizer'
   # AMBXst — /usr/local/bin/ambxst is now a Go daemon that supervises
   # children (`qs -p .../ambxst/shell.qml`, `axctl daemon`, `tail -f`
   # on the IPC pipe), so the main UI process must be matched by command
   # line (-f); -x ambxst/axctl catch the daemon binaries by name.
   # Helpers (comm=bash/tail) need -f with a distinctive phrase.
-  kill_matching -f "ambxst/shell.qml"
-  kill_matching -x "ambxst"
-  kill_matching -x "axctl"
-  kill_matching -f "ambxst_ipc"
+  [ambxst]='-f ambxst/shell.qml
+-x ambxst
+-x axctl
+-f ambxst_ipc'
+  [dms]='-f dms run'
+  # Noctalia v5 is its own binary (no quickshell fork) — match it by name.
+  [noctalia]='-x noctalia'
+  [end4]='-f qs -c ii'
+  [end4pc]='-f qs -c end4-pC'
   # omarchy v4 is one quickshell instance started as
   # `quickshell -n -p <checkout>/shell`. Like ambxst's `qs -p` it has no config
   # name, so it must be matched by command line — and the pattern is anchored on
   # the whole invocation, not just "omarchy/shell", which would also match an
   # editor holding a file from the checkout open.
-  kill_matching -f "quickshell -n -p .*omarchy/shell"
   # omarchy-launch-shell supervises quickshell and respawns it on any exit —
   # kill the supervisor too or the shell comes right back.
-  kill_matching -f "omarchy-launch-shell"
-  # Old quickshell wallpaper scripts from previous configs
-  kill_matching -f "switchwall.sh"
+  [omarchy]='-f quickshell -n -p .*omarchy/shell
+-f omarchy-launch-shell'
+  [xenon]='-f qs -c xenon'
+)
+
+# Not owned by any one shell: helpers that previous shells' configs leave
+# behind (swaync, awww-daemon, old quickshell wallpaper scripts) and the
+# quickshell catch-all — no quickshell instance from any previous shell may
+# linger. Killed after every shell's own specs.
+SHARED_MATCH_SPECS='-x swaync
+-f awww-daemon
+-x quickshell
+-f switchwall.sh'
+
+# No graceful-quit IPC for noctalia v5: its CLI only accepts theme/msg/config/
+# dmenu/plugins/firefox-theme, and an unrecognised bare argument falls through
+# and STARTS the shell — so `noctalia kill` would launch it. Killed by name via
+# its MATCH_SPECS instead. Likewise xenon: its handlers are launcher,
+# clipboard, sidePanel, wallpaperpanel, powermenu, infopanel, settings,
+# cliphistService, wallpaper and lock — there is no kill/quit verb to call. It
+# is TERMed by command line.
+quit_caelestia() { command -v qs >/dev/null 2>&1 && qs -c caelestia kill 2>/dev/null; }
+quit_dms() { command -v dms >/dev/null 2>&1 && dms kill 2>/dev/null; }
+quit_end4() { command -v qs >/dev/null 2>&1 && qs -c ii kill 2>/dev/null; }
+quit_end4pc() { command -v qs >/dev/null 2>&1 && qs -c end4-pC kill 2>/dev/null; }
+# Only ask ambxst to quit if it's actually running: its CLI trusts a
+# cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
+# whatever unrelated process now owns that recycled PID.
+quit_ambxst() { pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null; }
+
+# dms and noctalia are exec-once'd from their shell conf, but exec-once does
+# not re-fire on `hyprctl reload`, so they are started here too (guarded by the
+# first MATCH_SPECS line so a fresh login doesn't double-start them).
+# Settle wait between starting ambxst and re-asserting its monitor scale.
+AMBXST_MONITOR_SETTLE_SECS=1
+
+launch_caelestia() {
+  # The fork's QML needs its own Caelestia.Internal plugin (~/.local/lib):
+  # the packaged one in /usr/lib is older and lacks types like
+  # LogindManager, so the shell dies with "Failed to load configuration".
+  # hypr-user.lua exports these too, but hyprland only applies `env` at
+  # startup — set them here so a switch works without a relogin.
+  QML2_IMPORT_PATH="$HOME/.local/lib/qt6/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}" \
+    CAELESTIA_LIB_DIR="$HOME/.local/lib/caelestia" \
+    caelestia shell -d &
+  disown
+}
+launch_ambxst() {
+  # ambxst rewrites the monitor on startup; shells/ambxst-overrides.lua
+  # puts it back at scale 1 on the next reload.
+  ambxst &
+  disown
+  sleep "$AMBXST_MONITOR_SETTLE_SECS"
+  hyprctl eval 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })' >/dev/null 2>&1
+}
+launch_dms() {
+  dms run &
+  disown
+}
+launch_noctalia() {
+  noctalia &
+  disown
+}
+launch_end4() {
+  qs -c ii &
+  disown
+}
+launch_end4pc() {
+  qs -c end4-pC &
+  disown
+}
+launch_omarchy() {
+  # Nothing puts OMARCHY_PATH in the session environment on purpose (see
+  # docs/shells/omarchy.md), so it is exported here for the shell process.
+  # The Hyprland config does not rely on this — it resolves the checkout
+  # itself — but the shell's QML calls omarchy-* scripts by bare name.
+  # QS_DISABLE_FILE_WATCHER/QS_NO_RELOAD_POPUP mirror upstream's
+  # omarchy-launch-shell: quickshell's own file-watcher reload against a
+  # half-updated checkout crashes the shell, so reloads stay deliberate.
+  # scripts/omarchy-shims comes FIRST so house shims shadow same-named
+  # upstream scripts for everything the shell spawns (currently just
+  # omarchy-launch-screensaver — see the shim for why).
+  OMARCHY_PATH="$HOME/.local/share/omarchy" \
+    PATH="$SCRIPT_DIR/omarchy-shims:$HOME/.local/share/omarchy/bin:$PATH" \
+    QS_DISABLE_FILE_WATCHER=1 QS_NO_RELOAD_POPUP=1 \
+    quickshell -n -p "$HOME/.local/share/omarchy/shell" &
+  disown
+}
+launch_xenon() {
+  qs -c xenon &
+  disown
+}
+
+# A spec line is "<flag> <pattern>"; the pattern may contain spaces.
+spec_flag() { echo "${1%% *}"; }
+spec_pattern() { echo "${1#* }"; }
+
+guard_spec() { head -n1 <<<"${MATCH_SPECS[$1]}"; }
+
+# ── Teardown ─────────────────────────────────────────────────────────────────
+# Reap-wait limit (5 × TERM_POLL_INTERVAL ≈ 0.5s; the TERM/KILL escalation
+# constants and kill_matching live in lib/shell-common.sh).
+REAP_POLL_ITERS=5
+
+spec_block_for() {
+  if [ "$1" = shared ]; then echo "$SHARED_MATCH_SPECS"; else echo "${MATCH_SPECS[$1]}"; fi
+}
+
+# Alternation of every pattern in the table — what is left to wait for after
+# the kills. Derived, so a new shell's spec is reaped without a second list.
+reap_regex() {
+  local shell spec patterns=()
+  for shell in "${KNOWN[@]}" shared; do
+    while IFS= read -r spec; do
+      [ -n "$spec" ] && patterns+=("$(spec_pattern "$spec")")
+    done <<<"$(spec_block_for "$shell")"
+  done
+  local IFS='|'
+  echo "${patterns[*]}"
+}
+
+kill_spec_block() {
+  local spec
+  while IFS= read -r spec; do
+    [ -n "$spec" ] && kill_matching "$(spec_flag "$spec")" "$(spec_pattern "$spec")"
+  done <<<"$1"
+}
+
+kill_all_shells() {
+  local shell
+  # Ask nicely via each shell's own IPC first (skip if binary not installed)
+  for shell in "${KNOWN[@]}"; do
+    declare -F "quit_$shell" >/dev/null && "quit_$shell"
+  done
+  for shell in "${KNOWN[@]}" shared; do
+    kill_spec_block "$(spec_block_for "$shell")"
+  done
   # Catch-all: no quickshell instance from any previous shell may linger
   killall -q qs quickshell 2>/dev/null
   # Wait briefly for OS to reclaim resources from killed processes
-  local i=0
-  while [ "$i" -lt "$REAP_POLL_ITERS" ] && pgrep -A -f "qs -c|quickshell|ambxst|noctalia|dms run|omarchy/shell|omarchy-launch-shell" >/dev/null 2>&1; do
+  local i=0 regex
+  regex=$(reap_regex)
+  while [ "$i" -lt "$REAP_POLL_ITERS" ] && pgrep -A -f "$regex" >/dev/null 2>&1; do
     sleep "$TERM_POLL_INTERVAL"
     i=$((i + 1))
   done
 }
+
+launch_shell() {
+  local guard
+  guard=$(guard_spec "$1")
+  pgrep -A "$(spec_flag "$guard")" "$(spec_pattern "$guard")" >/dev/null 2>&1 || "launch_$1"
+}
+
+# ── Dry run ──────────────────────────────────────────────────────────────────
+# Read-only: pgrep only reports whether each pattern currently matches.
+print_plan() {
+  local shell line state
+  echo "Dry run: switch $PREV_SHELL -> $SHELL_NAME (nothing touched)"
+  echo "config: $SHELL_CONFIG"
+  echo
+  echo "graceful quit (in order):"
+  for shell in "${KNOWN[@]}"; do
+    declare -F "quit_$shell" >/dev/null && echo "  quit_$shell"
+  done
+  echo "kill (TERM, KILL for survivors; pgrep -A):"
+  for shell in "${KNOWN[@]}" shared; do
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      pgrep -A "$(spec_flag "$line")" "$(spec_pattern "$line")" >/dev/null 2>&1 && state=running || state=idle
+      printf '  %-9s %-2s %-40s [%s]\n' "$shell" "$(spec_flag "$line")" "$(spec_pattern "$line")" "$state"
+    done <<<"$(spec_block_for "$shell")"
+  done
+  echo "  catch-all: killall -q qs quickshell"
+  echo "reap-wait regex: $(reap_regex)"
+  echo
+  echo "launch guard: $(guard_spec "$SHELL_NAME")"
+  declare -f "launch_$SHELL_NAME"
+  echo
+  echo "active.conf ($ACTIVE) would become:"
+  printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME"
+}
+
+if [ "$DRY_RUN" = 1 ]; then
+  print_plan
+  exit 0
+fi
 
 # ── Switch over ──────────────────────────────────────────────────────────────
 # Snapshot the OUTGOING shell before anything is torn down — its theming has to
@@ -236,11 +376,12 @@ sleep "$RELOAD_SETTLE_SECS"
 # Detect from the loaded binds instead of hardcoding shell names. Dispatchers
 # take Lua syntax under a .lua config and legacy syntax under a .conf one.
 #
-# Parsed from the PLAIN-TEXT output on purpose: `hyprctl binds -j` emits invalid
-# JSON on this Hyprland build whenever binds carry descriptions (it shifts keys
-# against values, e.g. `"keycode": XF86AudioRaiseVolume` unquoted). omarchy sets
-# a description on every one of its 216 binds, so jq fails there — which used to
-# land in the else branch by accident rather than by decision.
+# Parsed from the PLAIN-TEXT output on purpose: on Hyprland 0.56 `hyprctl binds -j`
+# emitted invalid JSON whenever binds carried descriptions (it shifted keys
+# against values, e.g. `"keycode": XF86AudioRaiseVolume` unquoted), and omarchy
+# sets a description on every one of its 216 binds, so jq failed there. 0.57.0
+# parsed fine under caelestia (168 binds); untested under omarchy. The text parse
+# is robust either way, so it is kept defensively.
 if hyprctl binds | grep -qE '^[[:space:]]*submap: global$'; then
   hyprctl dispatch 'hl.dsp.submap("global")' >/dev/null 2>&1 || hyprctl dispatch submap global
 else
@@ -261,85 +402,7 @@ fi
 # the lock fd (LOCK_FD) and would hold the lock open after this script exits.
 exec {LOCK_FD}>&-
 
-# Launch. dms and noctalia are exec-once'd from their shell conf, but
-# exec-once does not re-fire on `hyprctl reload`, so start them here too
-# (guarded so a fresh login doesn't double-start them).
-# Settle wait between starting ambxst and re-asserting its monitor scale.
-AMBXST_MONITOR_SETTLE_SECS=1
-case "$SHELL_NAME" in
-caelestia)
-  pgrep -A -f "qs -c caelestia" >/dev/null 2>&1 || {
-    # The fork's QML needs its own Caelestia.Internal plugin (~/.local/lib):
-    # the packaged one in /usr/lib is older and lacks types like
-    # LogindManager, so the shell dies with "Failed to load configuration".
-    # hypr-user.lua exports these too, but hyprland only applies `env` at
-    # startup — set them here so a switch works without a relogin.
-    QML2_IMPORT_PATH="$HOME/.local/lib/qt6/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}" \
-      CAELESTIA_LIB_DIR="$HOME/.local/lib/caelestia" \
-      caelestia shell -d &
-    disown
-  }
-  ;;
-ambxst)
-  pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 || {
-    # ambxst rewrites the monitor on startup; shells/ambxst-overrides.lua
-    # puts it back at scale 1 on the next reload.
-    ambxst &
-    disown
-    sleep "$AMBXST_MONITOR_SETTLE_SECS"
-    hyprctl eval 'hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })' >/dev/null 2>&1
-  }
-  ;;
-dms)
-  pgrep -A -f "dms run" >/dev/null 2>&1 || {
-    dms run &
-    disown
-  }
-  ;;
-noctalia)
-  pgrep -A -x noctalia >/dev/null 2>&1 || {
-    noctalia &
-    disown
-  }
-  ;;
-end4)
-  pgrep -A -f "qs -c ii" >/dev/null 2>&1 || {
-    qs -c ii &
-    disown
-  }
-  ;;
-end4pc)
-  pgrep -A -f "qs -c end4-pC" >/dev/null 2>&1 || {
-    qs -c end4-pC &
-    disown
-  }
-  ;;
-omarchy)
-  pgrep -A -f "quickshell -n -p .*omarchy/shell" >/dev/null 2>&1 || {
-    # Nothing puts OMARCHY_PATH in the session environment on purpose (see
-    # docs/shells/omarchy.md), so it is exported here for the shell process.
-    # The Hyprland config does not rely on this — it resolves the checkout
-    # itself — but the shell's QML calls omarchy-* scripts by bare name.
-    # QS_DISABLE_FILE_WATCHER/QS_NO_RELOAD_POPUP mirror upstream's
-    # omarchy-launch-shell: quickshell's own file-watcher reload against a
-    # half-updated checkout crashes the shell, so reloads stay deliberate.
-    # scripts/omarchy-shims comes FIRST so house shims shadow same-named
-    # upstream scripts for everything the shell spawns (currently just
-    # omarchy-launch-screensaver — see the shim for why).
-    OMARCHY_PATH="$HOME/.local/share/omarchy" \
-      PATH="$HOME/.config/dcli/scripts/omarchy-shims:$HOME/.local/share/omarchy/bin:$PATH" \
-      QS_DISABLE_FILE_WATCHER=1 QS_NO_RELOAD_POPUP=1 \
-      quickshell -n -p "$HOME/.local/share/omarchy/shell" &
-    disown
-  }
-  ;;
-xenon)
-  pgrep -A -f "qs -c xenon" >/dev/null 2>&1 || {
-    qs -c xenon &
-    disown
-  }
-  ;;
-esac
+launch_shell "$SHELL_NAME"
 
 echo "Switched to $SHELL_NAME"
 echo "Active shell: $(grep -v '^#' "$ACTIVE")"

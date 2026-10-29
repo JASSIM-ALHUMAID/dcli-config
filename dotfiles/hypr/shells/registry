@@ -1,0 +1,23 @@
+# Shell registry — the one list of shells, read by both runtimes:
+#   ~/.config/hypr/hyprland.lua  (which Hyprland config to dofile)
+#   scripts/lib/shell-common.sh  (switch-shell.sh, edit-hypr.sh, doctor.sh, picker)
+#
+# One record per line, in picker order:  name|config|icon|blurb
+#   name    switch-shell.sh / edit-hypr.sh argument and the active.conf value
+#   config  the shell's Hyprland Lua config; "~/" = $HOME, otherwise relative
+#           to ~/.config/hypr
+#   icon    file under dotfiles/fuzzel/shell-icons (omarchy is a .png on
+#           purpose: upstream's only SVG is a wide black wordmark, unusable at
+#           icon size on a dark picker)
+#   blurb   picker label suffix
+#
+# Adding a shell here is necessary but not sufficient — see the "New shell"
+# checklist in docs/ARCHITECTURE.md.
+caelestia|~/.local/share/caelestia/hypr/hyprland.lua|caelestia.svg|Material 3 · quickshell
+ambxst|~/.local/share/ambxst/hyprland.lua|ambxst.svg|Axenide · Astal
+dms|shells/dms/hyprland.lua|dms.svg|Dux Shell (ex-DankMaterialShell)
+noctalia|shells/noctalia/hyprland.lua|noctalia.svg|v5 · native, no Qt
+end4|shells/end4/hyprland.lua|end4.svg|illogical-impulse
+end4pc|shells/end4pc/hyprland.lua|end4pc.svg|pctrade fork
+omarchy|shells/omarchy/hyprland.lua|omarchy.png|DHH · v4 quickshell
+xenon|shells/xenon/hyprland.lua|xenon.svg|MannuVilasara · quickshell

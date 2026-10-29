@@ -4,26 +4,60 @@
 local home = os.getenv("HOME")
 local hypr = home .. "/.config/hypr"
 
-local shell_paths = {
-    caelestia = home .. "/.local/share/caelestia/hypr/hyprland.lua",
-    ambxst    = home .. "/.local/share/ambxst/hyprland.lua",
-    dms       = hypr .. "/shells/dms/hyprland.lua",
-    noctalia  = hypr .. "/shells/noctalia/hyprland.lua",
-    end4      = hypr .. "/shells/end4/hyprland.lua",
-    end4pc    = hypr .. "/shells/end4pc/hyprland.lua",
-    -- omarchy's own config lives in its checkout, but the file below is a
-    -- loader we own that dofile()s it — so it belongs here, not in ~/.local.
-    omarchy   = hypr .. "/shells/omarchy/hyprland.lua",
-    xenon     = hypr .. "/shells/xenon/hyprland.lua",
-}
+-- ── shell registry ──
+
+-- shells/registry is the one list of shells (name|config|icon|blurb); this file
+-- needs only the first two fields. A "~/"-prefixed config is $HOME-relative,
+-- anything else is relative to ~/.config/hypr.
+local REGISTRY_PATH = hypr .. "/shells/registry"
+local FALLBACK_SHELL = "caelestia"
+local FALLBACK_CONFIG = home .. "/.local/share/caelestia/hypr/hyprland.lua"
+
+local function load_registry()
+    local paths = {}
+    local f = io.open(REGISTRY_PATH, "r")
+    if not f then
+        io.stderr:write("hyprland.lua: cannot read " .. REGISTRY_PATH .. "\n")
+        return paths
+    end
+
+    for line in f:lines() do
+        local record = line:match("^%s*(.-)%s*$")
+        if record ~= "" and not record:match("^#") then
+            local name, config = record:match("^([^|]+)|([^|]+)")
+            if name and config then
+                if config:match("^~/") then
+                    paths[name] = home .. config:sub(2)
+                else
+                    paths[name] = hypr .. "/" .. config
+                end
+            else
+                io.stderr:write("hyprland.lua: malformed registry line: " .. record .. "\n")
+            end
+        end
+    end
+    f:close()
+
+    return paths
+end
+
+-- Without a usable registry the session still gets a config: caelestia's.
+local shell_paths = load_registry()
+if next(shell_paths) == nil then
+    io.stderr:write("hyprland.lua: no shells registered, falling back to " .. FALLBACK_SHELL .. "\n")
+    shell_paths[FALLBACK_SHELL] = FALLBACK_CONFIG
+end
+
+-- ── active shell ──
 
 -- active.conf holds a bare shell name; older versions wrote a
 -- "source = ~/.config/hypr/shells/<name>.conf" line, still accepted here.
--- Cross-reference: the bash parsers of this same contract live in the dcli
--- repo, scripts/lib/shell-common.sh — keep the accepted forms in sync there.
+-- Cross-reference: the bash side is the dcli repo's scripts/lib/shell-common.sh,
+-- which reads the same shells/registry and parses active.conf — keep the
+-- accepted forms in sync there.
 local function read_active_shell()
     local f = io.open(hypr .. "/shells/active.conf", "r")
-    if not f then return "caelestia" end
+    if not f then return FALLBACK_SHELL end
 
     local shell
     for line in f:lines() do
@@ -38,8 +72,10 @@ local function read_active_shell()
     end
     f:close()
 
-    return shell or "caelestia"
+    return shell or FALLBACK_SHELL
 end
+
+-- ── file helpers ──
 
 local function file_exists(path)
     local f = io.open(path, "r")
@@ -88,6 +124,8 @@ local function seed_scheme(dir)
     os.execute("mkdir -p '" .. hypr .. "/scheme'")
     copy(default, current)
 end
+
+-- ── dispatch ──
 
 -- DCLI_HYPRMOD_SHELL: set by scripts/edit-hypr.sh in hyprmod's environment
 -- only, so hyprmod's config reader (which executes this file) evaluates the

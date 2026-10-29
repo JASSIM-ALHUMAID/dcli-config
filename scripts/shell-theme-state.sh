@@ -51,7 +51,7 @@
 # Called from scripts/switch-shell.sh. Set DCLI_SKIP_THEME_STATE=1 to bypass.
 set -u
 
-REPO_DIR="${DCLI_DIR:-$HOME/.config/dcli}"
+REPO_DIR="${DCLI_DIR:-$(dirname "$(dirname "$(readlink -f "$0")")")}"
 STORE_ROOT="$REPO_DIR/state/shell-theme"
 
 # Managed single files, relative to $HOME.
