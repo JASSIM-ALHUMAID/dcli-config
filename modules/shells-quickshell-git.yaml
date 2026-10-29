@@ -1,17 +1,22 @@
-description: quickshell-git provider - required by caelestia-shell >= 2.2.0
+description: quickshell-git provider - the default; the caelestia fork's README asks for it
 
 packages:
   - quickshell-git
 
-# The default provider on this host. AUR caelestia-shell 2.2.0 replaced its
-# `quickshell` dependency with `quickshell-git`, which is what made `paru -Syu`
-# deadlock on "quickshell-git and quickshell are in conflict" — see
-# docs/PACKAGE-CONFLICTS.md.
+# The default provider on this host, because the caelestia fork's own README
+# wants quickshell-git. (The AUR caelestia-shell 2.2.0 package used to hard-depend
+# on it, which is what made `paru -Syu` deadlock on "quickshell-git and quickshell
+# are in conflict" — see docs/PACKAGE-CONFLICTS.md.) Stock quickshell 0.3.2 is now
+# in extra; whether it works for the fork is being tested.
+#
+# Always install it as `aur/quickshell-git`: `pacman -Sp quickshell-git` still
+# resolves to the repo package noctalia-qs, so a bare name picks the wrong one.
 #
 # quickshell-git has Provides=quickshell, so every other shell still resolves and
-# runs under it: shell-dms (dms-shell depends on plain `quickshell`), ambxst,
-# shell-end4 and shell-end4pc. So all six shells stay runtime-switchable with
-# scripts/switch-shell.sh while this provider is the installed one.
+# runs under it: shell-dms (dux-shell depends on plain `quickshell`), ambxst,
+# shell-end4, shell-end4pc, shell-omarchy and shell-xenon. So all eight shells
+# stay runtime-switchable with scripts/switch-shell.sh while this provider is the
+# installed one (noctalia v5 needs no Quickshell at all).
 #
 # See modules/shells-quickshell.yaml for why `conflicts:` alone is not enough to
 # perform the swap, and use scripts/switch-quickshell.sh instead.

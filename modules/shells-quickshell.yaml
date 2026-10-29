@@ -6,12 +6,16 @@ packages:
 # Exactly one quickshell provider may be installed: quickshell-git has
 # Conflicts=quickshell. Enable this one to pin the released build.
 #
-# Everything except caelestia runs fine here: shell-dms (dms-shell depends on
-# plain `quickshell`), ambxst, shell-end4 and shell-end4pc.
+# Stock quickshell is now 0.3.2 in extra. The shells that only need plain
+# `quickshell` run fine here: shell-dms (dux-shell), ambxst, shell-end4,
+# shell-end4pc, shell-omarchy and shell-xenon.
 #
-# caelestia is NOT usable with this provider — AUR caelestia-shell >= 2.2.0
-# hard-depends on quickshell-git. Disable the caelestia module before switching
-# here; scripts/switch-quickshell.sh enforces that.
+# The caelestia fork's own README asks for quickshell-git; whether stock 0.3.2
+# works for it is being tested, so caelestia is not declared incompatible;
+# scripts/switch-quickshell.sh only warns and asks for confirmation.
+#
+# Install the git build as `aur/quickshell-git`, never by bare name:
+# `pacman -Sp quickshell-git` still resolves to the repo package noctalia-qs.
 #
 # dcli's `conflicts:` only prompts at `dcli module enable` time and never
 # uninstalls the outgoing provider (auto_prune is false, and dcli installs with

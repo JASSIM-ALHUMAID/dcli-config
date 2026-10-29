@@ -1,12 +1,18 @@
 description: DankMaterialShell (dms) - alternate quickshell-based shell
 
+# dux-shell replaced dms-shell on 2026-10-30 (Provides dms-shell, Conflicts/
+# Replaces dms-shell and dms-shell-hyprland) and still ships the `dms` CLI
+# (run/kill/ipc/doctor). It also dropped the dgop dependency, and dgop no
+# longer exists in any repo. The module keeps its shell-dms name so host
+# enabled_modules and dcli state stay valid.
 packages:
-  - dms-shell
-  - dgop
+  - dux-shell
 
 dotfiles:
   - source: DankMaterialShell
     target: ~/.config/DankMaterialShell
 
-# Launched per-session via ~/.config/hypr/shells/dms.conf (`dms run`).
+# Launched per-session via ~/.config/hypr/shells/dms/hyprland.lua (`dms run`).
+# The packaged /usr/lib/systemd/user/dms.service stays disabled on purpose:
+# switch-shell.sh owns start/stop, and a second launcher would double-start it.
 # Switch with scripts/switch-shell.sh dms

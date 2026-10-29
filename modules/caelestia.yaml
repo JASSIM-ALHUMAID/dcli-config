@@ -1,8 +1,33 @@
 description: Caelestia Shell - my custom fork (plusdrag11/caelestia)
 
+# The caelestia-shell package is deliberately NOT installed (removed 2026-09-11):
+# the fork runs from ~/.config/quickshell/caelestia plus the plugin built into
+# ~/.local/lib/qt6/qml. These are the runtime deps that package used to pull in
+# (its AUR 2.5.0 Depends), now declared directly. Left out: quickshell-git, whose
+# only owner is modules/shells-quickshell{,-git}.yaml, and the base libs
+# (glibc, gcc-libs, bash).
 packages:
   - caelestia-cli
-  - caelestia-shell
+  - ddcutil
+  - brightnessctl
+  # Installed only "as a dependency" and nothing requires it any more, so it
+  # counts as an orphan; declaring it is what protects it from orphan pruning.
+  - libcava
+  - networkmanager
+  - lm_sensors
+  - aubio
+  - libpipewire
+  - libqalculate
+  - power-profiles-daemon
+  - ttf-material-symbols-variable
+  - ttf-rubik-vf                # AUR
+  - ttf-cascadia-code-nerd
+  - qt6-base
+  - qt6-declarative
+  - qt6-imageformats
+  - qt6-m3shapes-git            # AUR
+  - swappy
+  - fish
 
 # Deliberately NOT here: papirus-folders.
 #
@@ -27,16 +52,14 @@ packages:
 # With the package absent, sync_papirus_colors() short-circuits at its first
 # guard and costs nothing.
 
-# The quickshell provider is no longer declared here — it belongs to
-# modules/shells-quickshell-git.yaml (or shells-quickshell.yaml). caelestia-shell
-# 2.2.0 hard-depends on quickshell-git, so caelestia cannot coexist with the
-# stock provider; hence the conflict below.
-conflicts:
-  - shells-quickshell
+# The quickshell provider is not declared here — it belongs to
+# modules/shells-quickshell-git.yaml (or shells-quickshell.yaml). There is no
+# `conflicts: [shells-quickshell]` any more: that existed because the
+# caelestia-shell package hard-depended on quickshell-git, and the package is
+# gone. The fork's own README still says it wants quickshell-git; whether stock
+# quickshell 0.3.2 (now in extra) works for it is being tested.
 
-# The caelestia-shell package installs the STOCK shell into
-# /etc/xdg/quickshell/caelestia. My fork overrides it at
-# ~/.config/quickshell/caelestia (quickshell prefers ~/.config over /etc/xdg).
+# The fork lives at ~/.config/quickshell/caelestia.
 #
 # The hook clones the fork to ~/Projects/shell/real, builds/installs the
 # custom shell, and symlinks ~/.config/caelestia -> fork/caelestia-configs.
