@@ -15,7 +15,7 @@
 #
 # Layout this script produces:
 #   ~/.local/share/dots-hyprland   — my-ii fork checkout on branch my-ii (source of truth)
-#                                    origin = plusdrag11/dots-hyprland, upstream = end-4/dots-hyprland
+#                                    origin = JASSIM-ALHUMAID/my-end4, upstream = end-4/dots-hyprland
 #   ~/.config/quickshell/ii        — symlink -> dots-hyprland/dots/.config/quickshell/ii
 #   ~/.config/matugen              — symlink -> dots-hyprland/dots/.config/matugen
 #   ~/.config/hypr/hyprland/scripts — symlink -> dcli/dotfiles/hypr/shells/end4/hyprland/scripts
@@ -30,7 +30,7 @@ set -euo pipefail
 # shellcheck source=lib/hook-common.sh disable=SC1091
 . "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
-REPO_URL="https://github.com/plusdrag11/dots-hyprland.git"
+REPO_URL="https://github.com/JASSIM-ALHUMAID/my-end4.git"
 UPSTREAM_URL="https://github.com/end-4/dots-hyprland.git"
 REPO_BRANCH="my-ii"
 REPO_DIR="$REAL_HOME/.local/share/dots-hyprland"

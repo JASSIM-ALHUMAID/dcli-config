@@ -1,6 +1,7 @@
 #!/bin/bash
-# Bootstrap the end4-pC shell — pctrade's fork of end-4 dots-hyprland
-# (illogical-impulse). Runs alongside the existing "end4" (ii) shell as a
+# Bootstrap the end4-pC shell — my fork (JASSIM-ALHUMAID/my-end4-pC, branch
+# my-end4pc; upstream pctrade/end4-pC kept as second remote) of pctrade's
+# end-4 dots-hyprland (illogical-impulse) fork. Runs alongside the existing "end4" (ii) shell as a
 # separate, independent quickshell config named "end4-pC".
 #
 # CRITICAL: like end-4's illogical-impulse-quickshell-git, we do NOT install any
@@ -14,14 +15,14 @@
 # its own if shell-end4 is disabled.
 #
 # Layout this script produces:
-#   ~/.local/share/end4-pC         — pctrade/end4-pC checkout on branch main
+#   ~/.local/share/end4-pC         — my-end4pc fork checkout on branch my-end4pc
 #                                    (source of truth). The repo root IS the
 #                                    quickshell config (flat layout — no
 #                                    dots/.config/... wrapper like the ii fork).
 #   ~/.config/quickshell/end4-pC   — symlink -> the checkout root
 #
-# No matugen symlink: end4-pC ships no matugen config and reuses the shared
-# ~/.config/matugen owned by the ii (end4) checkout.
+# No matugen symlink: end4pc's matugen config is the dcli dotfile
+# ~/.config/matugen-end4pc (linked by link-dotfiles.sh), not ii's ~/.config/matugen.
 #
 # The shell also writes its own runtime state under ~/.config (e.g.
 # ~/.config/illogical-impulse) — nothing to do for that.
@@ -33,16 +34,20 @@ set -euo pipefail
 # shellcheck source=lib/hook-common.sh disable=SC1091
 . "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
-REPO_URL="https://github.com/pctrade/end4-pC.git"
-REPO_BRANCH="main"
+REPO_URL="https://github.com/JASSIM-ALHUMAID/my-end4-pC.git"
+UPSTREAM_URL="https://github.com/pctrade/end4-pC.git"
+REPO_BRANCH="my-end4pc"
 REPO_DIR="$REAL_HOME/.local/share/end4-pC"
 QS_CONF="$REAL_HOME/.config/quickshell/end4-pC"
 
-# 1) Clone the fork on branch main (full clone; submodules stay shallow. The
+# 1) Clone the fork on branch my-end4pc (full clone; submodules stay shallow. The
 #    config has a .gitmodules and, like the ii fork, fails to load without its
 #    submodules populated).
 clone_checkout "$REPO_DIR" "$REPO_URL" "$REPO_BRANCH" "end4-pC" --opt-in shell-end4pc \
     --recurse-submodules --shallow-submodules
+if [ "$CLONED_NOW" -eq 1 ]; then
+    as_user git -C "$REPO_DIR" remote add upstream "$UPSTREAM_URL"
+fi
 # Ensure submodules exist even on a pre-existing clone.
 update_submodules "$REPO_DIR"
 

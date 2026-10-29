@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bootstrap AMBXst from my fork (plusdrag11/Ambxst, branch my-ambxst;
+# Bootstrap AMBXst from my fork (JASSIM-ALHUMAID/my-Ambxst, branch my-ambxst;
 # upstream Axenide/Ambxst kept as second remote) — clones to ~/.local/src/ambxst
 # and runs THE FORK'S installer, which installs the Go daemon binary to
 # /usr/local/bin/ambxst (it sudos where needed). My AMBXst settings (binds.json, config/,
@@ -20,7 +20,7 @@ set -euo pipefail
 # shellcheck source=lib/hook-common.sh disable=SC1091
 . "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
-REPO_URL="https://github.com/plusdrag11/Ambxst.git"
+REPO_URL="https://github.com/JASSIM-ALHUMAID/my-Ambxst.git"
 UPSTREAM_URL="https://github.com/Axenide/Ambxst.git"
 REPO_BRANCH="my-ambxst"
 INSTALL_PATH="$REAL_HOME/.local/src/ambxst"

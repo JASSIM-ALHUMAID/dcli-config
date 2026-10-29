@@ -1,4 +1,4 @@
-description: Caelestia Shell - my custom fork (plusdrag11/caelestia)
+description: Caelestia Shell - my custom fork (JASSIM-ALHUMAID/my-caelestia)
 
 # The caelestia-shell package is deliberately NOT installed (removed 2026-09-11):
 # the fork runs from ~/.config/quickshell/caelestia plus the plugin built into
