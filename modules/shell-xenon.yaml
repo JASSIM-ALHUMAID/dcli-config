@@ -1,13 +1,24 @@
 description: xenon-shell (MannuVilasara/xenon-shell) - alternate shell (quickshell config "xenon")
 
-packages: []
+packages:
+  - python
+  - imagemagick
+  - brightnessctl
+  - cliphist
+  - wl-clipboard
+  - ttf-jetbrains-mono-nerd
+  - ttf-nerd-fonts-symbols
+  - papirus-icon-theme
 
 # Do NOT declare quickshell/quickshell-git here: the provider has exactly one
 # owner, modules/shells-quickshell{,-git}.yaml, and a second module claiming it
 # is the conflict trap in docs/PACKAGE-CONFLICTS.md. xenon is a plain Quickshell
-# config and runs on whichever provider is enabled. The hook installs only its
-# own runtime deps (python, imagemagick, brightnessctl, cliphist, wl-clipboard,
-# the two nerd fonts, papirus-icon-theme) as regular packages.
+# config and runs on whichever provider is enabled. Only its own runtime deps
+# (upstream README + what the QML execs) are declared, re-checked every sync.
+#
+# openrgb is deliberately NOT installed: it is only used when the openRgbDevices
+# key is set in ~/.config/xenon/config.json, and it is hardware-specific. See
+# docs/shells/xenon.md.
 #
 # There is no upstream installer to skip — xenon's README is a git clone plus a
 # dependency list, nothing more.

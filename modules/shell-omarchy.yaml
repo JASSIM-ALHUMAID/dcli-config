@@ -1,6 +1,8 @@
 description: omarchy v4 (quattro) - DHH's Hyprland desktop, one Quickshell instance
 
-# Runtime deps only. The shell itself is a git checkout, not a package:
+# Runtime deps only, all declared here (not in the setup hook) so every sync
+# re-checks them: hooks are `hook_behavior: once`, module packages are not.
+# The shell itself is a git checkout, not a package:
 # scripts/setup-omarchy.sh clones basecamp/omarchy at branch `quattro` into
 # ~/.local/share/omarchy. There is no usable AUR package — `aur/omarchy` is a
 # placeholder stub, and omarchy's real packages live in its own repo at
@@ -19,9 +21,10 @@ packages:
   - ddcutil               # brightness keys on external monitors via DDC/CI
   - foot                  # screensaver terminal (via scripts/omarchy-shims; the
                           # session default stays wezterm)
-  - xdg-terminal-exec     # AUR — how omarchy-launch-terminal resolves a terminal
+  - xdg-terminal-exec     # how omarchy-launch-terminal resolves a terminal
   - yaru-icon-theme       # AUR — the icon theme omarchy's themes name
-  - tensaku               # AUR — screenshot/clipboard annotator (tensaku-edit)
+  - tensaku               # AUR — screenshot/clipboard annotator (tensaku-edit);
+                          # also on the AUR despite living in omarchy's own repo
 
 # v4 is why omarchy fits here at all. The v3 line (branch master, v3.8.4) is
 # waybar + walker + mako + swaybg driven by .conf files, which does not fit an
@@ -46,7 +49,7 @@ hook_behavior: once
 # config/ tree would overwrite ~/.config for alacritty, foot, ghostty, btop,
 # git, tmux, lazygit and nvim — all dcli-symlinked here. The hook reproduces
 # only the checkout and the theme seed, and marks omarchy's first-run sequence
-# done so it cannot re-theme GTK for the other six shells. Details in
+# done so it cannot re-theme GTK for the other seven shells. Details in
 # docs/shells/omarchy.md.
 
 # As always, the real linking is done by scripts/link-dotfiles.sh; this key is

@@ -1,11 +1,66 @@
 description: end4-pC (pctrade's end-4 dots-hyprland fork) - alternate shell (quickshell config "end4-pC")
 
-packages: []
+packages:
+  # Qt deps (from the illogical-impulse-quickshell-git PKGBUILD)
+  - qt6-5compat
+  - qt6-imageformats
+  - qt6-multimedia
+  - qt6-positioning
+  - qt6-quicktimeline
+  - qt6-sensors
+  - qt6-svg
+  - qt6-tools
+  - qt6-translations
+  - qt6-virtualkeyboard
+  - qt6-wayland
+  - kirigami
+  - kdialog
+  - syntax-highlighting
+  # Runtime tools (curated from the illogical-impulse-basic/audio/toolkit/
+  # widgets/screencapture PKGBUILDs)
+  - bc
+  - cliphist
+  - jq
+  - go-yq
+  - cava
+  - pavucontrol-qt
+  - playerctl
+  - upower
+  - wtype
+  - ydotool
+  - fuzzel
+  - imagemagick
+  - hypridle
+  - hyprlock
+  - hyprpicker
+  - translate-shell
+  - wlogout
+  - libqalculate
+  - hyprshot
+  - slurp
+  - swappy
+  - tesseract
+  - tesseract-data-eng
+  - wf-recorder
+  - hyprsunset
+  - wl-clipboard
+  # AUR
+  - qt6-avif-image-plugin
+  - songrec
+
+# The same list is declared in the sibling end4 module on purpose: dcli has no
+# module-to-module dependency, so each module must stand alone, and dcli dedups
+# the overlap. Declared here rather than in the setup hook because hooks run
+# once while module packages are re-checked every sync.
+#
+# Deliberately skipped: the illogical-impulse-* meta packages themselves (local
+# PKGBUILDs), xdg-desktop-portal-kde/gtk (handled elsewhere), and the python/uv
+# toolchain (only end-4's own installer needs it).
 
 # Do NOT declare the illogical-impulse-quickshell-git package: it is a FOURTH
 # mutually-exclusive quickshell provider and would fight the one owned by
 # modules/shells-quickshell{,-git}.yaml. The end4-pC config runs fine on either
-# of those; this hook installs the fork's extra deps as regular packages
+# of those; the fork's extra deps are declared above as regular packages
 # instead. See docs/PACKAGE-CONFLICTS.md.
 post_install_hook: scripts/setup-end4pc.sh
 hook_behavior: once

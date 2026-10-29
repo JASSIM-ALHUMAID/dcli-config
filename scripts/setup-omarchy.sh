@@ -38,23 +38,14 @@
 # theme that is already set.
 set -euo pipefail
 
-# dcli may run hooks as root — always operate on the real user's home.
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+# shellcheck source=lib/hook-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
 REPO_URL="https://github.com/basecamp/omarchy.git"
 REPO_BRANCH="quattro"
 OMARCHY_PATH="$REAL_HOME/.local/share/omarchy"
 STATE_DIR="$REAL_HOME/.local/state/omarchy"
 CONF_DIR="$REAL_HOME/.config/omarchy"
-
-as_user() {
-    if [ "$(id -u)" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
-        sudo -u "$REAL_USER" -H "$@"
-    else
-        "$@"
-    fi
-}
 
 # omarchy-* scripts call each other by bare name and read $OMARCHY_PATH.
 as_omarchy() {
@@ -64,56 +55,24 @@ as_omarchy() {
 # 1) Clone upstream on the quattro branch. No submodules — the repo has none.
 #    Unlike the other shells there is no personal fork: 4.0 is alpha and moves
 #    daily, so we track upstream and fast-forward with update-omarchy.sh.
-if [ -d "$OMARCHY_PATH/.git" ]; then
-    echo ":: omarchy already cloned at $OMARCHY_PATH"
-else
-    if [ -e "$OMARCHY_PATH" ]; then
-        echo "!! $OMARCHY_PATH exists but is not a git repo — refusing to touch it." >&2
-        exit 1
-    fi
-    echo ":: Cloning omarchy (branch $REPO_BRANCH)"
-    as_user mkdir -p "$(dirname "$OMARCHY_PATH")"
-    as_user git clone --branch "$REPO_BRANCH" "$REPO_URL" "$OMARCHY_PATH"
-fi
+clone_checkout "$OMARCHY_PATH" "$REPO_URL" "$REPO_BRANCH" "omarchy"
 
-# 2) Runtime dependencies.
-#
-# Derived from install/omarchy-base.packages minus everything already present on
-# this machine and everything that is a system decision or an app opinion. The
-# full excluded list, for the record:
+# 2) Runtime dependencies are declared in modules/shell-omarchy.yaml, not
+#    installed here: hooks are `once`, but module packages are re-checked on
+#    every sync. The omarchy packages deliberately left out of that list:
 #
 #   provider/system : quickshell-git hyprland uwsm sddm plymouth kernel-modules-hook
-#   apps            : chromium obsidian libreoffice-fresh nautilus evince imv
+#   apps            : chromium obsidian libreoffice-fresh nautilus evince
 #                     kdenlive obs-studio pinta moonlight-qt gnome-calculator
 #                     gnome-disk-utility localsend xournalpp
 #   toolchains      : docker* ruby rust mise luarocks dotnet-runtime
 #                     postgresql-libs mariadb-libs tree-sitter-cli
 #   omarchy's own repo (pkgs.omarchy.org, NOT on the AUR — these back the
 #   `omarchy-menu` extras, not the shell itself):
-#                     aether omacut omawrite tensaku cliamp tobi-try omarchy-nvim
+#                     aether omacut omawrite cliamp tobi-try omarchy-nvim
 #
 # If something in that last group turns out to be load-bearing for the bar,
-# record it in docs/shells/omarchy.md rather than quietly adding it here.
-REPO_DEPS=(pamixer gum socat udiskie gnome-themes-extra)
-
-# AUR-only (installed as the real user; AUR helpers refuse to run as root).
-#   xdg-terminal-exec — how omarchy-launch-terminal resolves a terminal
-#   yaru-icon-theme   — the icon theme its themes reference by name
-AUR_DEPS=(xdg-terminal-exec yaru-icon-theme)
-
-echo ":: Installing omarchy runtime dependencies"
-if [ "$(id -u)" -eq 0 ]; then
-    pacman -S --needed --noconfirm "${REPO_DEPS[@]}"
-else
-    sudo pacman -S --needed --noconfirm "${REPO_DEPS[@]}"
-fi
-
-if as_user command -v paru >/dev/null 2>&1; then
-    echo ":: Installing AUR deps via paru"
-    as_user paru -S --needed --noconfirm "${AUR_DEPS[@]}"
-else
-    echo ":: paru not found — skipping AUR deps: ${AUR_DEPS[*]}"
-fi
+# record it in docs/shells/omarchy.md rather than quietly adding it there.
 
 # 3) State and user-config directories. ~/.config/omarchy itself is created and
 #    linked into this repo by link-dotfiles.sh; only make its themes/ subdir,

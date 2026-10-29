@@ -9,21 +9,13 @@
 # Safe to re-run: it never touches an existing ~/.config/wezterm.
 set -euo pipefail
 
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+# shellcheck source=lib/hook-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
 REPO_URL="https://github.com/JASSIM-ALHUMAID/wezterm.git"
 PLUSDRAG_URL="https://github.com/plusdrag11/wezterm.git"
 WEZ_CONF="$REAL_HOME/.config/wezterm"
 SNAPSHOT="$REAL_HOME/.config/dcli/dotfiles/wezterm"
-
-as_user() {
-    if [ "$(id -u)" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
-        sudo -u "$REAL_USER" -H "$@"
-    else
-        "$@"
-    fi
-}
 
 if [ -e "$WEZ_CONF" ]; then
     echo ":: ~/.config/wezterm already exists — nothing to do."

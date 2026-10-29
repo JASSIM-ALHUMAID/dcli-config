@@ -17,9 +17,8 @@
 # fork's install.sh by hand before any provider is installed.
 set -euo pipefail
 
-# dcli may run hooks as root — always operate on the real user's home.
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+# shellcheck source=lib/hook-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
 REPO_URL="https://github.com/plusdrag11/Ambxst.git"
 UPSTREAM_URL="https://github.com/Axenide/Ambxst.git"
@@ -32,25 +31,9 @@ if [ -d "$INSTALL_PATH/.git" ]; then
     exit 0
 fi
 
-# Clone the fork only if the user opts in. Non-interactive shells skip
-# silently (the user can re-run via `dcli module run-hook ambxst` later).
-reply=""
-if [ -t 0 ]; then
-    read -r -p ":: AMBXst fork not found at $INSTALL_PATH. Clone it? [y/N] " reply
-fi
-case "$reply" in
-    y|Y|yes|YES) ;;
-    *)
-        echo ":: Skipping AMBXst fork setup (no clone). Re-run later with:"
-        echo "     dcli module run-hook ambxst"
-        exit 0
-        ;;
-esac
-
-echo ":: Cloning AMBXst fork (branch $REPO_BRANCH) to $INSTALL_PATH"
-mkdir -p "$(dirname "$INSTALL_PATH")"
-git clone --branch "$REPO_BRANCH" "$REPO_URL" "$INSTALL_PATH"
-git -C "$INSTALL_PATH" remote add upstream "$UPSTREAM_URL"
+# Clone the fork only if the user opts in; non-interactive shells skip silently.
+clone_checkout "$INSTALL_PATH" "$REPO_URL" "$REPO_BRANCH" "AMBXst fork" --opt-in ambxst
+as_user git -C "$INSTALL_PATH" remote add upstream "$UPSTREAM_URL"
 
 echo ":: Running AMBXst installer"
 bash "$INSTALL_PATH/install.sh"

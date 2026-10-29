@@ -14,8 +14,8 @@
 # Safe to re-run: it never clones over or rebuilds an existing setup.
 set -euo pipefail
 
-REAL_USER="${SUDO_USER:-$USER}"
-REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+# shellcheck source=lib/hook-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
 REPO_URL="https://github.com/plusdrag11/caelestia.git"
 UPSTREAM_URL="https://github.com/caelestia-dots/shell.git"
@@ -26,14 +26,6 @@ REPO_BRANCH="my-caelestia-rebased"
 REPO_DIR="${CAELESTIA_DEV:-$REAL_HOME/Projects/shell/real}"
 QS_CONF="$REAL_HOME/.config/quickshell/caelestia"
 CAEL_CONF="$REAL_HOME/.config/caelestia"
-
-as_user() {
-    if [ "$(id -u)" -eq 0 ] && [ "$REAL_USER" != "root" ]; then
-        sudo -u "$REAL_USER" -H "$@"
-    else
-        "$@"
-    fi
-}
 
 # Starship: the live config is ~/starship.toml (regenerated from the fork's
 # starship.toml.template by starship-theme.py on every wallpaper/theme change);
@@ -59,22 +51,8 @@ fi
 
 # 1) Clone
 if [ ! -d "$REPO_DIR/.git" ]; then
-    if [ -e "$REPO_DIR" ]; then
-        echo "!! $REPO_DIR exists but is not a git repo — refusing to touch it." >&2
-        exit 1
-    fi
-    reply=""
-    if [ -t 0 ]; then
-        read -r -p ":: Caelestia fork not found at $REPO_DIR. Clone it? [y/N] " reply
-    fi
-    case "$reply" in
-        y|Y|yes|YES) ;;
-        *)
-            echo ":: Skipping caelestia fork setup (no clone). Re-run later with:"
-            echo "     dcli module run-hook caelestia"
-            exit 0
-            ;;
-    esac
+    require_clonable "$REPO_DIR" || exit 1
+    confirm_clone "Caelestia fork" "$REPO_DIR" caelestia
     as_user mkdir -p "$(dirname "$REPO_DIR")"
     if as_user gh auth status >/dev/null 2>&1; then
         as_user gh repo clone "$REPO_URL" "$REPO_DIR" -- --branch "$REPO_BRANCH"
@@ -98,18 +76,7 @@ else
 fi
 
 # 3) Symlink ~/.config/caelestia -> fork/caelestia-configs
-SRC="$REPO_DIR/caelestia-configs"
-if [ -L "$CAEL_CONF" ] && [ "$(readlink -f "$CAEL_CONF")" = "$(readlink -f "$SRC")" ]; then
-    echo ":: ~/.config/caelestia already linked"
-else
-    if [ -e "$CAEL_CONF" ]; then
-        BAK="$CAEL_CONF.bak-$(date +%Y%m%d-%H%M%S)"
-        echo ":: Backing up existing $CAEL_CONF -> $BAK"
-        as_user mv "$CAEL_CONF" "$BAK"
-    fi
-    as_user ln -s "$SRC" "$CAEL_CONF"
-    echo ":: Symlinked $CAEL_CONF -> $SRC"
-fi
+ensure_symlink "$REPO_DIR/caelestia-configs" "$CAEL_CONF" backup || exit 1
 
 ensure_starship
 
