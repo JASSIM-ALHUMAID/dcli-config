@@ -6,7 +6,7 @@ packages:
 # v5 is a ground-up rewrite: native C++23/Meson on Wayland + OpenGL ES, with no
 # Qt, no QML and no Quickshell. Upstream moved noctalia-dev/noctalia-shell ->
 # noctalia-dev/noctalia and the package was renamed noctalia-shell -> noctalia
-# (5.x, AUR source build via paru — Conflicts is only noctalia-git/noctalia-bin).
+# (5.4.0 stable, in the `extra` repo — Conflicts is only noctalia-git/noctalia-bin).
 #
 # That means the old noctalia-qs problem is GONE. v4 needed that quickshell fork,
 # which had Conflicts=quickshell AND Conflicts=quickshell-git, so it could not
@@ -14,9 +14,8 @@ packages:
 # the old download-and-extract-to-~/.local/opt hack. v5 is an ordinary package
 # belonging to neither provider group, and works no matter which one is enabled.
 #
-# NOTE: v5 is still beta (5.0.0_beta.4). See docs/PACKAGE-CONFLICTS.md.
-post_install_hook: scripts/setup-noctalia.sh
-hook_behavior: once
+# See docs/PACKAGE-CONFLICTS.md. The one-shot v4 teardown hook has been deleted:
+# it ran on the only machine that ever had v4 installed.
 
 # Config is TOML at ~/.config/noctalia/config.toml (hot-reloaded via inotify),
 # hand-ported from the v4 settings.json — v5 does not read the v4 JSON.
