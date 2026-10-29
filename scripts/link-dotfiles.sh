@@ -22,13 +22,19 @@
 # symlinks before the first run, this script refuses to clobber a wrong one.
 set -euo pipefail
 
-DOTFILES="$HOME/.config/dcli/dotfiles"
+# dcli runs hooks as `sudo bash <script>`, so $HOME is /root here — on
+# 2026-10-30 that made this script look for /root/.config/dcli and skip every
+# target. Everything below resolves the real user instead.
+# shellcheck source=lib/hook-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
+
+DOTFILES="$REAL_HOME/.config/dcli/dotfiles"
 TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc fuzzel cava foot btop nvim yazi lazygit git environment.d)
 
 ts=$(date +%Y%m%d-%H%M%S)
 for name in "${TARGETS[@]}"; do
     src="$DOTFILES/$name"
-    dst="$HOME/.config/$name"
+    dst="$REAL_HOME/.config/$name"
     if [ ! -d "$src" ]; then
         echo "!! skip $name: $src missing from repo"
         continue
@@ -38,10 +44,10 @@ for name in "${TARGETS[@]}"; do
         continue
     fi
     if [ -e "$dst" ]; then
-        mv "$dst" "$dst.bak-$ts"
+        as_user mv "$dst" "$dst.bak-$ts"
         echo ":: $name: backed up -> $dst.bak-$ts"
     fi
-    if ! ln -s "$src" "$dst" 2>/dev/null; then
+    if ! as_user ln -s "$src" "$dst" 2>/dev/null; then
         if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
             echo ":: $name: linked $dst -> $src (created by a concurrent hook)"
         else
@@ -71,11 +77,23 @@ echo "Done. Backups (if any) are at ~/.config/*.bak-$ts"
 # Masking is safe: switch-shell.sh launches it as `swaync & disown`
 # (a direct exec), which a masked unit does not block. Only the D-Bus/systemd
 # activation path is blocked.
-if command -v systemctl >/dev/null 2>&1; then
-    if [ "$(systemctl --user is-enabled swaync.service 2>/dev/null)" != "masked" ]; then
-        systemctl --user mask swaync.service >/dev/null 2>&1 &&
-            echo ":: masked swaync.service (blocks rogue D-Bus activation)"
+# As root, plain `systemctl --user` has no user bus and fails — the other half
+# of the 2026-10-30 hook failure. --machine=<user>@ reaches the user's manager.
+# A failed mask is reported, not fatal: linking dotfiles is this hook's job.
+user_systemctl() {
+    if [ "$(id -u)" -eq 0 ]; then
+        systemctl --user --machine="$REAL_USER@" "$@"
     else
+        systemctl --user "$@"
+    fi
+}
+
+if command -v systemctl >/dev/null 2>&1; then
+    if [ "$(user_systemctl is-enabled swaync.service 2>/dev/null)" = "masked" ]; then
         echo "ok swaync.service (already masked)"
+    elif user_systemctl mask swaync.service >/dev/null 2>&1; then
+        echo ":: masked swaync.service (blocks rogue D-Bus activation)"
+    else
+        echo "!! could not mask swaync.service — run: systemctl --user mask swaync.service" >&2
     fi
 fi

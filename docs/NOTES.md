@@ -42,6 +42,17 @@ module-to-module dependency). `scripts/doctor.sh` fails when `dcli sync --dry-ru
 has anything to install. Check hook state with `dcli hooks list`; force one with
 `dcli module run-hook <module>`.
 
+"Once" is per script *content*: `state/hooks-executed.yaml` stores a hash of each
+hook, and an edited hook runs again on the next sync. So every hook must stay safe
+to re-run — after the 2026-10-30 refactor, one sync re-ran nearly all of them.
+
+**dcli runs hooks as `sudo bash <script>`.** `$HOME` is `/root` inside a hook and
+`systemctl --user` has no user bus. Hooks resolve the real user through
+`scripts/lib/hook-common.sh` (`REAL_USER`/`REAL_HOME`/`as_user`, from
+`$SUDO_USER`); never use bare `$HOME` in a hook. `link-dotfiles.sh` did, and on
+2026-10-30 it looked for `/root/.config/dcli`, skipped every target and failed the
+sync with `Error: sudo command failed`.
+
 **Packages are installed in one global phase, before any hook runs.** `dcli sync`
 aggregates every enabled module's packages into a single list (`Loaded N
 declared packages`) and installs them, and only then runs post-install hooks.
