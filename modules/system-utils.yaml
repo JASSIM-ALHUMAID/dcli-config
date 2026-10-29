@@ -31,4 +31,6 @@ dotfiles:
   - source: fuzzel
     target: ~/.config/fuzzel
 
-# btop and fastfetch managed by Caelestia module
+# btop is a dcli dotfile, linked by scripts/link-dotfiles.sh. fastfetch is not
+# managed here: ~/.config/fastfetch is a symlink into the upstream caelestia-dots
+# clone at ~/.local/share/caelestia/fastfetch, created by hand.

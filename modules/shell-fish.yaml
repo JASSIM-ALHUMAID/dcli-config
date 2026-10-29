@@ -8,4 +8,7 @@ packages:
   - starship
   - zoxide
 
-# Dotfiles managed by Caelestia module (symlinks to ~/.local/share/caelestia/)
+# No dotfiles entry: ~/.config/fish is a symlink into the upstream caelestia-dots
+# clone at ~/.local/share/caelestia/fish. Neither dcli nor link-dotfiles.sh
+# creates or manages that link (and nothing in this repo clones that checkout),
+# so a fresh machine gets stock fish until it is made by hand.
