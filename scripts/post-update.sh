@@ -4,7 +4,7 @@
 # WHY: quickshell links Qt's *private* API (Qt_6_PRIVATE_API), which carries no
 # ABI guarantee even across patch releases. On 2026-08-22 a routine `dcli update`
 # moved qt6-base 6.11.1 -> 6.11.2 and every quickshell-based shell (caelestia,
-# ambxst, dms, end4, end4pc, xenon) died at once with:
+# ambxst, dms/dux-shell, end4, end4pc, omarchy, xenon) died at once with:
 #
 #   qs: symbol lookup error: undefined symbol:
 #       _ZN23QUntypedPropertyBindingC1EP23QPropertyBindingPrivate, version Qt_6_PRIVATE_API
@@ -44,7 +44,7 @@ mkdir -p "$(dirname "$log")"
 installed_name() { pacman -Qq 2>/dev/null | grep -qx "$1"; }
 
 # noctalia-qs Conflicts with BOTH quickshell and quickshell-git, so if it is ever
-# installed it has replaced the provider caelestia-shell and dms-shell depend on.
+# installed it has replaced the provider the quickshell shells depend on.
 # Noctalia v5 is native C++ and needs no quickshell at all — it should never be
 # here. Rebuilding on top of it cannot succeed, so bail out loudly instead.
 if installed_name noctalia-qs; then
@@ -55,6 +55,10 @@ if installed_name noctalia-qs; then
     exit 1
 fi
 
+# Only the AUR quickshell-git is rebuilt here. On the stock provider the
+# distribution rebuilds quickshell itself on every Qt bump, so the private-ABI
+# break above normally never reaches this machine and there is nothing to heal:
+# exit 0 (also covers no quickshell at all).
 installed_name quickshell-git || exit 0
 command -v qs >/dev/null 2>&1 || exit 0
 

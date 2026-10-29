@@ -1,7 +1,9 @@
 #!/bin/bash
 # Switch the installed quickshell provider: stock | git
-# Usage: switch-quickshell.sh [stock|git]
+# Usage: switch-quickshell.sh [stock|git] [--yes]
 #   no argument = report the current provider and exit
+#   --yes       = answer the caelestia confirmation prompt (required when
+#                 there is no tty)
 #
 # Why this script exists instead of plain `dcli module enable`:
 #
@@ -23,13 +25,20 @@
 set -u
 
 # Prevent concurrent runs — this mutates both dcli config and the package db.
-LOCKFILE="/tmp/switch-quickshell.lock"
-exec 200>"$LOCKFILE"
-flock -n 200 || { echo "switch-quickshell.sh: another instance is running"; exit 1; }
+# The fd number is bash-allocated and carried in LOCK_FD; $XDG_RUNTIME_DIR is
+# per-user, /tmp the fallback.
+LOCKFILE="${XDG_RUNTIME_DIR:-/tmp}/switch-quickshell.lock"
+exec {LOCK_FD}>"$LOCKFILE"
+flock -n "$LOCK_FD" || { echo "switch-quickshell.sh: another instance is running"; exit 1; }
+
+# kill_matching (TERM→KILL with -A) from the shared lib. The registry's KNOWN
+# is the shell list; this script's own provider list is PROVIDERS.
+# shellcheck source=lib/shell-common.sh disable=SC1091
+. "$(dirname "$(readlink -f "$0")")/lib/shell-common.sh" || exit 1
 
 REPO_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
 
-KNOWN=(stock git)
+PROVIDERS=(stock git)
 
 provider_pkg() {
   case "$1" in
@@ -80,25 +89,32 @@ module_enabled() {
     jq -e --arg m "$1" 'any(.modules[]; .name == $m and .enabled)' >/dev/null 2>&1
 }
 
-TARGET="${1:-}"
+ASSUME_YES=0
+TARGET=""
+for arg in "$@"; do
+  case "$arg" in
+  --yes | -y) ASSUME_YES=1 ;;
+  *) TARGET="$arg" ;;
+  esac
+done
 
 if [ -z "$TARGET" ]; then
   cur=$(current_provider)
   echo "Installed quickshell provider: $cur"
-  for p in "${KNOWN[@]}"; do
+  for p in "${PROVIDERS[@]}"; do
     m=$(provider_module "$p")
     module_enabled "$m" && state="enabled" || state="disabled"
     printf '  %-6s  %-22s  module %s\n' "$p" "$(provider_pkg "$p")" "$state"
   done
   echo
-  echo "Usage: switch-quickshell.sh [stock|git]"
+  echo "Usage: switch-quickshell.sh [stock|git] [--yes]"
   exit 0
 fi
 
-case " ${KNOWN[*]} " in
+case " ${PROVIDERS[*]} " in
 *" $TARGET "*) ;;
 *)
-  echo "Unknown provider: $TARGET (choose from: ${KNOWN[*]})"
+  echo "Unknown provider: $TARGET (choose from: ${PROVIDERS[*]})"
   exit 1
   ;;
 esac
@@ -108,20 +124,25 @@ TARGET_PKG=$(provider_pkg "$TARGET")
 TARGET_MOD=$(provider_module "$TARGET")
 OTHER_MOD=$(provider_module "$OTHER")
 
-# caelestia-shell >= 2.2.0 hard-depends on quickshell-git. Switching to stock
-# while caelestia is enabled cannot resolve, so refuse rather than let pacman
-# offer to remove caelestia-shell.
+# The caelestia fork runs from ~/.local without the caelestia-shell package
+# (removed 2026-09-11), so nothing in pacman blocks the swap any more. Its README
+# still asks for quickshell-git, though, and stock quickshell is only an
+# experiment for it — warn, and make the user say yes.
 if [ "$TARGET" = "stock" ] && module_enabled caelestia; then
   cat >&2 <<EOF
-Refusing to switch to the stock provider: the 'caelestia' module is enabled and
-caelestia-shell >= 2.2.0 hard-depends on quickshell-git.
-
-Disable it first if you really want the stock provider:
-
-    dcli module disable caelestia
-    $0 stock
+Warning: the 'caelestia' module is enabled. The caelestia fork's README still
+requires quickshell-git; running it on the stock provider is untested and may
+leave the shell failing to load. Switching back: $0 git
 EOF
-  exit 1
+  if [ "$ASSUME_YES" = 1 ]; then
+    :
+  elif [ -t 0 ] && [ -t 2 ]; then
+    read -r -p "Switch to stock anyway? [y/N] " reply
+    case "$reply" in [yY] | [yY][eE][sS]) ;; *) echo "Aborted." >&2; exit 1 ;; esac
+  else
+    echo "Refusing without a tty; re-run with --yes to proceed." >&2
+    exit 1
+  fi
 fi
 
 if [ "$(current_provider)" = "$TARGET" ] && module_enabled "$TARGET_MOD"; then
@@ -135,11 +156,10 @@ echo ":: Switching quickshell provider to $TARGET ($TARGET_PKG)"
 # doesn't leave a half-dead shell against a replaced library.
 if [ -x "$REPO_DIR/scripts/switch-shell.sh" ] && [ -n "${WAYLAND_DISPLAY:-}" ]; then
   echo ":: Stopping running shells first"
-  # -A (--ignore-ancestors) per the repo rule (switch-shell.sh:kill_matching):
-  # with -f, any ancestor whose command line contains the pattern is a hit.
-  pkill -A -f "qs -c" 2>/dev/null
-  pkill -A -x quickshell 2>/dev/null
-  pkill -A -f "dms run" 2>/dev/null
+  # kill_matching carries the -A (--ignore-ancestors) rule and TERM→KILL escalation.
+  kill_matching -f "qs -c"
+  kill_matching -x quickshell
+  kill_matching -f "dms run"
 fi
 
 # 1) dcli module state — disable the outgoing provider before enabling the
@@ -156,7 +176,9 @@ fi
 # 2) The package swap itself — interactive on purpose. pacman replaces the
 #    conflicting provider in a single transaction and asks before doing so;
 #    answer yes to that prompt. Uses the host's AUR helper when present because
-#    quickshell-git may come from the AUR on other hosts.
+#    quickshell-git may come from the AUR on other hosts. The git target keeps
+#    its `aur/` prefix (provider_install_target): `pacman -Sp quickshell-git`
+#    still resolves to the repo's noctalia-qs, which would replace the provider.
 INSTALL_TARGET=$(provider_install_target "$TARGET")
 echo ":: Installing $INSTALL_TARGET (answer 'y' to the conflict prompt)"
 if command -v paru >/dev/null 2>&1; then
@@ -170,7 +192,7 @@ else
   sudo pacman -S --needed "$INSTALL_TARGET" || exit 1
 fi
 
-# 3) Reconcile everything else dcli tracks (caelestia-*, dms-shell, ...).
+# 3) Reconcile everything else dcli tracks (everything else tracked by the modules).
 echo ":: Reconciling with dcli sync"
 dcli sync || exit 1
 
