@@ -1,15 +1,8 @@
 -- House overrides for end4 input settings
 -- These override the upstream defaults with our keyboard preferences
 
-hl.config({
-    input = {
-        kb_layout     = "us,ara",
-        kb_variant    = "",
-        kb_options    = "grp:win_space_toggle, ctrl:nocaps",
-        sensitivity   = 0.3,
-        accel_profile = "flat",
-    },
-})
+require("common.input")
+hl.config({ input = { kb_variant = "" } })
 
 -- House override: scrolling layout (was dwindle upstream)
 hl.config({
@@ -18,12 +11,7 @@ hl.config({
     },
 })
 
-hl.config({
-    scrolling = {
-        column_width           = 0.85,
-        explicit_column_widths = "0.35, 0.5, 0.65, 0.95, 1.0",
-    },
-})
+require("common.scrolling")
 
 -- House override: gestures like caelestia
 -- Upstream end4 uses 3-finger swipe/pinch for move/fullscreen and 4-finger
@@ -46,7 +34,6 @@ hl.gesture({ fingers = 3, direction = "pinch", action = "unset" })
 hl.gesture({ fingers = 4, direction = "up", action = "unset" })
 hl.gesture({ fingers = 4, direction = "down", action = "unset" })
 
-hl.gesture({ fingers = 4, direction = "horizontal", action = "workspace" })
 hl.gesture({ fingers = 3, direction = "up", action = "special", workspace_name = "special" })
 hl.gesture({
     fingers   = 3,

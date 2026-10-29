@@ -1,7 +1,7 @@
-require("hyprland.lib")
-require("hyprland.variables")
-if is_file_exists(HOME .. "/.config/hypr/custom/variables.lua") then
-    require("custom.variables")
+require("shells.end4.hyprland.lib")
+require("shells.end4.hyprland.variables")
+if is_file_exists(HOME .. "/.config/hypr/shells/end4/custom/variables.lua") then
+    require("shells.end4.custom.variables")
 end
 
 local qsScripts = "$HOME/.config/quickshell/$qsConfig/scripts"
