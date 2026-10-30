@@ -25,6 +25,7 @@ CHECKOUT_RECORDS=(
     "omarchy|$REAL_HOME/.local/share/omarchy|update-omarchy.sh"
     "xenon|$REAL_HOME/.local/share/xenon-shell|update-xenon.sh"
     "glyph|$REAL_HOME/.local/share/glyph-rice|update-glyph.sh"
+    "ryoku|$REAL_HOME/.local/share/ryoku-shell|update-ryoku.sh"
 )
 # No exemption for end4pc: its fork (my-end4pc) now carries patch-end4pc.sh's
 # rewrites as commits, so a dirty tree there is real work — and update-end4pc.sh

@@ -1,6 +1,6 @@
 # Architecture
 
-Nine shells share one Hyprland session. Each owns its UI process and its Hyprland
+Ten shells share one Hyprland session. Each owns its UI process and its Hyprland
 config; this repo owns the entry point that picks between them, the scripts that
 install and switch them, and everything the shells have in common.
 
@@ -103,6 +103,8 @@ These are the actual paths on a synced machine.
 | `~/.local/share/xenon-shell` | xenon checkout (`MannuVilasara/xenon-shell`, branch `main`); no personal fork | `setup-xenon.sh` |
 | `~/.config/quickshell/xenon` -> `~/.local/share/xenon-shell` | xenon's quickshell config | `setup-xenon.sh` |
 | `~/.config/xenon` -> `dcli/dotfiles/xenon` | xenon user config (`config.json`); generated data stays in `~/.cache/xenon` | `link-dotfiles.sh` |
+| `~/.local/share/ryoku-shell` | ryoku checkout (`Ryoku-dev/ryoku`, branch `main`); no personal fork. Built daemon/QML modules land in `~/.local` | `setup-ryoku.sh` |
+| `~/.config/ryoku`, `~/.local/share/ryoku` | ryoku runtime config (daemon-written) and i18n catalog — machine-local, **not** in this repo | `ryoku-shell` / `setup-ryoku.sh` |
 | `/usr/bin/uwsm` (pkg `uwsm`, `base.yaml`) | starts the Hyprland session after SDDM login | `dcli sync` |
 | SDDM (`/etc/sddm.conf`, pkg `sddm`) | display manager. Not declared in any module — a CachyOS default install; install it separately elsewhere | manual |
 
@@ -111,7 +113,8 @@ this repo owns, so editing the live config edits the repo. The deliberate except
 are `~/.config/caelestia` and `~/.config/quickshell/{caelestia,ii,end4-pC,xenon}`
 (symlinks into the fork/upstream checkouts, which are the source of truth) and
 `wezterm` (its own repo, [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm);
-dcli keeps a snapshot copy).
+dcli keeps a snapshot copy). `~/.config/ryoku` is the daemon's own state — it has
+no dcli-owned counterpart by design.
 
 ## Modules, hooks and the packages rule
 
@@ -159,6 +162,11 @@ How each shell is supplied:
   (a whole-distro installer). `quickshell-git` is in omarchy's own package list and
   deliberately not in its module, so the provider keeps one owner.
 - **xenon** — a checkout, no installer.
+- **glyph** — a rice checkout; `setup-glyph.sh` links only its two Quickshell
+  configs and fonts, never its `install.sh` (which takes over `~/.config/hypr`).
+- **ryoku** — a distro checkout; `setup-ryoku.sh` follows upstream's
+  `ryoku/shell/dev-run.sh` (build `ryoku-shell` + QML modules into `~/.local`),
+  never the distro installer or `ryoku materialize`.
 
 ## Adding a shell — checklist
 

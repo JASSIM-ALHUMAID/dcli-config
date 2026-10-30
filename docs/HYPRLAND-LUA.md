@@ -77,12 +77,15 @@ Hyprland puts only the main config's directory (`~/.config/hypr`) on
 (`us,ara`, `grp:win_space_toggle`, `ctrl:nocaps`, sensitivity 0.3, flat accel),
 `bind-options`, `gestures`, `scrolling`, `general`, `decoration`, `animations`,
 `workspace-slide`, `misc`, `rules`, `env`. Standalone shells opt in file by file
-(dms, noctalia and xenon take almost all of them; end4pc leaves gaps, decoration,
-layout and animations to its settings app; end4 keeps its upstream tree and only
-layers `custom/`). ambxst's overrides file takes five of them, omarchy `dofile()`s
-`monitor`, `input` and `gestures`. **caelestia does not use `common/`** — its input
-lives in its fork's `hypr-vars.lua`. `hl.config` merges, so a shell file loaded
-after a `common/` file wins on any key it sets again; set each key once.
+(dms, noctalia, xenon and ryoku take almost all of them; end4pc leaves gaps,
+decoration, layout and animations to its settings app; end4 keeps its upstream
+tree and only layers `custom/`). ambxst's overrides file takes five of them,
+omarchy `dofile()`s `monitor`, `input` and `gestures`. **caelestia does not use
+`common/`** — its input lives in its fork's `hypr-vars.lua`; **ryoku does not
+load its checkout's Hyprland config at all** (the distro owns that tree, dcli
+owns `~/.config/hypr`), so its binds are house binds plus `ryoku-shell` verbs.
+`hl.config` merges, so a shell file loaded after a `common/` file wins on any key
+it sets again; set each key once.
 
 ## Verifying a change
 

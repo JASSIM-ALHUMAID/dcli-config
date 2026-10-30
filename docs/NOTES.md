@@ -172,6 +172,8 @@ Several repos are in play. Changes to a shell itself belong in its checkout, not
 | end4pc fork | `~/.local/share/end4-pC` | `JASSIM-ALHUMAID/my-end4-pC` (`my-end4pc`) | `pctrade/end4-pC` |
 | omarchy | `~/.local/share/omarchy` | `basecamp/omarchy` (`quattro`) | none |
 | xenon | `~/.local/share/xenon-shell` | `MannuVilasara/xenon-shell` (`main`) | none |
+| glyph | `~/.local/share/glyph-rice` | `Nebelung-cloud/glyph-rice` (`main`) | none |
+| ryoku | `~/.local/share/ryoku-shell` | `Ryoku-dev/ryoku` (`main`) | none |
 | wezterm | `~/.config/wezterm` | `JASSIM-ALHUMAID/wezterm` | — (a secondary `plusdrag11` remote is added by `setup-wezterm.sh`) |
 
 `scripts/update-shells.sh [--status]` reports or fast-forwards all of them. It
@@ -181,7 +183,9 @@ and dirty count.
 
 - `~/.config/caelestia` is a symlink **into the caelestia fork**, so its runtime
   config is version-controlled there, not here. Do not let a dotfiles sync replace
-  it — the same is true of `~/.config/quickshell/{caelestia,ii,end4-pC,xenon}`.
+  it — the same is true of `~/.config/quickshell/{caelestia,ii,end4-pC,xenon,glyph,rice}`.
+- `~/.config/ryoku` is the opposite case: the ryoku daemon is its only writer and
+  dcli has no counterpart. Do not link a `dotfiles/ryoku` over it.
 - `~/.config/fish` and `~/.config/fastfetch` are symlinks into
   `~/.local/share/caelestia` (the caelestia-dots clone). This repo does not create
   them; they are unmanaged.

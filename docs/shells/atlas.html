@@ -258,7 +258,7 @@
 <header>
   <div class="kicker">~/.config/dcli</div>
   <h1>dcli Shell Atlas</h1>
-  <p class="lede">Nine Hyprland desktop shells live side by side on one CachyOS machine and swap at
+  <p class="lede">Ten Hyprland desktop shells live side by side on one CachyOS machine and swap at
   runtime — no relogin, no package churn. This page maps each one: <strong>where it is installed,
   where its configs live, how it launches, and how it updates.</strong></p>
 
@@ -280,7 +280,7 @@
   with <code>scripts/switch-quickshell.sh</code>, never by enabling modules by hand.</div>
 
   <nav aria-label="Shells">
-    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a><a href="#glyph">glyph</a>
+    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a><a href="#glyph">glyph</a><a href="#ryoku">ryoku</a>
   </nav>
 </header>
 
@@ -298,6 +298,7 @@
     <tr><td><a href="#omarchy">omarchy</a> <span class="badge b-checkout">checkout</span></td><td><code>quickshell -n -p …/shell</code></td><td>checkout, never its installer</td><td class="path">~/.local/share/omarchy</td><td><code>update-omarchy.sh</code></td></tr>
     <tr><td><a href="#xenon">xenon</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c xenon</code></td><td>checkout, deps in module</td><td class="path">~/.local/share/xenon-shell</td><td><code>update-xenon.sh</code></td></tr>
     <tr><td><a href="#glyph">glyph</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -p ~/.config/quickshell/glyph</code></td><td>rice checkout, never its installer</td><td class="path">~/.local/share/glyph-rice</td><td><code>update-glyph.sh</code></td></tr>
+    <tr><td><a href="#ryoku">ryoku</a> <span class="badge b-checkout">checkout</span></td><td><code>ryoku-shell daemon</code></td><td>distro checkout + local Go/Qt build</td><td class="path">~/.local/share/ryoku-shell</td><td><code>update-ryoku.sh</code></td></tr>
   </tbody>
 </table>
 </div>
@@ -470,6 +471,27 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
     <li><span class="trap">never</span>Run its <code>install.sh</code>: it symlinks the whole config/hypr tree over ~/.config/hypr and links fish/kitty/terminal palettes shared by every shell. setup-glyph.sh reproduces only the non-colliding steps.</li>
     <li>Its modules are required by <em>bare</em> name, so the loader prepends the checkout — otherwise <code>hyprland.rules</code> could resolve into the shared ~/.config/hypr/hyprland/ directory.</li>
     <li>Local binds go in the checkout's gitignored config/hypr/user.lua; the loader only adds SUPER+SHIFT+O.</li>
+  </ul>
+</section>
+
+<section class="shell" id="ryoku">
+  <div class="shell-head"><h3>ryoku</h3><span class="badge b-checkout">checkout</span><span class="launch">ryoku-shell daemon</span></div>
+  <p><strong>Ryoku-dev/ryoku</strong>, the Quickshell desktop of the Ryoku distribution, run from a
+  checkout. One repo supplies the shell QML, the Ryoku Hub settings app, the Go <code>ryoku-shell</code>
+  control plane, three Qt QML modules and the distro's Hyprland config — dcli uses only the shell half.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/ryoku-shell — upstream <code>main</code>, no personal fork (the checkout is not at ~/.local/share/ryoku: upstream installs its i18n catalog there)</dd>
+    <dt>Control plane</dt><dd class="path">~/.local/bin/ryoku-shell — the Go daemon/client, built from ryoku/shell/ipc</dd>
+    <dt>QML modules</dt><dd class="path">~/.local/lib/qt6/qml/Ryoku/{Blobs,Spatial3D,Ui,FrameBars,PluginKit}</dd>
+    <dt>Config</dt><dd class="path">~/.config/ryoku — shell.json, widgets.json, matugen.json; the daemon is the sole writer, machine-local</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/ryoku/hyprland.lua — standalone, in this repo</dd>
+    <dt>Update</dt><dd><code>update-ryoku.sh</code> (pulls and rebuilds)</dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">never</span>Run <code>ryoku-shell-installer</code> or <code>ryoku materialize</code>: the first adds a signed [ryoku] pacman repo and converts the system to the distro, the second copies its config tree over ~/.config/hypr. setup-ryoku.sh follows upstream's <code>ryoku/shell/dev-run.sh</code>.</li>
+    <li>dev-run.sh omits <code>Ryoku.PluginKit</code>; without it the shell dies at startup with “module Ryoku.PluginKit is not installed”. The hook installs it.</li>
+    <li><span class="trap">trap</span>App theming defaults ON and writes cava/btop/yazi/fish/starship/kitty. The hook seeds <code>matugen.json</code> with <code>themeRyokuApps:false</code> once; opt in from the Hub.</li>
+    <li>The daemon has a real <code>quit</code> verb; teardown uses it and falls back to the process match. qylock, ryoshot, the <code>ryoku</code> CLI and the <code>ryoku-*</code> helpers are not installed — house tools fill those binds.</li>
   </ul>
 </section>
 

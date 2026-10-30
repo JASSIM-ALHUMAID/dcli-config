@@ -29,6 +29,7 @@ CHECKOUTS=(
     "$HOME/.local/share/omarchy|omarchy"
     "$HOME/.local/share/xenon-shell|xenon"
     "$HOME/.local/share/glyph-rice|glyph"
+    "$HOME/.local/share/ryoku-shell|ryoku"
 )
 # ~/.config symlinks the shells' own launchers resolve through.
 SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quickshell/glyph quickshell/rice)

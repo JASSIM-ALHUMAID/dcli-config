@@ -26,6 +26,8 @@ resolves under whichever is installed.
 | end4pc | yes | either; same dep set |
 | omarchy | yes | either (its own package list names `quickshell-git`; the module omits it on purpose) |
 | xenon | yes | either |
+| glyph | yes | either (rice checkout, no package) |
+| ryoku | yes | either; built from the checkout, no `ryoku-desktop` package |
 | noctalia | **no** | v5 is native C++/Wayland — belongs to neither provider group |
 
 The provider is owned by one of two modules that list each other in `conflicts:`:

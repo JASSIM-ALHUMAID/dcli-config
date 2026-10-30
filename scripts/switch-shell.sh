@@ -166,6 +166,14 @@ declare -A MATCH_SPECS=(
   # pattern covers the desktop, the lock process and the rice app.
   [glyph]='-f qs .*quickshell/glyph
 -f qs .*quickshell/rice'
+  # ryoku is supervised by its own daemon: ryoku-shell owns the qs children and
+  # refuses to start a second copy, so the daemon is the "is it running" guard.
+  # The children are `qs -p <checkout>/ryoku/shell/quickshell/<config>` (the
+  # daemon sets RYOKU_SHELL_DIR, which makes qs -p win over -c) plus the Hub at
+  # <checkout>/ryoku/hub/quickshell. Anchor on those paths, not on `qs -c shell`.
+  [ryoku]='-x ryoku-shell
+-f qs .*ryoku/shell/quickshell
+-f qs .*ryoku/hub/quickshell'
 )
 
 # Not owned by any one shell: helpers that previous shells' configs leave
@@ -192,6 +200,10 @@ quit_end4pc() { command -v qs >/dev/null 2>&1 && qs -c end4-pC kill 2>/dev/null;
 # cached PID in /tmp/ambxst.pid, and a stale entry there makes it kill
 # whatever unrelated process now owns that recycled PID.
 quit_ambxst() { pgrep -A -f "ambxst/shell.qml" >/dev/null 2>&1 && ambxst quit 2>/dev/null; }
+# ryoku's daemon has a real quit verb: it TERMs the Quickshell children it
+# supervises and reaps them before exiting. Only ask when the daemon is running
+# — a stray client would just fail to connect and print an error.
+quit_ryoku() { pgrep -A -x ryoku-shell >/dev/null 2>&1 && "$HOME/.local/bin/ryoku-shell" quit 2>/dev/null; }
 
 # dms and noctalia are exec-once'd from their shell conf, but exec-once does
 # not re-fire on `hyprctl reload`, so they are started here too (guarded by the
@@ -262,6 +274,15 @@ launch_glyph() {
   # returns immediately. The shell's own `rice lock` still works — the config
   # directory is linked; only `rice switch` is deliberately not on PATH.
   qs -p "$HOME/.config/quickshell/glyph" -d &
+  disown
+}
+launch_ryoku() {
+  # The daemon needs RYOKU_SHELL_DIR at start: it is how it finds the QML tree
+  # (upstream's dev-run.sh exports the same value). Running it from the checkout
+  # rather than the linked config also keeps the shell's plugins resolving out
+  # of ~/.local/lib/qt6/qml, the tree setup-ryoku.sh built.
+  RYOKU_SHELL_DIR="$HOME/.local/share/ryoku-shell/ryoku/shell" \
+    "$HOME/.local/bin/ryoku-shell" daemon &
   disown
 }
 

@@ -14,8 +14,8 @@ packages:
 #
 # quickshell-git has Provides=quickshell, so every other shell still resolves and
 # runs under it: shell-dms (dux-shell depends on plain `quickshell`), ambxst,
-# shell-end4, shell-end4pc, shell-omarchy, shell-xenon and shell-glyph. So all
-# nine shells stay runtime-switchable with scripts/switch-shell.sh while this provider is the
+# shell-end4, shell-end4pc, shell-omarchy, shell-xenon, shell-glyph and shell-ryoku.
+# So all ten shells stay runtime-switchable with scripts/switch-shell.sh while this provider is the
 # installed one (noctalia v5 needs no Quickshell at all).
 #
 # See modules/shells-quickshell.yaml for why `conflicts:` alone is not enough to

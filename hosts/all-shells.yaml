@@ -13,6 +13,7 @@ enabled_modules:
 - shell-omarchy
 - shell-xenon
 - shell-glyph
+- shell-ryoku
 - shell-fish
 - terminal-wezterm
 - editor-neovim

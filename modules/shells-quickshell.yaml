@@ -8,7 +8,7 @@ packages:
 #
 # Stock quickshell is now 0.3.2 in extra. The shells that only need plain
 # `quickshell` run fine here: shell-dms (dux-shell), ambxst, shell-end4,
-# shell-end4pc, shell-omarchy and shell-xenon.
+# shell-end4pc, shell-omarchy, shell-xenon, shell-glyph and shell-ryoku.
 #
 # The caelestia fork's own README asks for quickshell-git; whether stock 0.3.2
 # works for it is being tested, so caelestia is not declared incompatible;

@@ -10,9 +10,9 @@
 # re-themes on the way past: GTK, Qt, the cursor, Thunar's colours, rofi. Those
 # are ONE global copy with six writers:
 #
-#   gtk-{3,4}.0/gtk.css      caelestia, ambxst, end4, end4pc
+#   gtk-{3,4}.0/gtk.css      caelestia, ambxst, end4, end4pc, ryoku
 #   gtk-{3,4}.0/settings.ini caelestia, end4pc, dms
-#   gsettings interface keys caelestia, ambxst, end4, end4pc, omarchy, dms
+#   gsettings interface keys caelestia, ambxst, end4, end4pc, omarchy, dms, ryoku
 #   qt5ct / qt6ct            ambxst, dms, end4pc
 #   gtk-{3,4}.0/thunar.css   caelestia (imported from gtk.css)
 #   gtk-{3,4}.0/nautilus.css caelestia (imported from gtk.css)
@@ -82,7 +82,7 @@ MANAGED_DIRS=(
 )
 
 GS_SCHEMA="org.gnome.desktop.interface"
-GS_KEYS=(gtk-theme icon-theme color-scheme cursor-theme cursor-size font-name text-scaling-factor)
+GS_KEYS=(gtk-theme icon-theme color-scheme cursor-theme cursor-size font-name document-font-name monospace-font-name accent-color text-scaling-factor)
 
 log() { printf '%s\n' "$*" >&2; }
 

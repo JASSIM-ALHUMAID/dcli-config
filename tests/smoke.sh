@@ -107,10 +107,10 @@ expect_current_shell "comments-only file" \
 expect_current_shell "missing file" MISSING "none"
 
 # ── registry: the shell list is a data file ────────────────────────────────
-EXPECTED_SHELLS="caelestia ambxst dms noctalia end4 end4pc omarchy xenon glyph"
+EXPECTED_SHELLS="caelestia ambxst dms noctalia end4 end4pc omarchy xenon glyph ryoku"
 got=$(bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && echo "${KNOWN[*]}"')
 if [ "$got" = "$EXPECTED_SHELLS" ]; then
-    ok "registry: parses to 9 names in order"
+    ok "registry: parses to 10 names in order"
 else
     bad "registry: want '$EXPECTED_SHELLS', got '$got'"
 fi

@@ -1,6 +1,6 @@
 # Shells
 
-Nine graphical shells live side by side on this machine. Any one can be made active
+Ten graphical shells live side by side on this machine. Any one can be made active
 at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 The list itself is `dotfiles/hypr/shells/registry`; how it all fits together is in
 [../ARCHITECTURE.md](../ARCHITECTURE.md), which also holds the checklist for adding
@@ -17,6 +17,7 @@ a shell.
 | [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (`quattro`). Checkout, not a package. Never run its `install.sh`. |
 | [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. |
 | [glyph](glyph.md) | `qs -p ~/.config/quickshell/glyph` | Nebelung-cloud/glyph-rice, Nothing-OS rice. Checkout, never its `install.sh`. |
+| [ryoku](ryoku.md) | `ryoku-shell daemon` | Ryoku-dev/ryoku, the distro's Quickshell desktop. Checkout + local Go/Qt build; never its installer or `materialize`. |
 
 [hyprmod.md](hyprmod.md) covers the per-shell Hyprland settings GUI;
 [atlas.html](atlas.html) is a one-page visual overview.
@@ -81,6 +82,7 @@ dependencies are declared as module `packages:` (not installed from the hook).
 | omarchy | `basecamp/omarchy` | `quattro` | none — tracked directly |
 | xenon | `MannuVilasara/xenon-shell` | `main` | none — tracked directly |
 | glyph | `Nebelung-cloud/glyph-rice` | `main` | none — tracked directly |
+| ryoku | `Ryoku-dev/ryoku` | `main` | none — tracked directly |
 
 The four forks pin their branch explicitly. **This matters:** a fork's *default*
 branch can be a mirror of upstream (caelestia's is `main`), so a bare clone lands on
@@ -112,6 +114,12 @@ running upstream's installer is actively harmful:
   (starship, fastfetch, btop, cava, gtk.css). `~/.config/hypr` is dcli's and the
   terminal configs are shared by every shell, so `setup-glyph.sh` only links the
   two Quickshell configs and the bundled fonts. See [glyph.md](glyph.md).
+- **ryoku** — the installer (`ryoku-shell-installer`) is a distro installer: it
+  adds a signed `[ryoku]` pacman repo, installs `ryoku-desktop-hyprland` with
+  SDDM/limine/snapshots, and `ryoku materialize` copies its config tree over
+  `~/.config`, including `~/.config/hypr`. `setup-ryoku.sh` follows upstream's
+  `ryoku/shell/dev-run.sh` instead: build the daemon and QML modules into
+  `~/.local`, keep the Hyprland config here. See [ryoku.md](ryoku.md).
 - **ambxst** — we run the fork's own `install.sh`. Its arch package list includes
   stock `quickshell`, which is only skipped because its `filter_packages()` sees
   the `qs` binary already on PATH. **Install a provider before running this hook on
@@ -280,6 +288,7 @@ scripts/update-shells.sh [name|all]   # run each shell's updater
 | omarchy | `scripts/update-omarchy.sh` |
 | xenon | `scripts/update-xenon.sh` |
 | glyph | `scripts/update-glyph.sh` |
+| ryoku | `scripts/update-ryoku.sh` (re-runs the build after the pull) |
 
 `update-shells.sh` refuses to run an updater on a checkout with local changes. The
 updaters only work where a plain fast-forward is possible. **caelestia has no update

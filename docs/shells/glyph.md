@@ -37,7 +37,7 @@ desktop) and `rice` (a small shell switcher and the lock entry point).
   config live there;
 - it links fish `config.fish`, kitty, qtengine, `starship.toml`, `fastfetch`,
   `btop`, `cava` and `gtk-{3,4}.0/gtk.css` — most of those are dcli dotfiles or
-  shared by all nine shells;
+  shared by all ten shells;
 - its package phase installs hyprland, quickshell, sddm and a full desktop.
 
 `setup-glyph.sh` reproduces only the parts that do not collide: the checkout, the
