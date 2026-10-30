@@ -258,7 +258,7 @@
 <header>
   <div class="kicker">~/.config/dcli</div>
   <h1>dcli Shell Atlas</h1>
-  <p class="lede">Eight Hyprland desktop shells live side by side on one CachyOS machine and swap at
+  <p class="lede">Nine Hyprland desktop shells live side by side on one CachyOS machine and swap at
   runtime — no relogin, no package churn. This page maps each one: <strong>where it is installed,
   where its configs live, how it launches, and how it updates.</strong></p>
 
@@ -280,7 +280,7 @@
   with <code>scripts/switch-quickshell.sh</code>, never by enabling modules by hand.</div>
 
   <nav aria-label="Shells">
-    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a>
+    <a href="#caelestia">caelestia</a><a href="#ambxst">ambxst</a><a href="#dms">dms</a><a href="#noctalia">noctalia</a><a href="#end4">end4</a><a href="#end4pc">end4pc</a><a href="#omarchy">omarchy</a><a href="#xenon">xenon</a><a href="#glyph">glyph</a>
   </nav>
 </header>
 
@@ -297,6 +297,7 @@
     <tr><td><a href="#end4pc">end4pc</a> <span class="badge b-fork">custom fork</span></td><td><code>qs -c end4-pC</code></td><td>fork checkout, deps in module</td><td class="path">~/.local/share/end4-pC</td><td><code>update-end4pc.sh</code></td></tr>
     <tr><td><a href="#omarchy">omarchy</a> <span class="badge b-checkout">checkout</span></td><td><code>quickshell -n -p …/shell</code></td><td>checkout, never its installer</td><td class="path">~/.local/share/omarchy</td><td><code>update-omarchy.sh</code></td></tr>
     <tr><td><a href="#xenon">xenon</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -c xenon</code></td><td>checkout, deps in module</td><td class="path">~/.local/share/xenon-shell</td><td><code>update-xenon.sh</code></td></tr>
+    <tr><td><a href="#glyph">glyph</a> <span class="badge b-checkout">checkout</span></td><td><code>qs -p ~/.config/quickshell/glyph</code></td><td>rice checkout, never its installer</td><td class="path">~/.local/share/glyph-rice</td><td><code>update-glyph.sh</code></td></tr>
   </tbody>
 </table>
 </div>
@@ -452,12 +453,32 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   </ul>
 </section>
 
+<section class="shell" id="glyph">
+  <div class="shell-head"><h3>glyph</h3><span class="badge b-checkout">checkout</span><span class="launch">qs -p ~/.config/quickshell/glyph</span></div>
+  <p><strong>Nebelung-cloud/glyph-rice</strong>, a Nothing-OS rice: black, white dots, one red. One checkout
+  supplies a complete Hyprland Lua config and two Quickshell configs — the desktop and its small
+  <code>rice</code> switcher/lock helper.</p>
+  <dl class="paths">
+    <dt>Source</dt><dd class="path">~/.local/share/glyph-rice — upstream <code>main</code>, no personal fork</dd>
+    <dt>QS configs</dt><dd class="path">~/.config/quickshell/{glyph,rice} → the checkout's config/quickshell/*</dd>
+    <dt>Fonts</dt><dd class="path">~/.local/share/fonts/glyph → checkout config/fonts</dd>
+    <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/glyph/hyprland.lua — loader that prepends the checkout to package.path, then dofile()s its entry point</dd>
+    <dt>State</dt><dd class="path">~/.config/demonshot and ~/.local/state/rice — machine-local</dd>
+    <dt>Update</dt><dd><code>update-glyph.sh</code></dd>
+  </dl>
+  <ul class="notes">
+    <li><span class="trap">never</span>Run its <code>install.sh</code>: it symlinks the whole config/hypr tree over ~/.config/hypr and links fish/kitty/terminal palettes shared by every shell. setup-glyph.sh reproduces only the non-colliding steps.</li>
+    <li>Its modules are required by <em>bare</em> name, so the loader prepends the checkout — otherwise <code>hyprland.rules</code> could resolve into the shared ~/.config/hypr/hyprland/ directory.</li>
+    <li>Local binds go in the checkout's gitignored config/hypr/user.lua; the loader only adds SUPER+SHIFT+O.</li>
+  </ul>
+</section>
+
 </section>
 
 <h2>Cross-cutting rules</h2>
 <ul class="notes">
   <li><strong>Hyprland loads <code>hyprland.conf</code> or <code>hyprland.lua</code>, never both.</strong> This machine is all-Lua; under a Lua config <code>hyprctl keyword</code> is rejected — use <code>hyprctl eval 'hl.…'</code>.</li>
-  <li><strong>Two shells bring their own Hyprland config</strong> (caelestia, ambxst — from their checkouts); the rest use configs in this repo that share the <code>common/</code> layer; omarchy is the hybrid loader.</li>
+  <li><strong>Two shells bring their own Hyprland config</strong> (caelestia, ambxst — from their checkouts); the rest use configs in this repo that share the <code>common/</code> layer; omarchy and glyph are hybrid loaders.</li>
   <li><strong>SUPER+SPACE is reserved everywhere</strong> for the us/ara keyboard-layout toggle; launchers live on a Super tap or SUPER+D per shell. <strong>SUPER+SHIFT+O is the way out</strong> — it opens the shell picker from any shell.</li>
   <li><strong>Per-shell Hyprland settings GUI:</strong> <code>scripts/edit-hypr.sh [shell]</code> retargets HyprMod at the shell's managed overlay, <code>dotfiles/hypr/shells/&lt;name&gt;/hyprmod.lua</code>.</li>
   <li><strong>Stale processes are the usual "new shell looks broken" cause</strong> — anything in <code>pgrep -a -f "qs -c|quickshell|ambxst|dms run|noctalia"</code> that isn't the active shell shouldn't be there.</li>

@@ -28,9 +28,10 @@ CHECKOUTS=(
     "$HOME/.local/share/end4-pC|end4pc"
     "$HOME/.local/share/omarchy|omarchy"
     "$HOME/.local/share/xenon-shell|xenon"
+    "$HOME/.local/share/glyph-rice|glyph"
 )
 # ~/.config symlinks the shells' own launchers resolve through.
-SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon)
+SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quickshell/glyph quickshell/rice)
 
 # shellcheck source=lib/shell-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/shell-common.sh" || exit 1

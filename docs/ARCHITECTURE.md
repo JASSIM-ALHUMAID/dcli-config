@@ -1,6 +1,6 @@
 # Architecture
 
-Eight shells share one Hyprland session. Each owns its UI process and its Hyprland
+Nine shells share one Hyprland session. Each owns its UI process and its Hyprland
 config; this repo owns the entry point that picks between them, the scripts that
 install and switch them, and everything the shells have in common.
 

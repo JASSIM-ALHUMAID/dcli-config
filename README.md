@@ -2,9 +2,9 @@
 
 Declarative system config for an Arch/CachyOS + Hyprland machine, managed with
 [dcli](https://gitlab.com/theblackdon) v0.2.2: packages, services, default apps,
-dotfiles and bootstrap hooks. One Hyprland session, eight switchable desktop
+dotfiles and bootstrap hooks. One Hyprland session, nine switchable desktop
 shells — my **custom Caelestia fork** as the daily driver, plus ambxst, Dux Shell
-(DMS), Noctalia, end-4, end4-pC, omarchy and xenon.
+(DMS), Noctalia, end-4, end4-pC, omarchy, xenon and glyph-rice.
 
 `dcli sync` on a fresh machine reproduces the full session: SDDM login, uwsm,
 Hyprland, the shell of your choice, with every shell's checkout, dependencies and
@@ -66,10 +66,12 @@ Verify any shell's Hyprland config without switching to it:
 | **end4pc** | `qs -c end4-pC` | `shells/end4pc/hyprland.lua` (standalone) | `~/.config/quickshell/end4-pC` | fork `JASSIM-ALHUMAID/my-end4-pC` (`my-end4pc`), upstream `pctrade/end4-pC` |
 | **omarchy** | `quickshell -n -p $OMARCHY_PATH/shell` | `shells/omarchy/hyprland.lua` — a loader that runs omarchy's own Lua config, then the house layer | `~/.config/omarchy` | `basecamp/omarchy` branch `quattro`, tracked directly |
 | **xenon** | `qs -c xenon` | `shells/xenon/hyprland.lua` (standalone) | `~/.config/xenon` | `MannuVilasara/xenon-shell` branch `main`, tracked directly |
+| **glyph** | `qs -p ~/.config/quickshell/glyph` | `shells/glyph/hyprland.lua` — a loader that runs the checkout's own Lua config | `~/.config/quickshell/{glyph,rice}` | `Nebelung-cloud/glyph-rice` branch `main`, tracked directly |
 
-caelestia, ambxst and omarchy ship complete Hyprland configs, so we load theirs and
-layer local tweaks on top; the rest are standalone configs here that share the
-`dotfiles/hypr/common/` preference layer. The wezterm config has its own history at
+caelestia, ambxst, omarchy and glyph ship complete Hyprland configs, so we load
+theirs (the last two through a loader) and layer local tweaks on top; the rest are
+standalone configs here that share the `dotfiles/hypr/common/` preference layer.
+The wezterm config has its own history at
 [JASSIM-ALHUMAID/wezterm](https://github.com/JASSIM-ALHUMAID/wezterm).
 
 ## Things worth knowing

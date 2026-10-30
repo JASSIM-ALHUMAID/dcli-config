@@ -8,7 +8,7 @@
 #   lib   — fixture test of shell-common.sh:current_shell() against a temp
 #           active.conf (bare name, legacy "source =" line, comments-only,
 #           missing file)
-#   registry — dotfiles/hypr/shells/registry parses to the 8 shells in picker
+#   registry — dotfiles/hypr/shells/registry parses to the 9 shells in picker
 #           order; config-path lookup; an unusable registry fails loudly
 #   lifecycle — every registry name has a MATCH_SPECS entry and a launch_<name>
 #           in switch-shell.sh, and `switch-shell.sh --dry-run <name>` exits 0
@@ -107,10 +107,10 @@ expect_current_shell "comments-only file" \
 expect_current_shell "missing file" MISSING "none"
 
 # ── registry: the shell list is a data file ────────────────────────────────
-EXPECTED_SHELLS="caelestia ambxst dms noctalia end4 end4pc omarchy xenon"
+EXPECTED_SHELLS="caelestia ambxst dms noctalia end4 end4pc omarchy xenon glyph"
 got=$(bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && echo "${KNOWN[*]}"')
 if [ "$got" = "$EXPECTED_SHELLS" ]; then
-    ok "registry: parses to 8 names in order"
+    ok "registry: parses to 9 names in order"
 else
     bad "registry: want '$EXPECTED_SHELLS', got '$got'"
 fi

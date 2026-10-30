@@ -1,0 +1,48 @@
+description: glyph-rice (Nebelung-cloud/glyph-rice) - Nothing-OS rice, two Quickshell configs
+
+# Runtime deps the shell execs or talks to over D-Bus, re-checked every sync.
+# Hooks are `hook_behavior: once`; module packages are not.
+#
+# Already declared by other enabled modules and therefore not repeated here:
+# kitty/fish/starship/fastfetch/btop/cava/eza/zoxide (terminal-*), thunar
+# (file-manager), grim/slurp/swappy/cliphist/wl-clipboard/hyprpicker/libqalculate
+# (base), imagemagick/libvips (omarchy/end4), ydotool/trash-cli (system-utils),
+# papirus-icon-theme (ambxst), the Noto and JetBrains Mono fonts (base), and the
+# xdg-desktop-portal pair (base). zen-browser-bin, telegram-desktop and
+# spotify-launcher are bound by upstream but deliberately not declared: they are
+# personal app choices, and a missing binary just leaves that bind inert.
+packages:
+  - gnome-keyring          # execs gnome-keyring-daemon for secrets
+  - polkit-gnome           # execs its authentication agent
+  - geoclue                # location provider for the clock/weather
+  - gpu-screen-recorder    # Shot > record
+  - direnv                 # fish integration upstream ships
+  - adw-gtk-theme          # the dark GTK base its gtk.css sits on
+  - libnotify              # notify-send from the shell's scripts
+  - bluez                  # Buds panel reads BlueZ over D-Bus
+  - bluez-utils
+  - qtengine               # AUR - Qt theming the rice ships
+  - darkly-bin             # AUR - Qt6 style
+  - bibata-cursor-theme-bin # AUR - upstream's cursor theme
+
+# Do NOT declare quickshell/quickshell-git here: the provider has exactly one
+# owner, modules/shells-quickshell{,-git}.yaml (docs/PACKAGE-CONFLICTS.md).
+# glyph is a plain pair of Quickshell configs and runs on whichever is enabled.
+#
+# There is no usable package: glyph is a rice, and its install.sh symlinks the
+# whole config/hypr tree over ~/.config/hypr plus fish/kitty/qtengine and the
+# terminal palettes. This repo owns ~/.config/hypr, so setup-glyph.sh never runs
+# it — see docs/shells/glyph.md.
+post_install_hook: scripts/setup-glyph.sh
+hook_behavior: once
+
+# No `dotfiles:` key: the only user-visible config is the checkout itself.
+# ~/.config/quickshell/{glyph,rice} are symlinks into it, created by the hook
+# (they are checkouts' source of truth, not dcli dotfiles). The shell writes
+# ~/.config/demonshot/rules.json and ~/.local/state/rice/shell; both are
+# machine-local and untracked.
+#
+# Launched as `qs -p ~/.config/quickshell/glyph`; the Hyprland config is
+# dotfiles/hypr/shells/glyph/hyprland.lua, a loader for the checkout's own
+# hyprland.lua (its bare requires must resolve to its own modules first).
+# Switch with scripts/switch-shell.sh glyph.

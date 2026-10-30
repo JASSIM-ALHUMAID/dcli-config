@@ -159,6 +159,13 @@ declare -A MATCH_SPECS=(
   [omarchy]='-f quickshell -n -p .*omarchy/shell
 -f omarchy-launch-shell'
   [xenon]='-f qs -c xenon'
+  # glyph-rice runs two Quickshell configs from one checkout: `glyph` (the
+  # desktop, `qs -p .../quickshell/glyph`) and `rice` (its shell switcher and
+  # lock helper). `qs -p` has no config name, so match by command line — the
+  # same anchoring omarchy needs. Both share the checkout prefix, so one
+  # pattern covers the desktop, the lock process and the rice app.
+  [glyph]='-f qs .*quickshell/glyph
+-f qs .*quickshell/rice'
 )
 
 # Not owned by any one shell: helpers that previous shells' configs leave
@@ -246,6 +253,15 @@ launch_omarchy() {
 }
 launch_xenon() {
   qs -c xenon &
+  disown
+}
+launch_glyph() {
+  # Started directly rather than through upstream's `rice start`: that helper
+  # also symlinks glyph's starship/fastfetch/gtk term palettes into ~/.config,
+  # which this repo and the other shells own. `-d` detaches, so the launcher
+  # returns immediately. The shell's own `rice lock` still works — the config
+  # directory is linked; only `rice switch` is deliberately not on PATH.
+  qs -p "$HOME/.config/quickshell/glyph" -d &
   disown
 }
 

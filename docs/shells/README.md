@@ -1,6 +1,6 @@
 # Shells
 
-Eight graphical shells live side by side on this machine. Any one can be made active
+Nine graphical shells live side by side on this machine. Any one can be made active
 at runtime with `scripts/switch-shell.sh <name>` (no argument = fuzzel picker).
 The list itself is `dotfiles/hypr/shells/registry`; how it all fits together is in
 [../ARCHITECTURE.md](../ARCHITECTURE.md), which also holds the checklist for adding
@@ -16,6 +16,7 @@ a shell.
 | [end4pc](end4pc.md) | `qs -c end4-pC` | pctrade's end-4 fork, via a personal fork. |
 | [omarchy](omarchy.md) | `quickshell -n -p $OMARCHY_PATH/shell` | DHH's v4 (`quattro`). Checkout, not a package. Never run its `install.sh`. |
 | [xenon](xenon.md) | `qs -c xenon` | MannuVilasara/xenon-shell, no local fork. |
+| [glyph](glyph.md) | `qs -p ~/.config/quickshell/glyph` | Nebelung-cloud/glyph-rice, Nothing-OS rice. Checkout, never its `install.sh`. |
 
 [hyprmod.md](hyprmod.md) covers the per-shell Hyprland settings GUI;
 [atlas.html](atlas.html) is a one-page visual overview.
@@ -79,6 +80,7 @@ dependencies are declared as module `packages:` (not installed from the hook).
 | end4pc | `JASSIM-ALHUMAID/my-end4-pC` | `my-end4pc` | `pctrade/end4-pC` |
 | omarchy | `basecamp/omarchy` | `quattro` | none — tracked directly |
 | xenon | `MannuVilasara/xenon-shell` | `main` | none — tracked directly |
+| glyph | `Nebelung-cloud/glyph-rice` | `main` | none — tracked directly |
 
 The four forks pin their branch explicitly. **This matters:** a fork's *default*
 branch can be a mirror of upstream (caelestia's is `main`), so a bare clone lands on
@@ -105,6 +107,11 @@ running upstream's installer is actively harmful:
   overwrites `~/.config` for alacritty, foot, btop, git, tmux, lazygit and nvim,
   all of which are dcli-symlinked. `setup-omarchy.sh` reproduces only the clone
   and the theme seed. See [omarchy.md](omarchy.md).
+- **glyph** — `install.sh` symlinks its **entire** `config/hypr` tree over
+  `~/.config/hypr`, plus fish, kitty, qtengine and the terminal palettes
+  (starship, fastfetch, btop, cava, gtk.css). `~/.config/hypr` is dcli's and the
+  terminal configs are shared by every shell, so `setup-glyph.sh` only links the
+  two Quickshell configs and the bundled fonts. See [glyph.md](glyph.md).
 - **ambxst** — we run the fork's own `install.sh`. Its arch package list includes
   stock `quickshell`, which is only skipped because its `filter_packages()` sees
   the `qs` binary already on PATH. **Install a provider before running this hook on
@@ -120,9 +127,9 @@ running upstream's installer is actively harmful:
    `switch-shell.sh` reads).
 3. Two shells supply their own Hyprland config from their checkout
    (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the rest use
-   `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo. omarchy is a hybrid:
-   that file is a *loader* which runs omarchy's own Lua config from its checkout
-   and layers the house preferences on top, so it needs no `-overrides.lua`.
+   `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo. omarchy and glyph are
+   hybrids: those files are *loaders* which run the checkout's own Lua config and
+   layer the house preferences on top, so they need no `-overrides.lua`.
    Standalone configs share `dotfiles/hypr/common/` and require everything by
    fully-qualified name — see [../HYPRLAND-LUA.md](../HYPRLAND-LUA.md).
 
@@ -272,6 +279,7 @@ scripts/update-shells.sh [name|all]   # run each shell's updater
 | end4pc | `scripts/update-end4pc.sh` (see the warning in [end4pc.md](end4pc.md)) |
 | omarchy | `scripts/update-omarchy.sh` |
 | xenon | `scripts/update-xenon.sh` |
+| glyph | `scripts/update-glyph.sh` |
 
 `update-shells.sh` refuses to run an updater on a checkout with local changes. The
 updaters only work where a plain fast-forward is possible. **caelestia has no update
