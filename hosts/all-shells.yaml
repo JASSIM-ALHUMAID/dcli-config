@@ -4,7 +4,6 @@ import: []
 enabled_modules:
 - base
 - hyprland-entry
-- shells-quickshell-git
 - caelestia
 - ambxst
 - shell-dms
@@ -22,6 +21,7 @@ enabled_modules:
 - media
 - dev-tools
 - system-utils
+- shells-quickshell-git
 packages: []
 exclude: []
 additional_packages: []
@@ -82,7 +82,7 @@ theming:
   qt: null
   env_vars: {}
 editor: null
-package_manager: null
+package_manager: pacman
 aur_helper: paru
 sync_sudo: false
 auto_commit: false
