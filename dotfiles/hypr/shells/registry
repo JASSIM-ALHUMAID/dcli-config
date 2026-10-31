@@ -13,13 +13,13 @@
 #
 # Adding a shell here is necessary but not sufficient — see the "New shell"
 # checklist in docs/ARCHITECTURE.md.
-caelestia|~/.local/share/caelestia/hypr/hyprland.lua|caelestia.svg|Material 3 · quickshell
-ambxst|~/.local/share/ambxst/hyprland.lua|ambxst.svg|Axenide · Astal
-dms|shells/dms/hyprland.lua|dms.svg|Dux Shell (ex-DankMaterialShell)
-noctalia|shells/noctalia/hyprland.lua|noctalia.svg|v5 · native, no Qt
-end4|shells/end4/hyprland.lua|end4.svg|illogical-impulse
-end4pc|shells/end4pc/hyprland.lua|end4pc.svg|pctrade fork
-omarchy|shells/omarchy/hyprland.lua|omarchy.png|DHH · v4 quickshell
-xenon|shells/xenon/hyprland.lua|xenon.svg|MannuVilasara · quickshell
-glyph|shells/glyph/hyprland.lua|glyph.svg|Nebelung · Nothing-OS rice
-ryoku|shells/ryoku/hyprland.lua|ryoku.png|Ryoku · distro checkout
+caelestia|~/.local/share/caelestia/hypr/hyprland.lua|caelestia.svg|Material You, softly glowing
+ambxst|~/.local/share/ambxst/hyprland.lua|ambxst.svg|Astal-built command deck
+dms|shells/dms/hyprland.lua|dms.svg|Dux Shell · the Dank lineage, reborn
+noctalia|shells/noctalia/hyprland.lua|noctalia.svg|A quiet night sky · native, Qt-free
+end4|shells/end4/hyprland.lua|end4.svg|Illogical Impulse · the showpiece rice
+end4pc|shells/end4pc/hyprland.lua|end4pc.svg|Illogical Impulse, remixed by pctrade
+omarchy|shells/omarchy/hyprland.lua|omarchy.png|DHH's opinionated Arch, in quickshell
+xenon|shells/xenon/hyprland.lua|xenon.svg|MannuVilasara's lean quickshell take
+glyph|shells/glyph/hyprland.lua|glyph.svg|Nothing-OS dots & dot-matrix soul
+ryoku|shells/ryoku/hyprland.lua|ryoku.png|The whole Ryoku desktop, as shipped
