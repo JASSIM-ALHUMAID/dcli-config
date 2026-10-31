@@ -1,0 +1,14 @@
+# Template — scripts/install-grub-theme.sh substitutes @RENDERER@ and installs
+# the result as ~/.config/systemd/user/dcli-grub-render.service.
+#
+# Re-renders the GRUB theme of every shell whose wallpaper changed. --changed
+# makes the common trigger (a state file rewritten for some other setting) a
+# ~0.1s no-op; a real render rewrites .stamp, which the root-side
+# dcli-grub-theme.path turns into an install.
+[Unit]
+Description=Re-render dcli GRUB themes after a wallpaper change
+
+[Service]
+Type=oneshot
+ExecStart=@RENDERER@ --changed all
+Nice=10

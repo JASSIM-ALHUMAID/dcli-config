@@ -121,6 +121,22 @@ theme_state() {
   "$helper" "$1" "$2" || true
 }
 
+# ── GRUB theme ───────────────────────────────────────────────────────────────
+# The bootloader follows the shell: re-render the GRUB theme set with the new
+# shell as `active`. Renders take seconds (image work), so it runs detached —
+# a switch never waits on it — and its failure is never a switch failure. The
+# root-side path unit installs the result when the renderer touches its stamp
+# (docs/GRUB.md). DCLI_SKIP_GRUB_THEME=1 bypasses it.
+GRUB_RENDERER="$SCRIPT_DIR/render-grub-theme.sh"
+GRUB_RENDER_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/dcli/grub-theme.log"
+
+grub_theme_render() {
+  [ "${DCLI_SKIP_GRUB_THEME:-0}" = 1 ] && return 0
+  [ -x "$GRUB_RENDERER" ] || return 0
+  mkdir -p "$(dirname "$GRUB_RENDER_LOG")" 2>/dev/null || return 0
+  setsid -f "$GRUB_RENDERER" --active "$1" >"$GRUB_RENDER_LOG" 2>&1 </dev/null || true
+}
+
 # ── Shell lifecycle table ────────────────────────────────────────────────────
 # Per registry name, everything switch-shell.sh knows about running that shell:
 #   MATCH_SPECS     newline-separated "<pgrep flag> <pattern>" lines. The FIRST
@@ -375,6 +391,12 @@ print_plan() {
   echo "launch guard: $(guard_spec "$SHELL_NAME")"
   declare -f "launch_$SHELL_NAME"
   echo
+  if [ "${DCLI_SKIP_GRUB_THEME:-0}" = 1 ]; then
+    echo "grub theme: skipped (DCLI_SKIP_GRUB_THEME=1)"
+  else
+    echo "grub theme (detached, non-fatal): $GRUB_RENDERER --active $SHELL_NAME  [log: $GRUB_RENDER_LOG]"
+  fi
+  echo
   echo "active.conf ($ACTIVE) would become:"
   printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME"
 }
@@ -441,6 +463,8 @@ fi
 # Release the lock before launching background processes — they inherit
 # the lock fd (LOCK_FD) and would hold the lock open after this script exits.
 exec {LOCK_FD}>&-
+
+grub_theme_render "$SHELL_NAME"
 
 launch_shell "$SHELL_NAME"
 

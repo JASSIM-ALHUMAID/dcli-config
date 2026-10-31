@@ -212,6 +212,11 @@ sufficient. Work through all of these:
    `shell-theme-state.sh` if it touches the shared surface.
 10. **Docs:** `docs/shells/<name>.md` plus rows in `docs/shells/README.md`, the README
     shell table, and `docs/shells/atlas.html`.
-11. **Verify:** `bash tests/smoke.sh`,
+11. **GRUB.** Add the shell's wallpaper record to `WALLPAPER_SOURCES` in
+    `scripts/lib/wallpaper.sh` (smoke fails without one — the boot theme would be a
+    gradient) and re-run `scripts/install-grub-theme.sh` so the watcher picks up the
+    new state file. Optionally add a style-table entry in `render-grub-theme.sh` if
+    the shell should not get the default `material` layout. See [GRUB.md](GRUB.md).
+12. **Verify:** `bash tests/smoke.sh`,
     `DCLI_HYPRMOD_SHELL=<name> Hyprland --verify-config -c ~/.config/hypr/hyprland.lua`,
     `scripts/switch-shell.sh --dry-run <name>`, then `scripts/doctor.sh`.

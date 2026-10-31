@@ -1,0 +1,17 @@
+description: GRUB follows the shell - per-shell themes rendered from each shell's wallpaper and logo
+
+packages:
+  - grub
+  - imagemagick
+  - resvg
+  - inter-font
+  - ttf-jetbrains-mono-nerd
+  # setpriv: the root sync helper drops to your uid to read the staging tree
+  - util-linux
+
+# The hook only renders (as you) and prints the one-time root command; the
+# root-owned half is installed by `scripts/install-grub-theme.sh` (run as you;
+# it calls sudo itself) and removed by `scripts/uninstall-grub-theme.sh`,
+# never by a hook. Architecture and threat model: docs/GRUB.md.
+post_install_hook: scripts/setup-grub-theme.sh
+hook_behavior: once

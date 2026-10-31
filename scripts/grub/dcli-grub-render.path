@@ -1,0 +1,12 @@
+# Template — scripts/install-grub-theme.sh replaces the placeholder line below with
+# one PathChanged= per wallpaper state file in scripts/lib/wallpaper.sh, and
+# installs the result as ~/.config/systemd/user/dcli-grub-render.path.
+[Unit]
+Description=Watch every shell's wallpaper state for the dcli GRUB themes
+
+[Path]
+@PATH_CHANGED@
+Unit=dcli-grub-render.service
+
+[Install]
+WantedBy=default.target

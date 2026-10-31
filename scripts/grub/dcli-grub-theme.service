@@ -1,0 +1,19 @@
+# Template — scripts/install-grub-theme.sh substitutes @USER@ and
+# @STAGING@ and installs the result as /etc/systemd/system/dcli-grub-theme.service.
+#
+# Runs the root-owned copy of dcli-grub-sync only. The staging tree is
+# user-writable, so the helper reads it as @USER@ (setpriv) and validates in
+# a private temp dir; see the helper's header for the threat model.
+[Unit]
+Description=Install the dcli GRUB themes into /boot/grub/themes/dcli
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/dcli-grub-sync --user @USER@ --staging @STAGING@
+ProtectSystem=strict
+# grub-mkconfig rewrites grub.cfg; os-prober (if enabled) mounts under /var/lib/os-prober.
+ReadWritePaths=/boot/grub -/var/lib/os-prober
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateNetwork=yes
+NoNewPrivileges=yes

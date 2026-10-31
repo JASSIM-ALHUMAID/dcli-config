@@ -1,0 +1,89 @@
+#!/bin/sh
+# grub-mkconfig helper, installed as /etc/grub.d/42_dcli_shells (root-owned).
+# Emits a "Shells" submenu: one nested submenu per installed dcli GRUB theme,
+# previewing that shell's theme and holding a boot entry that adds
+# `dcli.shell=<name>` to the kernel command line (scripts/boot-shell.sh reads
+# it in the session and switches to that shell).
+#
+# The boot entry body is NOT re-derived here: 10_linux is run with the same
+# environment grub-mkconfig gave this script and its first top-level menuentry
+# is reused, so root UUID, subvolume, microcode and initrd handling stay
+# whatever 10_linux decided. If anything cannot be derived this script prints
+# nothing and exits 0 — a broken helper must never break grub.cfg.
+#
+# Overrides (tests only; grub-mkconfig sets none of them):
+#   DCLI_GRUB_THEMES_DIR   installed themes (default /boot/grub/themes/dcli)
+#   DCLI_GRUB_10_LINUX     entry generator (default /etc/grub.d/10_linux)
+#   DCLI_GRUB_THEMES_URI   skip grub-mkconfig_lib; use this as the GRUB-side
+#                          path of the themes dir
+
+themes_dir="${DCLI_GRUB_THEMES_DIR:-/boot/grub/themes/dcli}"
+linux_script="${DCLI_GRUB_10_LINUX:-/etc/grub.d/10_linux}"
+active_dir_name=active
+title_max_bytes=120
+
+[ -d "$themes_dir" ] || exit 0
+[ -x "$linux_script" ] || exit 0
+
+if [ -n "${DCLI_GRUB_THEMES_URI:-}" ]; then
+    themes_uri="$DCLI_GRUB_THEMES_URI"
+else
+    : "${pkgdatadir:=/usr/share/grub}"
+    # shellcheck disable=SC1091
+    . "$pkgdatadir/grub-mkconfig_lib" || exit 0
+    # GRUB paths on btrfs carry the subvolume (/@/boot/...), which only
+    # grub-mkconfig_lib knows how to compute.
+    themes_uri=$(make_system_path_relative_to_its_root "$themes_dir") || exit 0
+fi
+[ -n "$themes_uri" ] || exit 0
+
+# Title text lands inside a single-quoted grub script string: drop everything
+# that could close it or expand.
+grub_safe() {
+    printf '%s' "$1" | head -n1 | tr -d "'\"\\\\\$\`" | head -c "$title_max_bytes"
+}
+
+# First top-level menuentry of 10_linux, header line dropped, body only.
+# awk exits non-zero unless the entry's closing brace was seen.
+entry_body=$("$linux_script" 2>/dev/null | awk '
+    !started && /^menuentry / { started = 1; next }
+    started && /^}/           { closed = 1; exit }
+    started                   { print }
+    END                       { exit closed ? 0 : 1 }') || exit 0
+printf '%s\n' "$entry_body" | grep -Eq '^[[:space:]]*(linux|linux16|linuxefi)[[:space:]]' || exit 0
+
+os_label=$(grub_safe "${GRUB_DISTRIBUTOR:-Linux}")
+
+shell_blocks=""
+for dir in "$themes_dir"/*/; do
+    name=$(basename "$dir")
+    [ "$name" != "$active_dir_name" ] || continue
+    case "$name" in
+    [a-z0-9]*) ;;
+    *) continue ;;
+    esac
+    case "$name" in *[!a-z0-9-]*) continue ;; esac
+    [ -f "$dir/theme.txt" ] || continue
+
+    title=$name
+    [ -f "$dir/title.txt" ] && title=$(grub_safe "$(cat "$dir/title.txt")")
+    [ -n "$title" ] || title=$name
+
+    # Append the kernel parameter to the linux line and nest one level deeper.
+    body=$(printf '%s\n' "$entry_body" |
+        sed -E "s/^([[:space:]]*(linux|linux16|linuxefi)[[:space:]].*[^[:space:]])[[:space:]]*\$/\\1 dcli.shell=$name/; s/^/\\t\\t/")
+
+    # `theme` is deliberately not exported: the submenu's variable context is
+    # dropped on exit, which puts the active theme back for the parent menu.
+    shell_blocks="$shell_blocks
+	submenu '$title' --class dcli-$name \$menuentry_id_option 'dcli-shell-$name' {
+		set theme=(\$root)$themes_uri/$name/theme.txt
+		menuentry 'Boot $os_label · $name' --class dcli-$name \$menuentry_id_option 'dcli-boot-$name' {
+$body
+		}
+	}"
+done
+
+[ -n "$shell_blocks" ] || exit 0
+
+printf "submenu 'Shells' --class dcli \$menuentry_id_option 'dcli-shells' {%s\n}\n" "$shell_blocks"

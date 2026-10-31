@@ -13,6 +13,11 @@
 #   lifecycle — every registry name has a MATCH_SPECS entry and a launch_<name>
 #           in switch-shell.sh, and `switch-shell.sh --dry-run <name>` exits 0
 #           and touches nothing (fixture HOME + XDG_RUNTIME_DIR)
+#   grub  — the GRUB layer: 42_dcli_shells output through grub-script-check
+#           (fixture themes dir + fixture 10_linux), dcli-grub-sync against a
+#           fixture staging tree (valid install, hostile inputs refused),
+#           install-grub-theme.sh / uninstall-grub-theme.sh into a fixture root,
+#           boot-shell.sh consumption rules, the switch-shell.sh hook
 #   drift — every modules/*.yaml `dotfiles:` source must be a link-dotfiles.sh
 #           TARGETS entry or an ALLOWED_DIVERGENCE entry below
 #
@@ -40,6 +45,8 @@ parse_targets=()
 for f in "$REPO_DIR"/scripts/*.sh "$REPO_DIR"/scripts/lib/*.sh; do
     parse_targets+=("$f")
 done
+GRUB_SCRIPTS=("$REPO_DIR/scripts/grub/dcli-grub-sync" "$REPO_DIR/scripts/grub/42_dcli_shells")
+parse_targets+=("${GRUB_SCRIPTS[@]}")
 # omarchy-shims holds extensionless executables, some nested — walk files only
 # (the glob also matches a subdirectory, which bash -n cannot parse).
 while IFS= read -r -d '' f; do parse_targets+=("$f"); done < <(
@@ -71,17 +78,25 @@ for f in "$REPO_DIR"/scripts/*.sh; do
     fi
 done
 
+for f in "${GRUB_SCRIPTS[@]}"; do
+    if [ -x "$f" ]; then
+        ok "executable ${f#"$REPO_DIR"/}"
+    else
+        bad "not executable: ${f#"$REPO_DIR"/}"
+    fi
+done
+
 # ── lint: the shellcheck gate ────────────────────────────────────────────────
 if command -v "$SHELLCHECK" >/dev/null 2>&1 || [ -x "$SHELLCHECK" ]; then
     if (
         cd "$REPO_DIR" || exit 1
         # scripts/*.sh is the documented gate; lib/*.sh is the shared-code
         # superset — both must be clean.
-        "$SHELLCHECK" scripts/*.sh scripts/lib/*.sh
+        "$SHELLCHECK" scripts/*.sh scripts/lib/*.sh scripts/grub/dcli-grub-sync scripts/grub/42_dcli_shells
     ); then
-        ok "shellcheck scripts/*.sh scripts/lib/*.sh"
+        ok "shellcheck scripts/*.sh scripts/lib/*.sh scripts/grub/*"
     else
-        bad "shellcheck scripts/*.sh scripts/lib/*.sh"
+        bad "shellcheck scripts/*.sh scripts/lib/*.sh scripts/grub/*"
     fi
 else
     bad "shellcheck not found at $SHELLCHECK or on PATH"
@@ -267,6 +282,325 @@ while IFS= read -r entry; do
 done <<EOF
 $declared_sources
 EOF
+
+# ── grub: the bootloader theming layer ──────────────────────────────────────
+GRUB_SRC="$REPO_DIR/scripts/grub"
+grub_fx="$fixture_home/grub"
+mkdir -p "$grub_fx"
+
+# 42_dcli_shells against a fixture themes dir and a fixture 10_linux (the real
+# one needs grub-probe and root). The fixture entry mirrors 10_linux's output
+# shape: a top-level menuentry, then an Advanced submenu that must be ignored.
+mkdir -p "$grub_fx/themes/alpha" "$grub_fx/themes/beta-2" "$grub_fx/themes/active" "$grub_fx/themes/_junk"
+for t in alpha beta-2 active _junk; do : >"$grub_fx/themes/$t/theme.txt"; done
+printf "alpha · Alpha 'quoted' \$x\n" >"$grub_fx/themes/alpha/title.txt"
+cat >"$grub_fx/10_linux" <<'FIXTURE'
+#!/bin/sh
+cat <<'ENTRIES'
+menuentry 'Fixture Linux' --class fixture --class gnu-linux --class gnu --class os $menuentry_id_option 'gnulinux-simple-fx' {
+	load_video
+	search --no-floppy --fs-uuid --set=root fx
+	linux	/@/boot/vmlinuz-fixture root=UUID=fx rw rootflags=subvol=@ quiet 
+	initrd	/@/boot/initramfs-fixture.img
+}
+submenu 'Advanced options' $menuentry_id_option 'gnulinux-advanced-fx' {
+	menuentry 'Fixture Linux, fallback' $menuentry_id_option 'fx-fb' {
+		linux /boot/fallback
+	}
+}
+ENTRIES
+FIXTURE
+chmod +x "$grub_fx/10_linux"
+grub_d_run() {
+    DCLI_GRUB_THEMES_DIR="$grub_fx/themes" DCLI_GRUB_10_LINUX="$grub_fx/10_linux" \
+        DCLI_GRUB_THEMES_URI=/@/boot/grub/themes/dcli GRUB_DISTRIBUTOR=Fixture "$GRUB_SRC/42_dcli_shells"
+}
+grub_d_out=$(grub_d_run)
+if grep -q "dcli.shell=alpha\$" <<<"$grub_d_out" && grep -q "dcli.shell=beta-2\$" <<<"$grub_d_out" &&
+    ! grep -q '_junk\|dcli-shell-active\|fallback' <<<"$grub_d_out" &&
+    grep -q "^	submenu 'alpha · Alpha quoted x'" <<<"$grub_d_out"; then
+    ok "grub: 42_dcli_shells emits one boot entry per shell, dcli.shell appended, active/junk skipped"
+else
+    bad "grub: 42_dcli_shells output wrong: $grub_d_out"
+fi
+if command -v grub-script-check >/dev/null 2>&1; then
+    if grub-script-check <<<"$grub_d_out"; then
+        ok "grub: 42_dcli_shells output passes grub-script-check"
+    else
+        bad "grub: 42_dcli_shells output fails grub-script-check"
+    fi
+else
+    ok "grub: grub-script-check not installed — script check skipped"
+fi
+rm -f "$grub_fx/10_linux"
+printf '#!/bin/sh\necho "nothing useful"\n' >"$grub_fx/10_linux"
+chmod +x "$grub_fx/10_linux"
+if [ -z "$(grub_d_run)" ]; then
+    ok "grub: 42_dcli_shells prints nothing when 10_linux yields no entry"
+else
+    bad "grub: 42_dcli_shells emitted output without a derivable boot entry"
+fi
+
+# dcli-grub-sync: non-root, reading with `env` instead of setpriv, into a
+# fixture destination. Same code path as the installed helper otherwise.
+staging="$grub_fx/staging"
+sync_dest="$grub_fx/dest"
+sync_run() {
+    DCLI_GRUB_ALLOW_NONROOT=1 DCLI_GRUB_DEST="$sync_dest" DCLI_GRUB_READER=env \
+        DCLI_GRUB_MKCONFIG="touch $grub_fx/mkconfig-ran" \
+        "$GRUB_SRC/dcli-grub-sync" --user "$(id -un)" --staging "$staging" 2>&1
+}
+png_bytes() { printf '\x89PNG\r\n\x1a\n\0\0\0\0'; }
+jpg_bytes() { printf '\xff\xd8\xff\xe0\0\0'; }
+stage_shell() {
+    local d="$staging/$1"
+    mkdir -p "$d/icons"
+    png_bytes >"$d/pane.png"
+    png_bytes >"$d/icons/os.png"
+    jpg_bytes >"$d/background.jpg"
+    printf 'desktop-image: "background.jpg"\n+ boot_menu { left = 10%% }\n' >"$d/theme.txt"
+    printf '%s · Fixture\n' "$1" >"$d/title.txt"
+    : >"$d/.complete"
+}
+mkdir -p "$staging/fonts"
+printf 'FILE\0\0\0\4PFF2fixture' >"$staging/fonts/fixture.pf2"
+printf 'fixture|fixture.pf2|Fixture Regular 22\n' >"$staging/fonts/MANIFEST"
+stage_shell alpha
+stage_shell beta
+echo alpha >"$staging/active"
+png_bytes >"$staging/alpha/preview.png"
+if out=$(sync_run) && [ -f "$sync_dest/alpha/theme.txt" ] && [ -f "$sync_dest/beta/icons/os.png" ] &&
+    [ -f "$sync_dest/active/fixture.pf2" ] && [ -f "$sync_dest/active/theme.txt" ] &&
+    [ "$(cat "$sync_dest/active/.dcli-shell")" = alpha ] && [ ! -e "$sync_dest/alpha/preview.png" ] &&
+    [ ! -e "$sync_dest/active/MANIFEST" ] &&
+    [ ! -e "$sync_dest/alpha/.complete" ] && [ -f "$grub_fx/mkconfig-ran" ] &&
+    [ "$(stat -c %a "$sync_dest/alpha/theme.txt")" = 644 ]; then
+    ok "grub: dcli-grub-sync installs shells + active/ (fonts merged), previews + font MANIFEST skipped, grub.cfg regenerated"
+else
+    bad "grub: dcli-grub-sync valid install failed: $out"
+fi
+rm -f "$grub_fx/mkconfig-ran"
+if out=$(sync_run) && [ ! -f "$grub_fx/mkconfig-ran" ]; then
+    ok "grub: dcli-grub-sync leaves grub.cfg alone when the shell set is unchanged"
+else
+    bad "grub: dcli-grub-sync re-ran mkconfig for an unchanged shell set: $out"
+fi
+rm -rf "$staging/beta"
+if out=$(sync_run) && [ ! -e "$sync_dest/beta" ] && [ -f "$grub_fx/mkconfig-ran" ]; then
+    ok "grub: dcli-grub-sync drops shells that are no longer staged"
+else
+    bad "grub: dcli-grub-sync kept a removed shell: $out"
+fi
+
+# Hostile or malformed staging must be refused with the previous install intact.
+expect_sync_refusal() {
+    local desc="$1" before after
+    before=$(cd "$sync_dest" && find . -type f -exec cksum {} + | sort)
+    if out=$(sync_run); then
+        bad "grub: dcli-grub-sync accepted $desc"
+    else
+        after=$(cd "$sync_dest" && find . -type f -exec cksum {} + | sort)
+        if [ "$before" = "$after" ]; then
+            ok "grub: dcli-grub-sync refuses $desc, installed tree untouched"
+        else
+            bad "grub: dcli-grub-sync refused $desc but changed the installed tree"
+        fi
+    fi
+}
+ln -s /etc/passwd "$staging/alpha/evil.png"
+expect_sync_refusal "a symlink member"
+rm -f "$staging/alpha/evil.png"
+ln "$staging/alpha/pane.png" "$staging/alpha/hard.png"
+expect_sync_refusal "a hardlink member"
+rm -f "$staging/alpha/hard.png"
+echo "not a png" >"$staging/alpha/fake.png"
+expect_sync_refusal "a .png without PNG magic"
+rm -f "$staging/alpha/fake.png"
+echo '#!/bin/sh' >"$staging/alpha/run.sh"
+expect_sync_refusal "a disallowed file type"
+rm -f "$staging/alpha/run.sh"
+printf 'x: "../../etc/shadow"\n' >>"$staging/alpha/theme.txt"
+expect_sync_refusal "a theme.txt reference that escapes its directory"
+printf 'desktop-image: "background.jpg"\n' >"$staging/alpha/theme.txt"
+mv "$staging/alpha/.complete" "$grub_fx/.complete-held"
+expect_sync_refusal "a shell without its .complete marker"
+mv "$grub_fx/.complete-held" "$staging/alpha/.complete"
+if out=$(sync_run); then
+    ok "grub: dcli-grub-sync accepts the staging tree again once it is clean"
+else
+    bad "grub: dcli-grub-sync rejected a clean tree: $out"
+fi
+if DCLI_GRUB_ALLOW_NONROOT= DCLI_GRUB_DEST="$sync_dest" "$GRUB_SRC/dcli-grub-sync" --user "$(id -un)" --staging "$staging" >/dev/null 2>&1; then
+    bad "grub: dcli-grub-sync ran without root"
+else
+    ok "grub: dcli-grub-sync refuses to run without root"
+fi
+
+# Wallpaper sources (lib/wallpaper.sh) against a fixture $HOME: every record
+# kind, ~ expansion, first-existing-wins fallback, and "no wallpaper".
+wp_home="$grub_fx/wp-home"
+mkdir -p "$wp_home/pics" "$wp_home/.local/state/caelestia/wallpaper" "$wp_home/.local/state/dms" \
+    "$wp_home/.local/state/noctalia" "$wp_home/.local/state/omarchy/current" "$wp_home/.local/state/rice" \
+    "$wp_home/.local/share/xenon-shell/Assets"
+for f in a b c d x; do png_bytes >"$wp_home/pics/$f.png"; done
+echo "$wp_home/pics/a.png" >"$wp_home/.local/state/caelestia/wallpaper/path.txt"
+printf '{"wallpaperPath":"%s"}\n' "$wp_home/pics/b.png" >"$wp_home/.local/state/dms/session.json"
+printf '[wallpaper]\nx = 1\n\n    [wallpaper.default]\n    path = "%s"\n\n    [wallpaper.last]\n    path = "%s"\n' \
+    "$wp_home/pics/a.png" "$wp_home/pics/c.png" >"$wp_home/.local/state/noctalia/settings.toml"
+ln -s "$wp_home/pics/d.png" "$wp_home/.local/state/omarchy/current/background"
+png_bytes >"$wp_home/.local/share/xenon-shell/Assets/default_wallpaper.png"
+echo '~/pics/x.png' >"$wp_home/.local/state/ryoku-wallpaper"
+printf '{"wall":""}\n' >"$wp_home/.local/state/rice/glyph.json"
+wp_of() { SHELL_WALLPAPER_HOME="$wp_home" bash -c '. "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; shell_wallpaper "$1"' _ "$1"; }
+if [ "$(wp_of caelestia)" = "$wp_home/pics/a.png" ] && [ "$(wp_of dms)" = "$wp_home/pics/b.png" ] &&
+    [ "$(wp_of noctalia)" = "$wp_home/pics/c.png" ] && [ "$(wp_of omarchy)" = "$wp_home/pics/d.png" ] &&
+    [ "$(wp_of ryoku)" = "$wp_home/pics/x.png" ] &&
+    [ "$(wp_of xenon)" = "$wp_home/.local/share/xenon-shell/Assets/default_wallpaper.png" ] &&
+    [ -z "$(wp_of glyph)" ] && [ -z "$(wp_of ambxst)" ] && [ -z "$(wp_of no-such-shell)" ]; then
+    ok "wallpaper: text/json/toml section/link/~ records resolve; xenon falls back to its default; empty and absent give none"
+else
+    bad "wallpaper: shell_wallpaper resolved a fixture wrongly"
+fi
+missing_records=""
+mapfile -t registry_shells < <(bash -c '. "'"$REPO_DIR"'/scripts/lib/shell-common.sh" && printf "%s\n" "${KNOWN[@]}"')
+[ "${#registry_shells[@]}" -gt 0 ] || missing_records=" (registry unreadable)"
+for name in "${registry_shells[@]}"; do
+    grep -q "^    \"$name|" "$REPO_DIR/scripts/lib/wallpaper.sh" || missing_records+=" $name"
+done
+if [ -z "$missing_records" ]; then
+    ok "wallpaper: every registry shell has a WALLPAPER_SOURCES record"
+else
+    bad "wallpaper: no WALLPAPER_SOURCES record for:$missing_records (GRUB would draw a gradient)"
+fi
+
+# Installer + shared status helper in a fixture root (no systemctl, no sync, no
+# grub-mkconfig under DCLI_INSTALL_ROOT).
+inst_root="$grub_fx/root"
+mkdir -p "$inst_root/etc/default"
+printf 'GRUB_TIMEOUT=5\nGRUB_THEME=/boot/grub/themes/old/theme.txt\n' >"$inst_root/etc/default/grub"
+installer="$REPO_DIR/scripts/install-grub-theme.sh"
+uninstaller="$REPO_DIR/scripts/uninstall-grub-theme.sh"
+grub_problems() { DCLI_INSTALL_ROOT="$inst_root" bash -c '. "'"$REPO_DIR"'/scripts/lib/grub-common.sh"; grub_integration_problems'; }
+if [ -n "$(grub_problems)" ]; then
+    ok "grub: status helper reports a missing install"
+else
+    bad "grub: status helper called an empty root current"
+fi
+if DCLI_INSTALL_ROOT="$inst_root" "$installer" >/dev/null 2>&1 &&
+    cmp -s "$inst_root/usr/local/libexec/dcli-grub-sync" "$GRUB_SRC/dcli-grub-sync" &&
+    cmp -s "$inst_root/etc/grub.d/42_dcli_shells" "$GRUB_SRC/42_dcli_shells" &&
+    grep -q "^ExecStart=/usr/local/libexec/dcli-grub-sync --user $(id -un) --staging $REPO_DIR/state/grub-theme\$" \
+        "$inst_root/etc/systemd/system/dcli-grub-theme.service" &&
+    grep -q '^GRUB_THEME="/boot/grub/themes/dcli/active/theme.txt"$' "$inst_root/etc/default/grub" &&
+    [ "$(grep -c '^GRUB_THEME=' "$inst_root/etc/default/grub")" = 1 ] &&
+    ! grep -q '@[A-Z]*@' "$inst_root"/etc/systemd/system/dcli-grub-theme.*; then
+    ok "grub: installer lays out helper, grub.d script, substituted units, one GRUB_THEME line"
+else
+    bad "grub: installer fixture run failed or produced a wrong layout"
+fi
+units="$inst_root/user-units"
+if grep -qx "ExecStart=$REPO_DIR/scripts/render-grub-theme.sh --changed all" "$units/dcli-grub-render.service" &&
+    [ "$(grep -c '^PathChanged=' "$units/dcli-grub-render.path")" = "$(DCLI_INSTALL_ROOT="$inst_root" bash -c '. "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; wallpaper_state_files' | wc -l)" ] &&
+    ! grep -q '@[A-Z_]*@' "$units"/dcli-grub-render.*; then
+    ok "grub: installer writes the user render units, one PathChanged per wallpaper state file"
+else
+    bad "grub: user render units missing, unsubstituted or not watching every wallpaper state file"
+fi
+if [ -z "$(grub_problems)" ]; then
+    ok "grub: status helper calls the installed fixture current"
+else
+    bad "grub: status helper still reports problems: $(grub_problems)"
+fi
+if DCLI_INSTALL_ROOT="$inst_root" "$installer" >/dev/null 2>&1 &&
+    [ "$(cat "$inst_root/var/lib/dcli-grub/previous-grub-theme")" = 'GRUB_THEME=/boot/grub/themes/old/theme.txt' ] &&
+    [ "$(grep -c '^GRUB_THEME=' "$inst_root/etc/default/grub")" = 1 ]; then
+    ok "grub: a re-install keeps the remembered pre-install GRUB_THEME"
+else
+    bad "grub: a re-install overwrote the remembered GRUB_THEME or duplicated the line"
+fi
+if DCLI_INSTALL_ROOT="$inst_root" "$uninstaller" >/dev/null 2>&1 &&
+    [ ! -e "$inst_root/usr/local/libexec/dcli-grub-sync" ] && [ ! -e "$inst_root/etc/grub.d/42_dcli_shells" ] &&
+    [ ! -e "$inst_root/etc/systemd/system/dcli-grub-theme.path" ] &&
+    [ ! -e "$inst_root/user-units/dcli-grub-render.path" ] &&
+    grep -qx 'GRUB_THEME=/boot/grub/themes/old/theme.txt' "$inst_root/etc/default/grub"; then
+    ok "grub: uninstaller removes everything and restores the previous GRUB_THEME"
+else
+    bad "grub: uninstaller left files behind or lost the previous GRUB_THEME"
+fi
+for script in "$installer" "$uninstaller"; do
+    if DCLI_INSTALL_ROOT="$inst_root" "$script" --bogus >/dev/null 2>&1; then
+        bad "grub: ${script##*/} accepted an unknown argument"
+    else
+        ok "grub: ${script##*/} rejects an unknown argument"
+    fi
+done
+if [ "$(DCLI_INSTALL_ROOT="$inst_root" bash -c '. "'"$REPO_DIR"'/scripts/lib/grub-common.sh"; grub_module_packages' | head -n1)" = grub ]; then
+    ok "grub: grub_module_packages reads modules/grub-theme.yaml"
+else
+    bad "grub: grub_module_packages returned nothing from modules/grub-theme.yaml"
+fi
+for unit in dcli-grub-theme.path dcli-grub-theme.service; do
+    if grep -q '@STAGING@' "$GRUB_SRC/$unit"; then
+        ok "grub: unit template $unit carries its @STAGING@ placeholder"
+    else
+        bad "grub: unit template $unit lost its @STAGING@ placeholder"
+    fi
+done
+
+# boot-shell.sh: run from a copy next to a stub switch-shell.sh so a real
+# switch can never fire. Fixture registry, cmdline, boot id and state dir.
+bs_dir="$grub_fx/bootshell"
+mkdir -p "$bs_dir/scripts" "$bs_dir/home/.config/hypr/shells"
+cp "$REPO_DIR/scripts/boot-shell.sh" "$bs_dir/scripts/"
+cp -r "$REPO_DIR/scripts/lib" "$bs_dir/scripts/lib"
+printf '#!/bin/bash\necho "$1" >>"%s/switched"\n' "$bs_dir" >"$bs_dir/scripts/switch-shell.sh"
+chmod +x "$bs_dir/scripts/"*.sh
+printf 'alpha|a|a.svg|A\nbeta|b|b.svg|B\n' >"$bs_dir/registry"
+printf 'alpha\n' >"$bs_dir/home/.config/hypr/shells/active.conf"
+boot_shell_run() {
+    printf '%s\n' "$1" >"$bs_dir/cmdline"
+    printf '%s\n' "$2" >"$bs_dir/bootid"
+    HOME="$bs_dir/home" SHELL_REGISTRY="$bs_dir/registry" DCLI_CMDLINE_FILE="$bs_dir/cmdline" \
+        DCLI_BOOT_ID_FILE="$bs_dir/bootid" DCLI_BOOT_STATE_DIR="$bs_dir/state" DCLI_BOOT_SHELL_NO_WAIT=1 \
+        "$bs_dir/scripts/boot-shell.sh" 2>/dev/null
+}
+boot_shell_run "quiet dcli.shell=beta" boot-1
+boot_shell_run "quiet dcli.shell=beta" boot-1
+if [ "$(cat "$bs_dir/switched" 2>/dev/null)" = beta ]; then
+    ok "boot-shell: dcli.shell=beta switches once per boot id"
+else
+    bad "boot-shell: expected exactly one switch to beta, got '$(cat "$bs_dir/switched" 2>/dev/null)'"
+fi
+rm -f "$bs_dir/switched"
+boot_shell_run "dcli.shell=beta" boot-2
+rm -f "$bs_dir/switched"
+boot_shell_run "dcli.shell=alpha" boot-3
+boot_shell_run "dcli.shell=nonsense" boot-4
+boot_shell_run "quiet" boot-5
+if [ ! -e "$bs_dir/switched" ] && [ "$(cat "$bs_dir/state/boot-shell")" = boot-4 ]; then
+    ok "boot-shell: current, unknown and absent parameters switch nothing; consumption recorded"
+else
+    bad "boot-shell: switched when it should not have"
+fi
+
+# switch-shell.sh: the detached non-fatal render hook, skip switch, plan line.
+HOOK="$REPO_DIR/scripts/switch-shell.sh"
+if grep -q '^grub_theme_render "\$SHELL_NAME"$' "$HOOK" && grep -q 'DCLI_SKIP_GRUB_THEME' "$HOOK" &&
+    grep -q 'setsid -f "\$GRUB_RENDERER" --active' "$HOOK" &&
+    out=$(HOME="$dry_home" XDG_RUNTIME_DIR="$dry_runtime" "$HOOK" --dry-run omarchy 2>&1) &&
+    grep -q 'grub theme (detached, non-fatal)' <<<"$out"; then
+    ok "grub: switch-shell.sh renders the GRUB theme detached and non-fatal; dry-run plan lists it"
+else
+    bad "grub: switch-shell.sh GRUB hook or dry-run plan line missing"
+fi
+
+# Hyprland entry point: boot-shell.sh is launched from hyprland.start only.
+if [ "$(grep -c 'exec_cmd.*boot-shell.sh' "$REPO_DIR/dotfiles/hypr/hyprland.lua")" = 1 ] &&
+    grep -B1 'exec_cmd.*boot-shell.sh' "$REPO_DIR/dotfiles/hypr/hyprland.lua" | grep -q 'hl.on("hyprland.start"'; then
+    ok "grub: hyprland.lua starts boot-shell.sh from hyprland.start (not on reload)"
+else
+    bad "grub: hyprland.lua does not launch boot-shell.sh from hl.on(\"hyprland.start\")"
+fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────
 if [ "$failures" -eq 0 ]; then

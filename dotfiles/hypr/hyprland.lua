@@ -150,3 +150,13 @@ if file_exists(overrides) then dofile(overrides) end
 -- require() rather than dofile() so Hyprland's autoreload tracks the file.
 local managed = hypr .. "/shells/" .. shell .. "/hyprmod.lua"
 if file_exists(managed) then require("shells." .. shell .. ".hyprmod") end
+
+-- ── boot into a chosen shell ──
+
+-- GRUB's "Shells" submenu boots with dcli.shell=<name>; boot-shell.sh turns
+-- that into a switch-shell.sh call, once per boot. hyprland.start fires at
+-- compositor start only, never on `hyprctl reload`, so a shell switch (a
+-- reload) cannot re-run it; the script also records the boot id it consumed.
+hl.on("hyprland.start", function()
+    hl.exec_cmd(home .. "/.config/dcli/scripts/boot-shell.sh")
+end)

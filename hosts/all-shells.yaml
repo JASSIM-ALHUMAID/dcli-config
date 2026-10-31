@@ -15,6 +15,7 @@ enabled_modules:
 - shell-glyph
 - shell-ryoku
 - shell-fish
+- grub-theme
 - terminal-wezterm
 - editor-neovim
 - editor-ide

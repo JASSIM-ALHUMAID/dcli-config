@@ -38,6 +38,9 @@ SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quicksh
 # shellcheck source=lib/shell-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/shell-common.sh" || exit 1
 
+# shellcheck source=lib/grub-common.sh disable=SC1091
+. "$SCRIPT_DIR/lib/grub-common.sh" || exit 1
+
 # ── Output ───────────────────────────────────────────────────────────────────
 fail_count=0
 warn_count=0
@@ -240,6 +243,44 @@ check_stray_backups() {
     fi
 }
 
+# ── grub ─────────────────────────────────────────────────────────────────────
+# Optional layer (modules/grub-theme.yaml): everything here is WARN, never FAIL.
+check_grub() {
+    local problems problem state installed_active cur
+    problems=$(grub_integration_problems)
+    if [ -z "$problems" ]; then
+        ok "grub: helper, grub.d script, units and GRUB_THEME match the repo"
+    else
+        while IFS= read -r problem; do
+            warn "grub: $problem"
+        done <<<"$problems"
+        info "grub: install or refresh with: $GRUB_INSTALL_COMMAND"
+    fi
+    state=$(systemctl is-enabled "$GRUB_PATH_UNIT" 2>/dev/null)
+    if [ "$state" = enabled ]; then
+        ok "grub: $GRUB_PATH_UNIT enabled"
+    else
+        warn "grub: $GRUB_PATH_UNIT is '${state:-absent}', want enabled"
+    fi
+    state=$(systemctl --user is-enabled "$GRUB_RENDER_PATH_UNIT" 2>/dev/null)
+    if [ "$state" = enabled ]; then
+        ok "grub: $GRUB_RENDER_PATH_UNIT (user) enabled — wallpaper changes re-render"
+    else
+        warn "grub: $GRUB_RENDER_PATH_UNIT (user) is '${state:-absent}', want enabled"
+    fi
+    if [ -r "$GRUB_THEMES_INSTALLED/active/$GRUB_ACTIVE_MARKER" ]; then
+        installed_active=$(head -n1 "$GRUB_THEMES_INSTALLED/active/$GRUB_ACTIVE_MARKER")
+        cur=$(current_shell)
+        if [ "$installed_active" = "$cur" ]; then
+            ok "grub: installed active theme follows the session ($cur)"
+        else
+            warn "grub: installed active theme is '$installed_active' but the session runs '$cur' (render pending? journalctl -u dcli-grub-theme)"
+        fi
+    else
+        info "grub: no installed active theme yet"
+    fi
+}
+
 check_dcli_sync
 check_quickshell_provider
 check_hypr_errors
@@ -249,6 +290,7 @@ check_shell_links
 check_checkouts
 check_services
 check_stray_backups
+check_grub
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo
