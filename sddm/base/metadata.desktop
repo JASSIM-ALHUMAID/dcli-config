@@ -1,0 +1,10 @@
+[SddmGreeterTheme]
+Name=dcli shell greeter
+Description=One greeter engine, themed per dcli shell through theme.conf.user (palette, font, radii, layout)
+Author=dcli
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
+QtVersion=6
+X-SDDM-Theme-InterfaceVersion=2

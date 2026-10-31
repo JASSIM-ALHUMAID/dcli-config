@@ -47,6 +47,8 @@ for f in "$REPO_DIR"/scripts/*.sh "$REPO_DIR"/scripts/lib/*.sh; do
 done
 GRUB_SCRIPTS=("$REPO_DIR/scripts/grub/dcli-grub-sync" "$REPO_DIR/scripts/grub/42_dcli_shells")
 parse_targets+=("${GRUB_SCRIPTS[@]}")
+SDDM_SYNC="$REPO_DIR/scripts/sddm/dcli-sddm-sync"
+parse_targets+=("$SDDM_SYNC")
 # omarchy-shims holds extensionless executables, some nested — walk files only
 # (the glob also matches a subdirectory, which bash -n cannot parse).
 while IFS= read -r -d '' f; do parse_targets+=("$f"); done < <(
@@ -92,7 +94,7 @@ if command -v "$SHELLCHECK" >/dev/null 2>&1 || [ -x "$SHELLCHECK" ]; then
         cd "$REPO_DIR" || exit 1
         # scripts/*.sh is the documented gate; lib/*.sh is the shared-code
         # superset — both must be clean.
-        "$SHELLCHECK" scripts/*.sh scripts/lib/*.sh scripts/grub/dcli-grub-sync scripts/grub/42_dcli_shells
+        "$SHELLCHECK" scripts/*.sh scripts/lib/*.sh scripts/grub/dcli-grub-sync scripts/grub/42_dcli_shells scripts/sddm/dcli-sddm-sync
     ); then
         ok "shellcheck scripts/*.sh scripts/lib/*.sh scripts/grub/*"
     else
@@ -600,6 +602,81 @@ if [ "$(grep -c 'exec_cmd.*boot-shell.sh' "$REPO_DIR/dotfiles/hypr/hyprland.lua"
     ok "grub: hyprland.lua starts boot-shell.sh from hyprland.start (not on reload)"
 else
     bad "grub: hyprland.lua does not launch boot-shell.sh from hl.on(\"hyprland.start\")"
+fi
+
+# ── sddm: the login-screen theming layer ────────────────────────────────────
+sddm_fx="$fixture_home/sddm"
+mapfile -t SDDM_SHELLS < <(grep -v '^[[:space:]]*\(#.*\)\?$' "$REPO_DIR/dotfiles/hypr/shells/registry" | cut -d'|' -f1)
+mkdir -p "$sddm_fx/home/.local/state/dcli"
+if command -v magick >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    # Render every shell into a fixture stage with an empty HOME: no live palette
+    # files, no wallpapers -> the static fallbacks and generated background.
+    if HOME="$sddm_fx/home" SHELL_WALLPAPER_HOME="$sddm_fx/home" DCLI_SDDM_STAGE="$sddm_fx/stage" \
+        "$REPO_DIR/scripts/render-sddm-theme.sh" --active glyph all >/dev/null 2>&1 &&
+        [ "$(cat "$sddm_fx/stage/active")" = glyph ] && [ -f "$sddm_fx/stage/.stamp" ] &&
+        [ "$(find "$sddm_fx/stage" -name .complete | wc -l)" -eq "${#SDDM_SHELLS[@]}" ]; then
+        ok "sddm: renderer stages every registry shell and the active file"
+    else
+        bad "sddm: renderer did not stage every shell"
+    fi
+    if grep -q '^primary=#d71921' "$sddm_fx/stage/glyph/theme.conf.user"; then
+        ok "sddm: glyph keeps its fixed palette"
+    else
+        bad "sddm: glyph palette wrong"
+    fi
+    # Sync into a fixture themes root, reading as ourselves.
+    for n in "${SDDM_SHELLS[@]}"; do mkdir -p "$sddm_fx/themes/dcli-$n"; done
+    sync_run() {
+        DCLI_SDDM_ALLOW_NONROOT=1 DCLI_SDDM_READER=env DCLI_SDDM_THEMES_DIR="$sddm_fx/themes" \
+            DCLI_SDDM_CONF_DIR="$sddm_fx/conf.d" DCLI_SDDM_GREETER_CACHE="$sddm_fx/cache" \
+            "$SDDM_SYNC" --user "$(id -un)" --staging "$sddm_fx/stage" 2>&1
+    }
+    if sync_run >/dev/null && grep -qx 'Current=dcli-glyph' "$sddm_fx/conf.d/zz-dcli-theme.conf" &&
+        [ -f "$sddm_fx/themes/dcli-xenon/theme.conf.user" ] && [ -f "$sddm_fx/themes/dcli-xenon/assets/background.jpg" ]; then
+        ok "sddm: sync installs data into every theme and writes Current="
+    else
+        bad "sddm: sync failed on a valid staging tree"
+    fi
+    # Hostile staging: a symlink, a bad conf line and a non-JPEG must each be refused.
+    printf 'Exec=/bin/evil\nx="$(id)"\n' >"$sddm_fx/stage/xenon/theme.conf.user"
+    printf 'notajpeg' >"$sddm_fx/stage/ambxst/background.jpg"
+    out=$(sync_run) && rc=0 || rc=$?
+    if [ "$rc" -ne 0 ] && grep -q 'xenon: theme.conf.user missing or invalid' <<<"$out" &&
+        grep -q 'ambxst: background.jpg missing or not a JPEG' <<<"$out" &&
+        ! grep -q evil "$sddm_fx/themes/dcli-xenon/theme.conf.user"; then
+        ok "sddm: sync refuses a hostile conf line and a fake JPEG, keeps the old data"
+    else
+        bad "sddm: sync accepted hostile staging: $out"
+    fi
+    ln -sf /etc/passwd "$sddm_fx/stage/dms/background.jpg"
+    if out=$(sync_run); then
+        bad "sddm: sync accepted a staging tree holding a symlink"
+    elif grep -q 'members other than files and directories' <<<"$out"; then
+        ok "sddm: sync refuses a whole staging tree that carries a symlink"
+    else
+        bad "sddm: symlink refusal had the wrong reason: $out"
+    fi
+    # Installer + uninstaller into a fixture root.
+    inst_root="$sddm_fx/root"
+    if DCLI_INSTALL_ROOT="$inst_root" "$REPO_DIR/scripts/install-sddm-theme.sh" >/dev/null 2>&1 &&
+        [ -f "$inst_root/usr/share/sddm/themes/dcli-omarchy/entry.png" ] &&
+        [ -f "$inst_root/usr/share/sddm/themes/dcli-xenon/components/Palette.qml" ] &&
+        [ -f "$inst_root/usr/share/sddm/themes/dcli-caelestia/components/Greeting.qml" ] &&
+        grep -qxF "PathChanged=$(readlink -m "$REPO_DIR/state/sddm-theme")/.stamp" "$inst_root/etc/systemd/system/dcli-sddm-theme.path" &&
+        DCLI_INSTALL_ROOT="$inst_root" "$REPO_DIR/scripts/uninstall-sddm-theme.sh" >/dev/null 2>&1 &&
+        [ ! -e "$inst_root/usr/share/sddm/themes/dcli-xenon" ]; then
+        ok "sddm: installer lays down one theme per shell + units; uninstaller removes them"
+    else
+        bad "sddm: install/uninstall into a fixture root failed"
+    fi
+else
+    ok "sddm: skipped (imagemagick or jq missing)"
+fi
+if grep -q 'sddm_theme_render "\$SHELL_NAME"' "$REPO_DIR/scripts/switch-shell.sh" &&
+    "$REPO_DIR/scripts/switch-shell.sh" --dry-run glyph 2>/dev/null | grep -q '^sddm theme (detached'; then
+    ok "sddm: switch-shell.sh renders the SDDM theme detached; dry-run plan lists it"
+else
+    bad "sddm: switch-shell.sh SDDM hook or dry-run plan line missing"
 fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────

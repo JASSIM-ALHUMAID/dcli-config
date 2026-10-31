@@ -40,6 +40,8 @@ SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quicksh
 
 # shellcheck source=lib/grub-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/grub-common.sh" || exit 1
+# shellcheck source=lib/sddm-common.sh disable=SC1091
+. "$SCRIPT_DIR/lib/sddm-common.sh" || exit 1
 
 # ── Output ───────────────────────────────────────────────────────────────────
 fail_count=0
@@ -281,6 +283,35 @@ check_grub() {
     fi
 }
 
+# ── sddm ─────────────────────────────────────────────────────────────────────
+# Optional layer (modules/sddm-theme.yaml): everything here is WARN, never FAIL.
+check_sddm() {
+    local problems problem state want current
+    problems=$(sddm_integration_problems)
+    if [ -z "$problems" ]; then
+        ok "sddm: helper, units and one theme per shell match the repo"
+    else
+        while IFS= read -r problem; do
+            warn "sddm: $problem"
+        done <<<"$problems"
+        info "sddm: install or refresh with: $SDDM_INSTALL_COMMAND"
+        return
+    fi
+    state=$(systemctl is-enabled "$SDDM_PATH_UNIT" 2>/dev/null)
+    if [ "$state" = enabled ]; then
+        ok "sddm: $SDDM_PATH_UNIT enabled"
+    else
+        warn "sddm: $SDDM_PATH_UNIT is '${state:-absent}', want enabled"
+    fi
+    current=$(sed -n 's/^Current=//p' "$SDDM_CONF_FILE" 2>/dev/null | head -n1)
+    want=$(cat "$SDDM_STAGING_DIR/active" 2>/dev/null)
+    if [ -n "$want" ] && [ "$current" = "$SDDM_THEME_PREFIX$want" ]; then
+        ok "sddm: login screen wears $current (mode: $(sddm_mode))"
+    else
+        warn "sddm: Current='${current:-none}' but the render staged '${want:-nothing}' (journalctl -u dcli-sddm-theme)"
+    fi
+}
+
 check_dcli_sync
 check_quickshell_provider
 check_hypr_errors
@@ -291,6 +322,7 @@ check_checkouts
 check_services
 check_stray_backups
 check_grub
+check_sddm
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo

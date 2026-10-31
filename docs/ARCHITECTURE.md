@@ -217,6 +217,10 @@ sufficient. Work through all of these:
     gradient) and re-run `scripts/install-grub-theme.sh` so the watcher picks up the
     new state file. Optionally add a style-table entry in `render-grub-theme.sh` if
     the shell should not get the default `material` layout. See [GRUB.md](GRUB.md).
-12. **Verify:** `bash tests/smoke.sh`,
+12. **SDDM.** Add a `LOOK_TABLE` row (and a `PALETTE_SOURCES` row if the shell writes a
+    colour file) in `scripts/render-sddm-theme.sh`; a bespoke theme goes in
+    `sddm/themes/<name>/`. Re-run `scripts/install-sddm-theme.sh` to install the new
+    theme directory. See [SDDM.md](SDDM.md).
+13. **Verify:** `bash tests/smoke.sh`,
     `DCLI_HYPRMOD_SHELL=<name> Hyprland --verify-config -c ~/.config/hypr/hyprland.lua`,
     `scripts/switch-shell.sh --dry-run <name>`, then `scripts/doctor.sh`.

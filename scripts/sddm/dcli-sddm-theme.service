@@ -1,0 +1,17 @@
+# Template — scripts/install-sddm-theme.sh substitutes @USER@ and @STAGING@ and
+# installs the result as /etc/systemd/system/dcli-sddm-theme.service.
+#
+# Runs the root-owned copy of dcli-sddm-sync only; the staging tree is
+# user-writable, so the helper reads it as @USER@ (setpriv).
+[Unit]
+Description=Refresh the dcli SDDM themes (palette, wallpaper, active theme)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/dcli-sddm-sync --user @USER@ --staging @STAGING@
+ProtectSystem=strict
+ReadWritePaths=/usr/share/sddm/themes /etc/sddm.conf.d /var/lib/sddm
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateNetwork=yes
+NoNewPrivileges=yes

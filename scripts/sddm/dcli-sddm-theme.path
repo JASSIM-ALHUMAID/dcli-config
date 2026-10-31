@@ -1,0 +1,12 @@
+# Template — scripts/install-sddm-theme.sh substitutes @STAGING@ and
+# installs the result as /etc/systemd/system/dcli-sddm-theme.path.
+[Unit]
+Description=Watch the dcli SDDM theme staging tree
+
+[Path]
+# The renderer rewrites .stamp LAST after every successful render.
+PathChanged=@STAGING@/.stamp
+Unit=dcli-sddm-theme.service
+
+[Install]
+WantedBy=multi-user.target

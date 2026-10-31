@@ -137,6 +137,21 @@ grub_theme_render() {
   setsid -f "$GRUB_RENDERER" --active "$1" >"$GRUB_RENDER_LOG" 2>&1 </dev/null || true
 }
 
+# ── SDDM theme ───────────────────────────────────────────────────────────────
+# The login screen follows the shell the same way (docs/SDDM.md): re-stage the
+# palette/wallpaper with the new shell as the running one; the root path unit
+# installs it. Detached and non-fatal, like the GRUB render.
+# DCLI_SKIP_SDDM_THEME=1 bypasses it.
+SDDM_RENDERER="$SCRIPT_DIR/render-sddm-theme.sh"
+SDDM_RENDER_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/dcli/sddm-theme.log"
+
+sddm_theme_render() {
+  [ "${DCLI_SKIP_SDDM_THEME:-0}" = 1 ] && return 0
+  [ -x "$SDDM_RENDERER" ] || return 0
+  mkdir -p "$(dirname "$SDDM_RENDER_LOG")" 2>/dev/null || return 0
+  setsid -f "$SDDM_RENDERER" --active "$1" all >"$SDDM_RENDER_LOG" 2>&1 </dev/null || true
+}
+
 # ── Shell lifecycle table ────────────────────────────────────────────────────
 # Per registry name, everything switch-shell.sh knows about running that shell:
 #   MATCH_SPECS     newline-separated "<pgrep flag> <pattern>" lines. The FIRST
@@ -405,6 +420,11 @@ if [ "$DRY_RUN" = 1 ]; then
   print_plan
   exit 0
 fi
+  if [ "${DCLI_SKIP_SDDM_THEME:-0}" = 1 ]; then
+    echo "sddm theme: skipped (DCLI_SKIP_SDDM_THEME=1)"
+  else
+    echo "sddm theme (detached, non-fatal): $SDDM_RENDERER --active $SHELL_NAME all  [log: $SDDM_RENDER_LOG]"
+  fi
 
 # ── Switch over ──────────────────────────────────────────────────────────────
 # Snapshot the OUTGOING shell before anything is torn down — its theming has to
@@ -470,3 +490,4 @@ launch_shell "$SHELL_NAME"
 
 echo "Switched to $SHELL_NAME"
 echo "Active shell: $(grep -v '^#' "$ACTIVE")"
+sddm_theme_render "$SHELL_NAME"

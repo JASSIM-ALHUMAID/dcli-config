@@ -1,0 +1,199 @@
+#!/bin/bash
+# Root side of the SDDM theming layer. Installed root-owned as
+# /usr/local/libexec/dcli-sddm-sync and run by dcli-sddm-theme.service whenever
+# the user's renderer touches <staging>/.stamp. Never runs from the repo.
+#
+# Usage: dcli-sddm-sync --user <login> --staging <dir>
+#
+# What flows where. The theme CODE (QML) is installed once, by
+# install-sddm-theme.sh under the user's own sudo, into
+# /usr/share/sddm/themes/dcli-<shell>/ — this helper never creates a theme and
+# never installs QML. It only refreshes the DATA that follows the desktop:
+#   <staging>/<shell>/theme.conf.user  -> dcli-<shell>/theme.conf.user  (palette, look)
+#   <staging>/<shell>/background.jpg   -> dcli-<shell>/assets/background.jpg
+#   <staging>/<shell>/avatar.png       -> dcli-<shell>/assets/avatar.png (optional)
+#   <staging>/active                   -> /etc/sddm.conf.d/zz-dcli-theme.conf
+#
+# Threat model: <staging> is user-writable and this script is root, so the
+# tree is archived BY THE USER (setpriv, no supplementary groups) into a
+# root-owned temp dir and treated as hostile: size-capped, only regular files
+# and directories, fixed file names, magic bytes for images, theme.conf.user a
+# strict key=value subset. Nothing from staging is executed or sourced, and the
+# `active` name must match an already-installed theme directory.
+#
+# Overrides (tests only, honoured as given):
+#   DCLI_SDDM_THEMES_DIR   themes root           (/usr/share/sddm/themes)
+#   DCLI_SDDM_CONF_DIR     drop-in directory     (/etc/sddm.conf.d)
+#   DCLI_SDDM_READER       command prefix that reads as the user
+#   DCLI_SDDM_ALLOW_NONROOT=1  skip the euid check
+
+set -euo pipefail
+umask 077
+
+# ── Constants ────────────────────────────────────────────────────────────────
+THEMES_DIR="${DCLI_SDDM_THEMES_DIR:-/usr/share/sddm/themes}"
+CONF_DIR="${DCLI_SDDM_CONF_DIR:-/etc/sddm.conf.d}"
+CONF_NAME=zz-dcli-theme.conf
+THEME_PREFIX=dcli-
+GREETER_CACHE="${DCLI_SDDM_GREETER_CACHE:-/var/lib/sddm/.cache/sddm-greeter-qt6}"
+TAR_TIMEOUT_SECS=60
+MAX_STREAM_BYTES=$((64 * 1024 * 1024))
+MAX_IMAGE_BYTES=$((8 * 1024 * 1024))
+MAX_CONF_BYTES=$((16 * 1024))
+MAX_SHELLS=64
+SHELL_RE='^[a-z0-9][a-z0-9-]*$'
+# Keys are identifiers; values are colours, numbers, font names, booleans and
+# short words — never a quote, backslash, `$`, backtick or control byte.
+CONF_LINE_RE='^([[:space:]]*|#.*|\[General\]|[A-Za-z][A-Za-z0-9_]*=[A-Za-z0-9#.,_ /+"-]*)$'
+WORK=""
+
+log() { printf 'dcli-sddm-sync: %s\n' "$*"; }
+err() { printf 'dcli-sddm-sync: !! %s\n' "$*" >&2; }
+die() { err "$*"; exit 1; }
+
+cleanup() { [ -z "$WORK" ] || rm -rf "${WORK:?}"; }
+trap cleanup EXIT
+
+# ── Arguments ────────────────────────────────────────────────────────────────
+TARGET_USER=""
+STAGING=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+    --user) TARGET_USER="${2:-}"; shift 2 || die "--user needs a value" ;;
+    --staging) STAGING="${2:-}"; shift 2 || die "--staging needs a value" ;;
+    *) die "usage: dcli-sddm-sync --user <login> --staging <dir>" ;;
+    esac
+done
+[ -n "$TARGET_USER" ] && [ -n "$STAGING" ] || die "usage: dcli-sddm-sync --user <login> --staging <dir>"
+case "$STAGING" in /*) ;; *) die "--staging must be an absolute path" ;; esac
+
+if [ "${DCLI_SDDM_ALLOW_NONROOT:-0}" != 1 ] && [ "$(id -u)" -ne 0 ]; then
+    die "must run as root"
+fi
+
+user_entry=$(getent passwd "$TARGET_USER") || die "unknown user: $TARGET_USER"
+IFS=: read -r _ _ TARGET_UID TARGET_GID _ <<<"$user_entry"
+if [ "${DCLI_SDDM_ALLOW_NONROOT:-0}" != 1 ] && [ "$TARGET_UID" -eq 0 ]; then
+    die "refusing to treat root as the staging owner"
+fi
+
+if [ -n "${DCLI_SDDM_READER:-}" ]; then
+    # shellcheck disable=SC2206  # intentional word split of a command prefix
+    READER=($DCLI_SDDM_READER)
+else
+    READER=(setpriv --reuid="$TARGET_UID" --regid="$TARGET_GID" --clear-groups)
+fi
+
+# ── Fetch: archive as the user, extract as root into a private temp ──────────
+fetch_staging() {
+    local stream="$WORK/stage.tar" size member_types escaping
+    RAW="$WORK/raw"
+    mkdir -p "$RAW"
+    timeout "$TAR_TIMEOUT_SECS" "${READER[@]}" \
+        tar -C "$STAGING" -cf - --exclude=preview.png --exclude='*.tmp' . |
+        head -c $((MAX_STREAM_BYTES + 1)) >"$stream" || die "could not archive $STAGING as $TARGET_USER"
+    size=$(stat -c %s "$stream")
+    [ "$size" -le "$MAX_STREAM_BYTES" ] || die "staging archive exceeds $MAX_STREAM_BYTES bytes"
+    member_types=$(tar -tvf "$stream" | cut -c1 | sort -u) || die "unreadable staging archive"
+    case "$member_types" in
+    "-" | "d" | "-"$'\n'"d" | "d"$'\n'"-") ;;
+    *) die "staging archive holds members other than files and directories" ;;
+    esac
+    escaping=$(tar -tf "$stream" | grep -Ec '(^|/)\.\.(/|$)|^/' || true)
+    [ "$escaping" -eq 0 ] || die "staging archive has path-escaping member names"
+    tar -C "$RAW" -xf "$stream" --no-same-owner --no-same-permissions ||
+        die "could not extract staging archive"
+    rm -f "$stream"
+}
+
+# ── Validation ───────────────────────────────────────────────────────────────
+head_hex() { head -c "$2" "$1" | od -An -tx1 | tr -d ' \n'; }
+
+# valid_image <path> <png|jpg>
+valid_image() {
+    local path="$1" kind="$2"
+    [ -f "$path" ] && [ ! -L "$path" ] || return 1
+    [ "$(stat -c %s "$path")" -le "$MAX_IMAGE_BYTES" ] || return 1
+    case "$kind" in
+    png) [ "$(head_hex "$path" 8)" = 89504e470d0a1a0a ] ;;
+    jpg) [ "$(head_hex "$path" 3)" = ffd8ff ] ;;
+    esac
+}
+
+valid_conf() {
+    local path="$1" line
+    [ -f "$path" ] && [ ! -L "$path" ] || return 1
+    [ "$(stat -c %s "$path")" -le "$MAX_CONF_BYTES" ] || return 1
+    LC_ALL=C grep -qaP '[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]' "$path" && return 1
+    while IFS= read -r line || [ -n "$line" ]; do
+        line=${line%$'\r'}
+        [[ "$line" =~ $CONF_LINE_RE ]] || return 1
+    done <"$path"
+    return 0
+}
+
+# Theme directories this helper may refresh: installed by the installer, named
+# dcli-<shell>. A symlinked directory is refused so a swap can't redirect writes.
+installed_theme() {
+    local name="$1" dir="$THEMES_DIR/$THEME_PREFIX$1"
+    [ -d "$dir" ] && [ ! -L "$dir" ] && [ ! -L "$dir/assets" ]
+}
+
+# ── Install ──────────────────────────────────────────────────────────────────
+refresh_theme() {
+    local name="$1" src="$RAW/$1" dir="$THEMES_DIR/$THEME_PREFIX$1"
+    valid_conf "$src/theme.conf.user" || { err "$name: theme.conf.user missing or invalid"; return 1; }
+    valid_image "$src/background.jpg" jpg || { err "$name: background.jpg missing or not a JPEG"; return 1; }
+    install -d -m 0755 "$dir/assets"
+    install -m 0644 "$src/theme.conf.user" "$dir/theme.conf.user.new"
+    mv -f "$dir/theme.conf.user.new" "$dir/theme.conf.user"
+    install -m 0644 "$src/background.jpg" "$dir/assets/background.jpg.new"
+    mv -f "$dir/assets/background.jpg.new" "$dir/assets/background.jpg"
+    if valid_image "$src/avatar.png" png; then
+        install -m 0644 "$src/avatar.png" "$dir/assets/avatar.png.new"
+        mv -f "$dir/assets/avatar.png.new" "$dir/assets/avatar.png"
+    else
+        rm -f "$dir/assets/avatar.png"
+    fi
+}
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+WORK=$(mktemp -d) || die "mktemp failed"
+RAW=""
+fetch_staging
+
+active_name=""
+if [ -f "$RAW/active" ] && [ ! -L "$RAW/active" ] && [ "$(stat -c %s "$RAW/active")" -le 64 ]; then
+    active_name=$(head -n1 "$RAW/active")
+fi
+[[ "$active_name" =~ $SHELL_RE ]] || die "staged 'active' file is missing or not a shell name"
+installed_theme "$active_name" || die "theme $THEME_PREFIX$active_name is not installed — run install-sddm-theme.sh"
+
+refreshed=()
+failed=()
+count=0
+for dir in "$RAW"/*/; do
+    [ -d "$dir" ] || continue
+    name=$(basename "$dir")
+    [[ "$name" =~ $SHELL_RE ]] || { err "ignoring staged directory with a bad name: $name"; continue; }
+    count=$((count + 1))
+    [ "$count" -le "$MAX_SHELLS" ] || die "more than $MAX_SHELLS staged shells"
+    [ -f "$dir/.complete" ] || { err "$name: .complete marker missing (renderer not finished)"; failed+=("$name"); continue; }
+    installed_theme "$name" || { err "$name: theme not installed, skipping"; failed+=("$name"); continue; }
+    if refresh_theme "$name"; then refreshed+=("$name"); else failed+=("$name"); fi
+done
+[ "${#refreshed[@]}" -gt 0 ] || die "no staged shell passed validation"
+
+printf '%s\n' "${refreshed[@]}" | grep -qxF "$active_name" || die "active shell '$active_name' did not refresh"
+
+install -d -m 0755 "$CONF_DIR"
+printf '# Written by dcli-sddm-sync — do not edit; see docs/SDDM.md\n[Theme]\nCurrent=%s%s\n' \
+    "$THEME_PREFIX" "$active_name" >"$CONF_DIR/$CONF_NAME.new"
+chmod 0644 "$CONF_DIR/$CONF_NAME.new"
+mv -f "$CONF_DIR/$CONF_NAME.new" "$CONF_DIR/$CONF_NAME"
+
+# The greeter caches compiled QML; stale data/images would otherwise survive.
+rm -rf "${GREETER_CACHE:?}"
+
+log "refreshed: ${refreshed[*]}; active: $THEME_PREFIX$active_name"
+[ "${#failed[@]}" -eq 0 ] || die "kept previous data for shells that failed: ${failed[*]}"

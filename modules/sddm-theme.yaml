@@ -1,0 +1,17 @@
+description: SDDM follows the shell - one greeter theme per shell, palette and wallpaper synced from the running desktop
+
+packages:
+  - sddm
+  - qt6-declarative
+  - qt6-5compat
+  - qt6-svg
+  - imagemagick
+  # setpriv: the root sync helper drops to your uid to read the staging tree
+  - util-linux
+
+# The hook only renders (as you) and prints the one-time root command; the
+# root-owned half is installed by `scripts/install-sddm-theme.sh` (run as you;
+# it calls sudo itself) and removed by `scripts/uninstall-sddm-theme.sh`.
+# Architecture and threat model: docs/SDDM.md.
+post_install_hook: scripts/setup-sddm-theme.sh
+hook_behavior: once
