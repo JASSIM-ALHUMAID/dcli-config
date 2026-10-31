@@ -91,6 +91,34 @@ package.loaded["default.hypr.paths"] = {
     omarchy_path = omarchy,
 }
 
+-- ── on_created_empty shim ──
+-- Hyprland 0.57 deprecates the on_created_empty workspace rule in favour of a
+-- "workspace.created" handler checking .is_empty (`hyprctl deprecated-config`).
+-- Upstream's qconsole.lua still passes it and the checkout carries no local
+-- patches, so intercept hl.workspace_rule: strip the field and run the command
+-- from a handler instead. Drop this once upstream migrates.
+local workspace_rule = hl.workspace_rule
+local seeds = {}
+
+hl.workspace_rule = function(rule)
+    if type(rule) == "table" and rule.on_created_empty ~= nil then
+        seeds[rule.workspace] = rule.on_created_empty
+        local stripped = {}
+        for key, value in pairs(rule) do
+            if key ~= "on_created_empty" then stripped[key] = value end
+        end
+        rule = stripped
+    end
+    return workspace_rule(rule)
+end
+
+hl.on("workspace.created", function(workspace)
+    local command = workspace and workspace.is_empty and seeds[workspace.name]
+    if command then hl.exec_cmd(command) end
+end)
+
+-- Left installed after the require: qconsole.lua re-issues the rule from its
+-- refit handlers at runtime, and those must keep going through the shim.
 require("default.hypr.omarchy")
 
 -- Re-declare PATH on top of what envs.lua just set, with the house shim dir

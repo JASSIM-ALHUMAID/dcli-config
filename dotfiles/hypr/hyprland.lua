@@ -138,6 +138,15 @@ local dir = path:match("^(.*)/")
 
 add_to_package_path(dir)
 seed_scheme(dir)
+
+-- Hyprland 0.57 renamed group.lock_active() to group.lock(). Upstream checkouts
+-- (caelestia, glyph-rice) still call the old name and carry no local patches,
+-- so alias it for every shell. Drop once they migrate.
+local group_dsp = hl.dsp and hl.dsp.group
+if group_dsp and group_dsp.lock and group_dsp.lock_active then
+    group_dsp.lock_active = group_dsp.lock
+end
+
 dofile(path)
 
 -- Local overrides for shells whose config is owned upstream

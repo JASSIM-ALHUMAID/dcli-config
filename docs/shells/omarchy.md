@@ -371,3 +371,15 @@ switch-shell.sh prepends it to the shell process's PATH (menus, panels, idle),
 and `shells/omarchy/hyprland.lua` re-declares `hl.env("PATH", …)` after
 `require("default.hypr.omarchy")` so keybind-spawned processes get it too —
 rebuilding envs.lua's `<checkout>/bin` prepend, which hl.env alone would lose.
+
+## Deprecated-config shim
+
+Hyprland 0.57 deprecates the `on_created_empty` workspace rule. Upstream's
+`qconsole.lua` still uses it, so `dotfiles/hypr/shells/omarchy/hyprland.lua`
+wraps `hl.workspace_rule`, strips the field and runs the command from a
+`workspace.created` handler (`.is_empty`). Remove the shim once upstream
+migrates; `hyprctl deprecated-config` should stay empty.
+
+The shared entry point (`dotfiles/hypr/hyprland.lua`) likewise aliases
+`hl.dsp.group.lock_active` to `group.lock` for all shells (caelestia and
+glyph-rice upstream still use the old name).
