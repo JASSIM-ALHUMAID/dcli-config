@@ -1086,14 +1086,16 @@ contact_sheet() {
         mv "$STAGE_DIR/contact-sheet.png.tmp.png" "$STAGE_DIR/contact-sheet.png"
 }
 
-# What a shell's theme was last drawn from: its wallpaper (path, mtime, size) and
-# this renderer's own mtime, so a renderer edit re-renders everything too.
+# What a shell's theme was last drawn from: its wallpaper (path, mtime, size),
+# this renderer's own mtime, and the newest of the registry and the logos —
+# every theme's dock draws all of them, so a swapped logo re-renders everything.
 wallpaper_signature() {
     local wallpaper
     wallpaper=$(shell_wallpaper "$1")
-    printf '%s|%s|%s\n' "${wallpaper:-gradient}" \
+    printf '%s|%s|%s|%s\n' "${wallpaper:-gradient}" \
         "$([ -z "$wallpaper" ] || stat -c '%Y %s' -- "$wallpaper" 2>/dev/null)" \
-        "$(stat -c %Y -- "${BASH_SOURCE[0]}")"
+        "$(stat -c %Y -- "${BASH_SOURCE[0]}")" \
+        "$(stat -c %Y -- "$SHELL_REGISTRY" "$ICON_SRC_DIR"/* 2>/dev/null | sort -n | tail -n1)"
 }
 
 is_current() {

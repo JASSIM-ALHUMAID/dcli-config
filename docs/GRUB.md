@@ -72,7 +72,8 @@ with ambxst's wallpaper and dms with its previous one.
 The same table drives the watcher: `install-grub-theme.sh` writes one
 `PathChanged=` per state file into the user unit `dcli-grub-render.path`, whose
 service runs `render-grub-theme.sh --changed all`. `--changed` compares each
-shell's wallpaper path + mtime + size (and the renderer's own mtime) with the
+shell's wallpaper path + mtime + size (plus the renderer's mtime and the newest
+registry/logo mtime — every dock draws all logos) with the
 signature of its last render (`~/.cache/dcli/grub-wallpaper/<shell>`) and exits in
 ~0.1 s when nothing moved — dms and noctalia rewrite those files for unrelated
 settings constantly. A real change re-renders just that shell, rewrites
