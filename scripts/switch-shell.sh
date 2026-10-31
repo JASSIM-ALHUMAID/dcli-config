@@ -214,13 +214,16 @@ declare -A MATCH_SPECS=(
 )
 
 # Not owned by any one shell: helpers that previous shells' configs leave
-# behind (swaync, awww-daemon, old quickshell wallpaper scripts) and the
+# behind (hypridle — its lock_cmd is the previous shell's lock screen, and
+# surviving a switch is what showed glyph's lock over omarchy 2026-10-31;
+# swaync, awww-daemon, old quickshell wallpaper scripts) and the
 # quickshell catch-all — no quickshell instance from any previous shell may
 # linger. Killed after every shell's own specs.
 SHARED_MATCH_SPECS='-x swaync
 -f awww-daemon
 -x quickshell
--f switchwall.sh'
+-f switchwall.sh
+-x hypridle'
 
 # No graceful-quit IPC for noctalia v5: its CLI only accepts theme/msg/config/
 # dmenu/plugins/firefox-theme, and an unrecognised bare argument falls through
@@ -275,12 +278,18 @@ launch_noctalia() {
   noctalia &
   disown
 }
+# end4/end4pc own hypridle (their execs.lua start it at login only), and the
+# shared teardown kills it, so a switch into them has to start it again.
 launch_end4() {
   qs -c ii &
+  disown
+  hypridle &
   disown
 }
 launch_end4pc() {
   qs -c end4-pC &
+  disown
+  hypridle &
   disown
 }
 launch_omarchy() {
@@ -411,6 +420,11 @@ print_plan() {
   else
     echo "grub theme (detached, non-fatal): $GRUB_RENDERER --active $SHELL_NAME  [log: $GRUB_RENDER_LOG]"
   fi
+  if [ "${DCLI_SKIP_SDDM_THEME:-0}" = 1 ]; then
+    echo "sddm theme: skipped (DCLI_SKIP_SDDM_THEME=1)"
+  else
+    echo "sddm theme (detached, non-fatal): $SDDM_RENDERER --active $SHELL_NAME all  [log: $SDDM_RENDER_LOG]"
+  fi
   echo
   echo "active.conf ($ACTIVE) would become:"
   printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME"
@@ -420,11 +434,6 @@ if [ "$DRY_RUN" = 1 ]; then
   print_plan
   exit 0
 fi
-  if [ "${DCLI_SKIP_SDDM_THEME:-0}" = 1 ]; then
-    echo "sddm theme: skipped (DCLI_SKIP_SDDM_THEME=1)"
-  else
-    echo "sddm theme (detached, non-fatal): $SDDM_RENDERER --active $SHELL_NAME all  [log: $SDDM_RENDER_LOG]"
-  fi
 
 # ── Switch over ──────────────────────────────────────────────────────────────
 # Snapshot the OUTGOING shell before anything is torn down — its theming has to
@@ -485,9 +494,9 @@ fi
 exec {LOCK_FD}>&-
 
 grub_theme_render "$SHELL_NAME"
+sddm_theme_render "$SHELL_NAME"
 
 launch_shell "$SHELL_NAME"
 
 echo "Switched to $SHELL_NAME"
 echo "Active shell: $(grep -v '^#' "$ACTIVE")"
-sddm_theme_render "$SHELL_NAME"

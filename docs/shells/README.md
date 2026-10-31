@@ -214,7 +214,7 @@ explicitly does.
 | Daemon | Started at login by | On switch | Killed |
 |---|---|---|---|
 | `hyprpolkitagent` | dms, noctalia, xenon, end4pc | no | no |
-| `hypridle` | end4, end4pc | no | no |
+| `hypridle` | end4, end4pc | end4, end4pc | **yes** (shared teardown) |
 | `gnome-keyring-daemon` | end4, end4pc | no | no |
 | `swaync` | — | yes | **yes** |
 | cliphist `wl-paste` pair | every shell | no | no |
@@ -225,8 +225,7 @@ explicitly does.
 
 Consequences to expect until this is addressed: **no polkit agent if end4,
 omarchy, caelestia or ambxst is the login shell** (it survives once *any* shell
-has started the systemd unit, which is why it usually looks fine); `hypridle`
-leaks out of end4/end4pc into shells that do their own idle handling; end4's
+has started the systemd unit, which is why it usually looks fine); end4's
 clipboard watchers keep piping into a dead shell's IPC; omarchy loses `udiskie`
 on a mid-session switch in.
 
@@ -310,3 +309,15 @@ target name and broke the shell. It needs a real rebase plus a rebuild-and-verif
 - **Stale processes are the usual cause of "the new shell looks broken."** Check
   with `pgrep -a -f "qs -c|quickshell|ambxst|dms run|noctalia"` — anything other
   than your active shell should not be there. `scripts/doctor.sh` checks the rest.
+
+### Lock screen ownership
+
+Each shell locks with its own lock screen; the idle daemon is what decides which
+one fires. `hypridle` is killed on every switch (a stale one kept calling glyph's
+`rice lock` while omarchy was active — omarchy, ryoku and glyph run their own
+idle service; end4/end4pc get a fresh `hypridle`).
+
+**Coming:** a lock screen independent of the main shell (e.g. omarchy desktop,
+glyph lock). Needs a per-shell lock command table in `scripts/lib/shell-common.sh`
+plus a `lock-shell` state file read by a single `lock-session.sh` that every
+idle daemon and lock bind calls.
