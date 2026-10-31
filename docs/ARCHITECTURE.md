@@ -13,7 +13,7 @@ install and switch them, and everything the shells have in common.
   |- appends <shell dir> to package.path
   |- seeds ~/.config/hypr/scheme/current.lua (colours) if absent
   |- dofile(<the shell's config from the registry>)
-  |- dofile(shells/<name>-overrides.lua)     <- if present; tweaks on upstream-owned configs
+  |- dofile(shells/<name>/overrides.lua)     <- if present; tweaks on upstream-owned configs
   `- require(shells.<name>.hyprmod)          <- if present; HyprMod GUI layer, loaded last
 ```
 
@@ -46,7 +46,7 @@ install and switch them, and everything the shells have in common.
   opt into; **`shells/<name>/hyprland/`** keeps only what differs per shell. See
   [HYPRLAND-LUA.md](HYPRLAND-LUA.md) for the `require`/`dofile` and namespacing
   rules.
-- **`shells/<name>-overrides.lua`** customises a shell whose Hyprland config is
+- **`shells/<name>/overrides.lua`** customises a shell whose Hyprland config is
   owned upstream (editing the upstream file would be lost on update). Only ambxst
   uses it. caelestia's overrides live in its fork (`hypr-vars.lua`, `hypr-user.lua`).
   omarchy needs none: the file the entry point loads for it is already ours, a
@@ -195,7 +195,7 @@ sufficient. Work through all of these:
    that opts into `require("common.*")` and requires its own files with qualified
    names (`require("shells.<name>.hyprland.keybinds")`); a shell whose config is
    owned upstream points its registry `config` at the upstream file and gets a
-   `shells/<name>-overrides.lua` instead. Keep the common bind that returns to the
+   `shells/<name>/overrides.lua` instead. Keep the common bind that returns to the
    switcher (`SUPER + SHIFT + O`). Add an entry to `scripts/edit-hypr.sh` only via the
    registry (it reads it).
 7. **`update-shells.sh`:** a `CHECKOUT_RECORDS` entry (`name|dir|updater`; `-` means

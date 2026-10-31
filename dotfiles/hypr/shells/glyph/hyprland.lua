@@ -35,3 +35,9 @@ dofile(glyph_dir .. "/hyprland.lua")
 -- unbind first per the house rule (a rebind of a live combo stacks handlers).
 hl.unbind("SUPER + SHIFT + O")
 hl.bind("SUPER + SHIFT + O", hl.dsp.exec_cmd(home .. "/.config/dcli/scripts/switch-shell.sh"))
+
+-- House monitor and input win over glyph's own (highres/auto scale, us,ru with
+-- alt+shift): scale stays 1 and the layout toggle is Super+Space, caps = ctrl.
+-- hl.config merges, so glyph's other input keys (touchpad, repeat) survive.
+require("common.monitor")
+require("common.input")

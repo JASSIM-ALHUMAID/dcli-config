@@ -54,7 +54,10 @@ the registry config's directory *after* `~/.config/hypr`, which is not enough.
 `dotfiles/hypr/shells/glyph/hyprland.lua` therefore prepends the checkout's
 config directory to `package.path` and then `dofile()`s upstream's entry point.
 The house `common.*` layer still resolves because glyph has no files by those
-names.
+names. The loader requires `common.monitor` and `common.input` *after* upstream:
+glyph's own `highres`/auto scale (about 1.5 here) becomes scale 1, and its
+`us,ru`/`alt+shift` layout becomes `us,ara` with Super+Space and caps as ctrl.
+`hl.config` merges, so glyph's touchpad and repeat settings survive.
 
 Your own binds belong in the checkout's `config/hypr/user.lua`: upstream loads it
 last and gitignores it, so `git pull` never touches it. The loader itself only

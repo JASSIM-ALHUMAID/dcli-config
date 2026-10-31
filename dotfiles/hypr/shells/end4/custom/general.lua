@@ -11,7 +11,6 @@ hl.config({
     },
 })
 
-require("common.scrolling")
 
 -- House override: gestures like caelestia
 -- Upstream end4 uses 3-finger swipe/pinch for move/fullscreen and 4-finger

@@ -223,7 +223,7 @@ launch_caelestia() {
   disown
 }
 launch_ambxst() {
-  # ambxst rewrites the monitor on startup; shells/ambxst-overrides.lua
+  # ambxst rewrites the monitor on startup; shells/ambxst/overrides.lua
   # puts it back at scale 1 on the next reload.
   ambxst &
   disown

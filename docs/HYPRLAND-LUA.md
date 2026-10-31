@@ -78,8 +78,9 @@ Hyprland puts only the main config's directory (`~/.config/hypr`) on
 `bind-options`, `gestures`, `scrolling`, `general`, `decoration`, `animations`,
 `workspace-slide`, `misc`, `rules`, `env`. Standalone shells opt in file by file
 (dms, noctalia, xenon and ryoku take almost all of them; end4pc leaves gaps,
-decoration, layout and animations to its settings app; end4 keeps its upstream
-tree and only layers `custom/`). ambxst's overrides file takes five of them,
+decoration, layout and animations to its settings app and takes only `monitor`,
+`env`, `input` and `gestures`; end4 keeps its upstream tree and layers `input` in
+`custom/`). ambxst's overrides file takes `monitor`, `input` and `gestures`,
 omarchy `dofile()`s `monitor`, `input` and `gestures`. **caelestia does not use
 `common/`** — its input lives in its fork's `hypr-vars.lua`; **ryoku does not
 load its checkout's Hyprland config at all** (the distro owns that tree, dcli

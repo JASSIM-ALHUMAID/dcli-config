@@ -22,7 +22,7 @@ wrapper. It installs itself through its own installer rather than a package.
 | `~/.local/share/ambxst` → `~/.local/src/ambxst` | Where `hyprland.lua` is loaded from |
 | `/usr/local/bin/ambxst` | Go daemon binary installed by the fork's `install.sh` (it sudos where needed) |
 | `~/.config/ambxst` → `dotfiles/ambxst` | **dcli-managed** settings: `binds.json`, `config/`, `hypr-user.conf`, `presets/` |
-| `dotfiles/hypr/shells/ambxst-overrides.lua` | Local overrides, applied *after* the fork's own Lua |
+| `dotfiles/hypr/shells/ambxst/overrides.lua` | Local overrides, applied *after* the fork's own Lua |
 
 Note the launcher is the one shell binary in `/usr/local/bin` rather than `/usr/bin`
 or `~/.local/bin` — written by the fork's installer, not by pacman or dcli.
@@ -32,13 +32,12 @@ or `~/.local/bin` — written by the fork's installer, not by pacman or dcli.
 Unlike the standalone shells, ambxst's `hyprland.lua` comes from its checkout, not
 from `dotfiles/hypr/shells/`. `~/.config/hypr/hyprland.lua` `dofile()`s
 `~/.local/share/ambxst/hyprland.lua` (registry record `ambxst`), then loads
-`dotfiles/hypr/shells/ambxst-overrides.lua` on top.
+`dotfiles/hypr/shells/ambxst/overrides.lua` on top.
 
 The overrides file exists because the fork's config sets things this machine wants
 different. It pulls in the shared house layer — `require("common.monitor")`,
 `common.input` (`us,ara`, `grp:win_space_toggle`, `ctrl:nocaps`, pointer
-sensitivity/accel), `common.scrolling`, `common.workspace-slide`,
-`common.gestures` — and sets repeat rate and gesture behaviour itself. **Put local
+sensitivity/accel) and `common.gestures` — and sets repeat rate and gesture behaviour itself. **Put local
 tweaks there, not in the checkout** — the checkout is the
 fork and edits there become fork commits.
 
@@ -46,7 +45,7 @@ fork and edits there become fork commits.
 
 ambxst changes the monitor configuration when it launches. `switch-shell.sh`
 compensates by sleeping 1s after launch and re-applying scale 1 via `hyprctl eval`,
-and `ambxst-overrides.lua` puts it back on the next reload. If your display scale
+and `ambxst/overrides.lua` puts it back on the next reload. If your display scale
 looks wrong right after switching to ambxst, that is this.
 
 ## Trap: the stale PID file

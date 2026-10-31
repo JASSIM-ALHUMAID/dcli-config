@@ -25,11 +25,7 @@ require("common.monitor")
 -- shadowed there.
 require("common.env")
 require("common.input")
-require("common.bind-options")
 require("common.gestures")
-require("common.scrolling")
-require("common.misc")
-require("common.rules")
 require("shells.end4pc.hyprland.execs")
 require("shells.end4pc.hyprland.keybinds")
 

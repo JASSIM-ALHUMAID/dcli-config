@@ -1,10 +1,8 @@
--- ~/.config/hypr/shells/ambxst-overrides.lua
+-- ~/.config/hypr/shells/ambxst/overrides.lua
 -- Local overrides applied after ambxst's own hyprland.lua
 
 require("common.monitor")
 require("common.input")
-require("common.scrolling")
-require("common.workspace-slide")
 require("common.gestures")
 
 -- Each setting appears once: a later duplicate would silently win over this.
@@ -20,3 +18,10 @@ hl.config({
         workspace_swipe_distance   = 250,
     },
 })
+
+-- ambxst's fork binds Super-tap to the launcher on key-press (the axctl
+-- LuaGenerator emits no { release = true }), so the launcher fires the instant
+-- Super is tapped — intercepting Super+<number> workspace switches. Rebind on
+-- release, matching the house pattern shared by every other standalone shell.
+hl.unbind("SUPER + Super_L")
+hl.bind("SUPER + Super_L", hl.dsp.exec_cmd("ambxst run launcher"), { release = true })

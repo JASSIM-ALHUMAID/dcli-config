@@ -141,12 +141,12 @@ seed_scheme(dir)
 dofile(path)
 
 -- Local overrides for shells whose config is owned upstream
-local overrides = hypr .. "/shells/" .. shell .. "-overrides.lua"
+local overrides = hypr .. "/shells/" .. shell .. "/overrides.lua"
 if file_exists(overrides) then dofile(overrides) end
 
 -- HyprMod per-shell managed settings (edited via scripts/edit-hypr.sh, which
 -- points hyprmod's config-path at this shell's file). Loaded last so GUI
--- edits override both the shell config and shells/<name>-overrides.lua.
+-- edits override both the shell config and shells/<name>/overrides.lua.
 -- require() rather than dofile() so Hyprland's autoreload tracks the file.
 local managed = hypr .. "/shells/" .. shell .. "/hyprmod.lua"
 if file_exists(managed) then require("shells." .. shell .. ".hyprmod") end

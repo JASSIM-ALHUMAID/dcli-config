@@ -5,8 +5,8 @@
 -- config: omarchy ships a complete Lua Hyprland config and we run it, then
 -- layer the house preferences on top. Same idea as caelestia and ambxst, except
 -- those two load a file inside their own checkout and get their tweaks from
--- shells/<name>-overrides.lua — here the file the entry point loads is already
--- ours, so there is no separate omarchy-overrides.lua.
+-- shells/<name>/overrides.lua — here the file the entry point loads is already
+-- ours, so there is no separate omarchy/overrides.lua.
 --
 -- Loading order mirrors omarchy's own config/hypr/hyprland.lua:
 --   bootstrap.lua           sets package.path for the three module roots

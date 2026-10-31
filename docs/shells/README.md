@@ -137,7 +137,7 @@ running upstream's installer is actively harmful:
    (`~/.local/share/caelestia`, `~/.local/share/ambxst`); the rest use
    `dotfiles/hypr/shells/<name>/hyprland.lua` in this repo. omarchy and glyph are
    hybrids: those files are *loaders* which run the checkout's own Lua config and
-   layer the house preferences on top, so they need no `-overrides.lua`.
+   layer the house preferences on top, so they need no `overrides.lua`.
    Standalone configs share `dotfiles/hypr/common/` and require everything by
    fully-qualified name — see [../HYPRLAND-LUA.md](../HYPRLAND-LUA.md).
 

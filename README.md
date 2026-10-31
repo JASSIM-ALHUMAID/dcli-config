@@ -59,7 +59,7 @@ Verify any shell's Hyprland config without switching to it:
 | Shell | Launch | Hyprland config | Its own config | Source |
 |---|---|---|---|---|
 | **caelestia** | `caelestia shell -d` (`qs -c caelestia`) | `~/.local/share/caelestia/hypr/hyprland.lua`, overridden by `~/.config/caelestia/hypr-vars.lua` and `hypr-user.lua` | `~/.config/caelestia` | fork `JASSIM-ALHUMAID/my-caelestia` (`my-caelestia`), upstream `caelestia-dots/shell` |
-| **ambxst** | `ambxst` | `~/.local/share/ambxst/hyprland.lua` + `shells/ambxst-overrides.lua` | `~/.config/ambxst` | fork `JASSIM-ALHUMAID/my-Ambxst` (`my-ambxst`), upstream `Axenide/Ambxst` |
+| **ambxst** | `ambxst` | `~/.local/share/ambxst/hyprland.lua` + `shells/ambxst/overrides.lua` | `~/.config/ambxst` | fork `JASSIM-ALHUMAID/my-Ambxst` (`my-ambxst`), upstream `Axenide/Ambxst` |
 | **dms** | `dms run` | `shells/dms/hyprland.lua` (standalone) | `~/.config/DankMaterialShell` | package `dux-shell` |
 | **noctalia** | `noctalia` | `shells/noctalia/hyprland.lua` (standalone) | `~/.config/noctalia` | package `noctalia` (`extra`) |
 | **end4** | `qs -c ii` | `shells/end4/hyprland.lua` (end4's tree + `custom/`) | `~/.config/quickshell/ii` | fork `JASSIM-ALHUMAID/my-end4` (`my-ii`), upstream `end-4/dots-hyprland` |

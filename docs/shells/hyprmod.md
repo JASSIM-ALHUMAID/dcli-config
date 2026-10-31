@@ -20,7 +20,7 @@ hyprmod  ──reads/writes──►  shells/<name>/hyprmod.lua
   ▲                                 ▲
   │ executes hyprland.lua to map    │ require()'d LAST by hyprland.lua,
   │ the config tree (external       │ so GUI edits override the shell
-  │ entries, setup check)           │ config AND shells/<name>-overrides.lua
+  │ entries, setup check)           │ config AND shells/<name>/overrides.lua
 ```
 
 - The managed file is `dotfiles/hypr/shells/<name>/hyprmod.lua` — a naming
@@ -32,7 +32,7 @@ hyprmod  ──reads/writes──►  shells/<name>/hyprmod.lua
   shell is active: hand-written binds/settings show up read-only with correct
   file attribution, and overriding one writes `unbind` + `bind` (or the
   option) into the managed file.
-- Load order in `hyprland.lua`: shell config → `<name>-overrides.lua` →
+- Load order in `hyprland.lua`: shell config → `<name>/overrides.lua` →
   `<name>/hyprmod.lua`. The GUI file is the "what I clicked most recently"
   layer; if a hand fix must beat a stale GUI value, delete the value from the
   GUI file (both are visible in git).
