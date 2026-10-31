@@ -32,7 +32,8 @@ CHECKOUTS=(
     "$HOME/.local/share/ryoku-shell|ryoku"
 )
 # ~/.config symlinks the shells' own launchers resolve through.
-SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quickshell/glyph quickshell/rice)
+SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quickshell/glyph quickshell/rice
+    quickshell/shell quickshell/hub quickshell/ryostore matugen matugen-end4)
 
 # shellcheck source=lib/shell-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/shell-common.sh" || exit 1

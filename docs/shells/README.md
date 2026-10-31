@@ -117,9 +117,10 @@ running upstream's installer is actively harmful:
 - **ryoku** — the installer (`ryoku-shell-installer`) is a distro installer: it
   adds a signed `[ryoku]` pacman repo, installs `ryoku-desktop-hyprland` with
   SDDM/limine/snapshots, and `ryoku materialize` copies its config tree over
-  `~/.config`, including `~/.config/hypr`. `setup-ryoku.sh` follows upstream's
-  `ryoku/shell/dev-run.sh` instead: build the daemon and QML modules into
-  `~/.local`, keep the Hyprland config here. See [ryoku.md](ryoku.md).
+  `~/.config`, including `~/.config/hypr`. `setup-ryoku.sh` instead builds the
+  user-level half of the distro's packages into `~/.local` (daemons, Hub, store,
+  wallpaper picker, helpers on a session-only `PATH`) and keeps the Hyprland
+  config here. See [ryoku.md](ryoku.md).
 - **ambxst** — we run the fork's own `install.sh`. Its arch package list includes
   stock `quickshell`, which is only skipped because its `filter_packages()` sees
   the `qs` binary already on PATH. **Install a provider before running this hook on
@@ -196,8 +197,8 @@ anything. Aim new shells at that standard.
   permanently dirty. Both are dcli dotfiles now; see
   [caelestia.md](caelestia.md).
 * **Check its matugen invocation passes `-c`.** Bare `matugen` reads
-  `~/.config/matugen`, a symlink into the end-4 checkout, so an unqualified call
-  regenerates *end4's* theme.
+  `~/.config/matugen`, which is ryoku's template set (its daemon hard-codes that
+  path), so an unqualified call themes ryoku's kitty/btop/Qt files.
   `scripts/patch-end4pc.sh` rewrites it, mirroring the same pattern.
 * **Nothing tracked in git may be restored.** `shell-theme-state.sh` refuses to
   write a path that resolves to a tracked file, which is why

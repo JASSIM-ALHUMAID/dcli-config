@@ -93,6 +93,8 @@ These are the actual paths on a synced machine.
 | `~/.local/share/end4-pC` | **end4pc fork** — origin `JASSIM-ALHUMAID/my-end4-pC`, branch `my-end4pc`, upstream `pctrade/end4-pC`; the repo root *is* the quickshell config | `setup-end4pc.sh` |
 | `~/.config/quickshell/end4-pC` -> `~/.local/share/end4-pC` | end4pc's quickshell config | `setup-end4pc.sh` |
 | `~/.config/matugen-end4pc` -> `dcli/dotfiles/matugen-end4pc` | end4pc's own matugen config | `link-dotfiles.sh` |
+| `~/.config/matugen-end4` -> `dots-hyprland/dots/.config/matugen` | end4's own matugen config (passed with `-c`) | `setup-end4.sh` |
+| `~/.config/matugen` -> `ryoku-shell/ryoku/shell/matugen` | ryoku's templates — its daemon hard-codes this path | `setup-ryoku.sh` |
 | `/usr/bin/noctalia` (pkg `noctalia`, `extra`) | Noctalia v5 binary — native C++/Wayland, no Quickshell | pacman |
 | `~/.config/noctalia` -> `dcli/dotfiles/noctalia` | Noctalia config (`config.toml`, hot-reloaded) | `link-dotfiles.sh` |
 | `/usr/bin/dms` (pkg `dux-shell`) | Dux Shell (ex-DankMaterialShell); the CLI is still `dms` | pacman |
@@ -164,9 +166,11 @@ How each shell is supplied:
 - **xenon** — a checkout, no installer.
 - **glyph** — a rice checkout; `setup-glyph.sh` links only its two Quickshell
   configs and fonts, never its `install.sh` (which takes over `~/.config/hypr`).
-- **ryoku** — a distro checkout; `setup-ryoku.sh` follows upstream's
-  `ryoku/shell/dev-run.sh` (build `ryoku-shell` + QML modules into `~/.local`),
-  never the distro installer or `ryoku materialize`.
+- **ryoku** — a distro checkout; `setup-ryoku.sh` reproduces the user-level
+  half of the distro's packages from their own payload recipes (daemons, Hub and
+  store backends, QML modules, user-level helpers) into `~/.local`, with a private
+  bin dir only the ryoku session puts on `PATH`; never the distro installer,
+  `ryoku materialize` or the `ryoku` CLI.
 
 ## Adding a shell — checklist
 

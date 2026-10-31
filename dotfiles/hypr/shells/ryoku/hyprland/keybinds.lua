@@ -7,10 +7,11 @@
 -- are the ones the daemon routes in ryoku/shell/ipc (launcher, overview,
 -- visualizer*, quicksettings, wallpaper-menu, clipboard, hub).
 --
--- Deliberate omissions, all because the tool behind them is not installed in a
--- checkout-only setup: `ryoku-shell screenshot` (needs ryoku-cmd-ryoshot),
--- `ryoku-shell voice` (needs the ryostage venv), `ryoku-shell lock` (qylock),
--- and the ryoku-* app helpers. House tools take their place.
+-- The ryoku-* helpers are on the shell's own PATH (execs.lua), so its in-shell
+-- actions work; these binds still use the house tools so every shell shares
+-- one muscle memory. Not bound at all: `ryoku-shell lock` (qylock is not
+-- installed — it would leave the session unlocked) and `ryoku-shell voice`
+-- (needs the ryostage venv, an opt-in `ryostage install`).
 
 local ryokuShell    = os.getenv("HOME") .. "/.local/bin/ryoku-shell"
 local terminal      = "wezterm-gui"
@@ -83,9 +84,9 @@ hl.bind("SUPER + X", hl.dsp.focus({ workspace = "+1" }), { repeating = true })
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 
--- Media. ryoku's own helpers (ryoku-volume, ryoku-cmd-brightness) are not on
--- PATH in a checkout-only setup, so the keys drive PipeWire and brightnessctl
--- directly; the daemon's OSD follows the sink/backlight change either way.
+-- Media. The keys drive PipeWire and brightnessctl directly, as in every other
+-- shell (bind execs do not inherit the ryoku PATH); the daemon's OSD follows the
+-- sink/backlight change either way.
 hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd("wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true })
 hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"), { locked = true })
 hl.bind("XF86AudioMute",         hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"), { locked = true })

@@ -388,7 +388,7 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   <dl class="paths">
     <dt>Source</dt><dd class="path">~/.local/share/dots-hyprland — origin <code>JASSIM-ALHUMAID/my-end4</code> (upstream <code>end-4/dots-hyprland</code>), branch <code>my-ii</code></dd>
     <dt>QS config</dt><dd class="path">~/.config/quickshell/ii → checkout's dots/.config/quickshell/ii</dd>
-    <dt>Theming</dt><dd class="path">~/.config/matugen → the checkout — this shell <em>owns</em> the matugen path</dd>
+    <dt>Theming</dt><dd class="path">~/.config/matugen-end4 → the checkout's matugen dir, passed with <code>-c</code> (fork commit; ~/.config/matugen is ryoku's)</dd>
     <dt>State</dt><dd class="path">~/.config/illogical-impulse — written by the shell itself</dd>
     <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/end4/hyprland.lua — end4's own tree + custom/ overrides, plus the settings app's shellOverrides/main.lua</dd>
     <dt>Update</dt><dd><code>update-end4.sh</code> (fast-forward only; <code>update-shells.sh end4</code>)</dd>
@@ -402,7 +402,7 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   <div class="shell-head"><h3>end4pc</h3><span class="badge b-fork">custom fork</span><span class="launch">qs -c end4-pC</span></div>
   <p><strong>JASSIM-ALHUMAID/my-end4-pC</strong>, a personal fork of <strong>pctrade/end4-pC</strong> (itself a fork of end-4's dots), run as an independent config alongside end4
   without either touching the other — that separation took deliberate work, because upstream expects the
-  <code>~/.config/matugen</code> path that end4 already owns.</p>
+  <code>~/.config/matugen</code> path end4 owned at the time.</p>
   <dl class="paths">
     <dt>Source</dt><dd class="path">~/.local/share/end4-pC — origin <code>JASSIM-ALHUMAID/my-end4-pC</code>, branch <code>my-end4pc</code>, upstream <code>pctrade/end4-pC</code></dd>
     <dt>QS config</dt><dd class="path">~/.config/quickshell/end4-pC → the checkout root (flat layout — the repo root <em>is</em> the config)</dd>
@@ -481,17 +481,21 @@ directly with no fork, <span class="badge b-pkg">package</span> is pacman-manage
   control plane, three Qt QML modules and the distro's Hyprland config — dcli uses only the shell half.</p>
   <dl class="paths">
     <dt>Source</dt><dd class="path">~/.local/share/ryoku-shell — upstream <code>main</code>, no personal fork (the checkout is not at ~/.local/share/ryoku: upstream installs its i18n catalog there)</dd>
-    <dt>Control plane</dt><dd class="path">~/.local/bin/ryoku-shell — the Go daemon/client, built from ryoku/shell/ipc</dd>
-    <dt>QML modules</dt><dd class="path">~/.local/lib/qt6/qml/Ryoku/{Blobs,Spatial3D,Ui,FrameBars,PluginKit}</dd>
-    <dt>Config</dt><dd class="path">~/.config/ryoku — shell.json, widgets.json, matugen.json; the daemon is the sole writer, machine-local</dd>
+    <dt>Session bin</dt><dd class="path">~/.local/lib/ryoku/bin — ryoku-shell, ryogami(-live), ryoku-hub, ryoku-host, ryostore + linked user-level helpers; on PATH for the ryoku session only (~/.local/bin/ryoku-shell links here)</dd>
+    <dt>QML modules</dt><dd class="path">~/.local/lib/qt6/qml/Ryoku/{Blobs,Spatial3D,Ryogami,Ui,FrameBars,PluginKit}</dd>
+    <dt>Quickshell</dt><dd class="path">~/.config/quickshell/{shell,hub,ryostore,ryovm,inir,keys,stage,…} — links into the checkout; the daemon runs in deployed mode</dd>
+    <dt>Wallpapers</dt><dd class="path">~/Pictures/Wallpapers/ryoku — seeded once (reflink copy); ryogami scans all of ~/Pictures/Wallpapers</dd>
+    <dt>Config</dt><dd class="path">~/.config/ryoku — shell.json, desktop.json, matugen.json, …; daemon/Hub are the sole writers, machine-local</dd>
     <dt>Hyprland</dt><dd class="path">dotfiles/hypr/shells/ryoku/hyprland.lua — standalone, in this repo</dd>
     <dt>Update</dt><dd><code>update-ryoku.sh</code> (pulls and rebuilds)</dd>
   </dl>
   <ul class="notes">
-    <li><span class="trap">never</span>Run <code>ryoku-shell-installer</code> or <code>ryoku materialize</code>: the first adds a signed [ryoku] pacman repo and converts the system to the distro, the second copies its config tree over ~/.config/hypr. setup-ryoku.sh follows upstream's <code>ryoku/shell/dev-run.sh</code>.</li>
-    <li>dev-run.sh omits <code>Ryoku.PluginKit</code>; without it the shell dies at startup with “module Ryoku.PluginKit is not installed”. The hook installs it.</li>
+    <li><span class="trap">never</span>Run <code>ryoku-shell-installer</code> or <code>ryoku materialize</code>: the first adds a signed [ryoku] pacman repo and converts the system to the distro, the second copies its config tree over ~/.config/hypr. setup-ryoku.sh rebuilds the user-level half of the packages from their payload recipes.</li>
+    <li><span class="trap">trap</span>Upstream's <code>dev-run.sh</code> alone is not enough: it assumes the packages already put ~40 helpers on PATH. Without them the browser/terminal actions, Hub pages, plugins and wallpapers are silently dead (2026-10-31).</li>
+    <li><span class="trap">trap</span>The daemon renders <code>~/.config/matugen/config.toml</code> (path not configurable), so ryoku <em>owns</em> <code>~/.config/matugen</code>. end4 moved to <code>~/.config/matugen-end4</code> for this; any shell calling bare <code>matugen</code> would theme ryoku's files.</li>
+    <li><span class="trap">trap</span>Never set <code>RYOKU_SHELL_DIR</code>: Quickshell does not canonicalize config paths, so a <code>qs -p</code> checkout instance is invisible to the <code>qs -c shell ipc</code> calls upstream hard-codes.</li>
     <li><span class="trap">trap</span>App theming defaults ON and writes cava/btop/yazi/fish/starship/kitty. The hook seeds <code>matugen.json</code> with <code>themeRyokuApps:false</code> once; opt in from the Hub.</li>
-    <li>The daemon has a real <code>quit</code> verb; teardown uses it and falls back to the process match. qylock, ryoshot, the <code>ryoku</code> CLI and the <code>ryoku-*</code> helpers are not installed — house tools fill those binds.</li>
+    <li>The daemon has a real <code>quit</code> verb; teardown uses it and falls back to the process match, which also covers ryogami. Not installed: qylock, the <code>ryoku</code> CLI, <code>ryoku-wm-*</code> providers (Hub Desktop saves write nothing), privileged <code>system/</code> helpers, <code>ryoku-idle</code>. Binds keep house tools.</li>
   </ul>
 </section>
 

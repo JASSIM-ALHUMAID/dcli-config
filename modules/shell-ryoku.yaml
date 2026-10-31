@@ -7,13 +7,28 @@ description: ryoku (Ryoku-dev/ryoku) - the distro's Quickshell desktop, run from
 # networkmanager, curl, libnotify, pipewire/wireplumber, playerctl, cava,
 # imagemagick, hyprpicker, hypridle, hyprsunset, tesseract, zbar, mpv,
 # gpu-screen-recorder, cliphist.
+#
+# Some runtime deps below are also in end4/caelestia modules; they are repeated
+# on purpose so disabling another shell cannot break this one.
 packages:
-  # build toolchain (the hook compiles ryoku-shell and the Qt plugins)
+  # build toolchain (the hook compiles ryoku-shell, ryogami, the Hub/store
+  # backends and the Qt plugins)
   - go
   - cmake
   - ninja
   - qt6-shadertools
   - qt6-quick3d
+  - vulkan-headers         # ryogami picker's GPU card list
+  - wayland-protocols      # ryogami-live (video wallpapers)
+  # ryogami (wallpaper daemon + picker), from its PKGBUILD
+  - qt6-multimedia         # picker video previews
+  - qt6-imageformats       # WebP/AVIF thumbnails and RyoStore art
+  # ryoku-desktop's hard depends the shell QML imports or calls by name
+  - syntax-highlighting    # code blocks in the Super+S chat (QML import)
+  - libqalculate           # launcher calculator
+  - inter-font             # the shell UI font
+  - mpv-mpris              # launcher radio on the players bus
+  - yt-dlp                 # radio stream resolution
   # runtime
   - ffmpeg                 # visualizer, recording, palette generation
   - uv                     # ryostage's pinned Python 3.13 venv
@@ -37,18 +52,24 @@ packages:
 # [ryoku] pacman repo, installs ryoku-desktop-hyprland and converts the system
 # in place (SDDM, limine, snapshots); `ryoku materialize` copies its config tree
 # into ~/.config, including ~/.config/hypr. None of that is run. This module
-# reproduces upstream's `ryoku/shell/dev-run.sh` path: the checkout is the
-# source, the hook builds the daemon and the QML modules into ~/.local, and the
-# Hyprland config is dotfiles/hypr/shells/ryoku/hyprland.lua in this repo.
-# Details in docs/shells/ryoku.md.
+# reproduces the user-level half of the distro's packages from their own
+# recipes: the checkout is the source, the hook builds the daemons, Hub/store
+# backends and QML modules into ~/.local, links the user-level helpers into a
+# private bin dir the ryoku session puts on PATH, and links the Quickshell
+# configs by name. The Hyprland config is dotfiles/hypr/shells/ryoku/hyprland.lua
+# in this repo. Details in docs/shells/ryoku.md.
+#
+# Not declared (no session feature needs them): skwd-paper-bin (Wallpaper
+# Engine scenes, [ryoku] repo only), ryoku-cursors, qylock.
 post_install_hook: scripts/setup-ryoku.sh
 hook_behavior: once
 
 # No `dotfiles:` key: there is no dcli-owned config directory. ~/.config/ryoku
-# (shell.json, widgets.json, visualizer.json) is written by the daemon itself —
-# it is the sole writer — and stays machine-local. The QML import modules and
-# the i18n catalog land under ~/.local, not ~/.config.
+# (shell.json, widgets.json, desktop.json, ...) is written by the daemon and
+# Hub — the sole writers — and stays machine-local; the hook seeds two files
+# once. ~/.config/quickshell/{shell,hub,ryostore,...} are hook-made symlinks
+# into the checkout, not dcli dotfiles.
 #
-# Launched as `ryoku-shell daemon` with RYOKU_SHELL_DIR pointing at the
-# checkout; the daemon supervises one Quickshell config and hot-reloads QML.
-# Switch with scripts/switch-shell.sh ryoku.
+# Launched as `ryogami` + `ryoku-shell daemon` with ~/.local/lib/ryoku/bin on
+# PATH (deployed mode, no RYOKU_SHELL_DIR); the daemon supervises the
+# `qs -c shell` desktop. Switch with scripts/switch-shell.sh ryoku.

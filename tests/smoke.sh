@@ -58,6 +58,19 @@ for f in "${parse_targets[@]}"; do
 done
 rm -f "$bashn_err"
 
+# ── exec: every entry-point script is executable ─────────────────────────────
+# dcli runs hooks directly and update-*.sh exec their setup-*.sh, so a missing
+# exec bit is "permission denied" at sync time. setup/update for glyph and ryoku
+# were committed 100644 and nothing caught it until 2026-10-31. lib/*.sh is
+# sourced, never executed, and is not checked.
+for f in "$REPO_DIR"/scripts/*.sh; do
+    if [ -x "$f" ]; then
+        ok "executable ${f#"$REPO_DIR"/}"
+    else
+        bad "not executable: ${f#"$REPO_DIR"/} (chmod +x, and commit the mode)"
+    fi
+done
+
 # ── lint: the shellcheck gate ────────────────────────────────────────────────
 if command -v "$SHELLCHECK" >/dev/null 2>&1 || [ -x "$SHELLCHECK" ]; then
     if (
@@ -184,6 +197,25 @@ if [ -x "$REPO_DIR/scripts/doctor.sh" ] && "$REPO_DIR/scripts/doctor.sh" --versi
 else
     bad "doctor.sh missing, not executable, or --versions broken"
 fi
+
+# ── drift: ryoku's launch is defined once ───────────────────────────────────
+# launch-ryoku.sh owns the session PATH; setup-ryoku.sh builds into the same
+# directory, and both launch points (login, switch) must go through it.
+ryoku_bin_of() { sed -n 's|^RYOKU_BIN_DIR="\$[A-Z_]*HOME\(/[^"]*\)"$|\1|p' "$1"; }
+launch_bin=$(ryoku_bin_of "$REPO_DIR/scripts/launch-ryoku.sh")
+setup_bin=$(ryoku_bin_of "$REPO_DIR/scripts/setup-ryoku.sh")
+if [ -n "$launch_bin" ] && [ "$launch_bin" = "$setup_bin" ]; then
+    ok "ryoku bin dir agrees: ~$launch_bin"
+else
+    bad "ryoku bin dir drift: launch-ryoku.sh '~$launch_bin' vs setup-ryoku.sh '~$setup_bin'"
+fi
+for caller in dotfiles/hypr/shells/ryoku/hyprland/execs.lua scripts/switch-shell.sh; do
+    if grep -q 'launch-ryoku\.sh' "$REPO_DIR/$caller"; then
+        ok "$caller launches ryoku via launch-ryoku.sh"
+    else
+        bad "$caller starts ryoku without launch-ryoku.sh"
+    fi
+done
 
 # ── drift: modules/*.yaml dotfiles: vs link-dotfiles.sh TARGETS ─────────────
 # The YAML `dotfiles:` keys are documentation only — dcli silently ignores

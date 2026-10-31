@@ -17,7 +17,7 @@ impulse"), run from a custom fork as the Quickshell config named `ii`.
 |---|---|
 | `~/.local/share/dots-hyprland` | Fork checkout, **source of truth**. origin `JASSIM-ALHUMAID/my-end4`, upstream `end-4/dots-hyprland`, branch `my-ii` |
 | `~/.config/quickshell/ii` → `dots-hyprland/dots/.config/quickshell/ii` | The Quickshell config |
-| `~/.config/matugen` → `dots-hyprland/dots/.config/matugen` | Theming config, **owned by this shell** |
+| `~/.config/matugen-end4` → `dots-hyprland/dots/.config/matugen` | Theming config — its own path, passed to matugen with `-c` |
 | `~/.config/illogical-impulse` | Runtime state written by the shell itself |
 | `dotfiles/hypr/shells/end4/hyprland.lua` | Its Hyprland config: end4's own tree under `shells/end4/hyprland/`, house overrides under `shells/end4/custom/`, all `require`d as `shells.end4.*` |
 | `~/.config/hypr/hyprland/shellOverrides/main.lua` | What the ii settings app writes (`HyprlandConfig.qml`, `shellOverridesPath`); loaded last so the app's edits apply. The house `kb_layout` and `layout` lines were stripped from it and will return if the app rewrites those keys |
@@ -73,12 +73,22 @@ git -C ~/.local/share/dots-hyprland submodule update --init --recursive --depth 
 The clone is deliberately **full, not shallow** — the fork's branch history
 matters; only submodules are shallow.
 
-## Shares `~/.config/matugen` with end4pc
+## Its own matugen dir: `~/.config/matugen-end4`
 
-This shell **owns** `~/.config/matugen` (symlink into its checkout). That is why
-[end4pc](end4pc.md) needed `patch-end4pc.sh`: upstream end4-pC also expects
-`~/.config/matugen`, so running both would have had them fighting over one config.
-end4pc was repointed at its own `~/.config/matugen-end4pc` copy instead.
+Upstream ii runs bare `matugen`, which reads the default `~/.config/matugen`.
+Until 2026-10-31 this shell owned that path. Two other shells collided with it:
+[end4pc](end4pc.md) (moved to `~/.config/matugen-end4pc` by `patch-end4pc.sh`)
+and [ryoku](ryoku.md), whose daemon reads `~/.config/matugen/config.toml`
+directly and cannot be pointed elsewhere — every ryoku wallpaper change was
+rendering ii's templates (fuzzel, GTK, ii's palette).
+
+So the my-ii fork carries commit `cd3447a2`: `switchwall.sh`'s `MATUGEN_DIR` is
+`$XDG_CONFIG_HOME/matugen-end4`, matugen gets `-c "$MATUGEN_DIR/config.toml"`,
+and `config.toml`'s template paths follow. `setup-end4.sh` links
+`~/.config/matugen-end4` and releases an old `~/.config/matugen` link that still
+points into this checkout; `~/.config/matugen` is ryoku's now. If ii's colours
+stop following the wallpaper after an upstream merge, check that `switchwall.sh`
+still passes `-c`.
 
 Runtime state is separate (`~/.config/illogical-impulse` vs
 `~/.config/illogical-impulse-pC`), so the two coexist safely.

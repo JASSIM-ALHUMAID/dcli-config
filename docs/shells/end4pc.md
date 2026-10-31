@@ -25,8 +25,9 @@ separation is deliberate and took work.
 
 ## Why `patch-end4pc.sh` exists (and why it is now a no-op)
 
-Upstream end4-pC expects `~/.config/matugen` — but [end4](end4.md) **owns** that
-path as a symlink into its own checkout. Running both meant end4pc died with end4.
+Upstream end4-pC expects `~/.config/matugen` — a path [end4](end4.md) owned at the
+time (it is [ryoku](ryoku.md)'s since 2026-10-31; end4 moved to
+`~/.config/matugen-end4`). Running both meant end4pc died with end4.
 
 `patch-end4pc.sh` repoints a checkout at end4pc-owned paths. It rewrites the fork's
 `scripts/colors/switchwall.sh` to use `~/.config/matugen-end4pc`, points the shell's

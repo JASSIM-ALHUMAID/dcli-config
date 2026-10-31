@@ -168,12 +168,18 @@ declare -A MATCH_SPECS=(
 -f qs .*quickshell/rice'
   # ryoku is supervised by its own daemon: ryoku-shell owns the qs children and
   # refuses to start a second copy, so the daemon is the "is it running" guard.
-  # The children are `qs -p <checkout>/ryoku/shell/quickshell/<config>` (the
-  # daemon sets RYOKU_SHELL_DIR, which makes qs -p win over -c) plus the Hub at
-  # <checkout>/ryoku/hub/quickshell. Anchor on those paths, not on `qs -c shell`.
+  # It runs in deployed mode, so its children are `qs -c shell` and the Hub and
+  # store are `qs -c hub` / `qs -c ryostore` — config names no other shell here
+  # uses. ryogami (wallpapers) is a sibling daemon, not a child: it, its video
+  # player and its picker (`quickshell -p ~/.local/share/ryogami/shell.qml`)
+  # are matched on their own.
   [ryoku]='-x ryoku-shell
--f qs .*ryoku/shell/quickshell
--f qs .*ryoku/hub/quickshell'
+-x ryogami
+-x ryogami-live
+-f quickshell -p .*ryogami/shell.qml
+-f qs -c shell
+-f qs -c hub
+-f qs -c ryostore'
 )
 
 # Not owned by any one shell: helpers that previous shells' configs leave
@@ -277,12 +283,9 @@ launch_glyph() {
   disown
 }
 launch_ryoku() {
-  # The daemon needs RYOKU_SHELL_DIR at start: it is how it finds the QML tree
-  # (upstream's dev-run.sh exports the same value). Running it from the checkout
-  # rather than the linked config also keeps the shell's plugins resolving out
-  # of ~/.local/lib/qt6/qml, the tree setup-ryoku.sh built.
-  RYOKU_SHELL_DIR="$HOME/.local/share/ryoku-shell/ryoku/shell" \
-    "$HOME/.local/bin/ryoku-shell" daemon &
+  # launch-ryoku.sh is the one launch definition, shared with
+  # shells/ryoku/hyprland/execs.lua (session PATH, ryogami, deployed mode).
+  "$SCRIPT_DIR/launch-ryoku.sh" &
   disown
 }
 

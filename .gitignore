@@ -5,6 +5,13 @@ devfiles/
 # System packages merged from host (auto-generated, host-specific)
 system-packages-*.yaml
 
+# Ryoku Hub writes these through the ~/.config/hypr symlink on explicit actions
+# (rice import, GPU mode). No shell config here loads them; see docs/shells/ryoku.md.
+dotfiles/hypr/user.lua
+dotfiles/hypr/gpu.lua
+# ryoku's matugen pass writes its palette through the ~/.config/btop symlink.
+dotfiles/btop/themes/ryoku.theme
+
 # mpvpaper wallpaper thumbnails — regenerated cache, not config
 dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/*
 !dotfiles/hypr/custom/scripts/mpvpaper_thumbnails/.gitkeep
