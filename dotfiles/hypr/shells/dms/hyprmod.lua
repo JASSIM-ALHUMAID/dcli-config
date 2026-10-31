@@ -9,5 +9,8 @@ hl.config({
     input = {
         repeat_delay = 250,
         repeat_rate = 35,
+        touchpad = {
+            natural_scroll = true,
+        },
     },
 })

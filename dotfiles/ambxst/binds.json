@@ -48,7 +48,9 @@
             "action": {
                 "args": {
                 },
-                "id": "ambxst.launcher"
+                "id": "ambxst.launcher",
+                "layouts": [
+                ]
             },
             "key": "Super_L",
             "modifiers": [
