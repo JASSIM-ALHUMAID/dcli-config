@@ -261,10 +261,20 @@ record it here before adding it to the module.
 
 ## Health check
 
+On Hyprland 0.57 `--verify-config` for omarchy **segfaults on exit (status
+139)** — seen 2026-10-31, and at HEAD with no local changes. The trace is
+teardown, not parsing: `CConfigManager::~CConfigManager → cleanTimers →
+CEventLoopManager::removeTimer`; omarchy's Lua registers timers and verify mode
+has no event loop to remove them from. omarchy also sets
+`debug.enable_stdout_logs = 0`, so the verdict line never prints. Treat a 139
+with no Lua error before it as "parsed"; the authoritative check is
+`hyprctl configerrors` in a live omarchy session. Every other shell still
+prints `config ok`.
+
 ```bash
 scripts/doctor.sh                        # checkout, links, provider, configerrors
 scripts/update-shells.sh --status omarchy
-DCLI_HYPRMOD_SHELL=omarchy Hyprland --verify-config -c ~/.config/hypr/hyprland.lua   # "config ok"
+DCLI_HYPRMOD_SHELL=omarchy Hyprland --verify-config -c ~/.config/hypr/hyprland.lua   # see note below
 
 # checkout and version
 git -C ~/.local/share/omarchy log -1 --oneline
