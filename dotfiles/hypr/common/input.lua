@@ -5,7 +5,7 @@
 hl.config({
     input = {
         kb_layout     = "us,ara",
-        kb_options    = "grp:win_space_toggle, ctrl:nocaps",
+        kb_options    = "grp:win_space_toggle,ctrl:nocaps",
         sensitivity   = 0.3,
         accel_profile = "flat",
     },

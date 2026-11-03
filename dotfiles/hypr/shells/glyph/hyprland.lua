@@ -21,9 +21,12 @@ local glyph_dir = home .. "/.local/share/glyph-rice/config/hypr"
 -- Hyprland would drop the whole config and leave the desktop with no binds.
 local probe = io.open(glyph_dir .. "/hyprland.lua", "r")
 if not probe then
-    io.stderr:write("shells/glyph/hyprland.lua: glyph-rice not found at " .. glyph_dir
-        .. " — run: dcli module run-hook shell-glyph\n")
-    return
+	io.stderr:write(
+		"shells/glyph/hyprland.lua: glyph-rice not found at "
+			.. glyph_dir
+			.. " — run: dcli module run-hook shell-glyph\n"
+	)
+	return
 end
 probe:close()
 
@@ -37,7 +40,29 @@ hl.unbind("SUPER + SHIFT + O")
 hl.bind("SUPER + SHIFT + O", hl.dsp.exec_cmd(home .. "/.config/dcli/scripts/switch-shell.sh"))
 
 -- House monitor and input win over glyph's own (highres/auto scale, us,ru with
--- alt+shift): scale stays 1 and the layout toggle is Super+Space, caps = ctrl.
+-- alt+shift): scale stays 1 and the layout toggle is Super+Space, Caps Lock stays Caps Lock.
 -- hl.config merges, so glyph's other input keys (touchpad, repeat) survive.
 require("common.monitor")
 require("common.input")
+require("common.general")
+require("common.scrolling")
+
+-- ── house binds ──
+-- Glyph closes with Super+C and opens its terminal on Super+Q. Swap to
+-- Super+Q = close, Super+T = wezterm. Every Super+<key> in glyph also carries a
+-- non-consuming launcherInterrupt bind (so a tap-Super launcher does not fire);
+-- unbind drops that too, so it is re-added after each rebind.
+local terminal = "wezterm-gui"
+for _, key in ipairs({ "C", "Q", "T" }) do
+	hl.unbind("SUPER + " .. key)
+end
+hl.bind("SUPER + Q", hl.dsp.window.close())
+hl.bind("SUPER + T", hl.dsp.exec_cmd(terminal))
+for _, key in ipairs({ "C", "Q", "T" }) do
+	hl.bind("SUPER + " .. key, hl.dsp.global("shell:launcherInterrupt"), { non_consuming = true })
+end
+
+-- Super+Tab: next workspace that has windows ("e+1" = existing/populated only).
+hl.unbind("SUPER + Tab")
+hl.bind("SUPER + Tab", hl.dsp.focus({ workspace = "e+1" }))
+hl.bind("SUPER + Tab", hl.dsp.global("shell:launcherInterrupt"), { non_consuming = true })

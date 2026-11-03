@@ -14,7 +14,12 @@ REPO_DIR="$REAL_HOME/.local/share/glyph-rice"
 
 require_checkout "$REPO_DIR" glyph-rice setup-glyph.sh || exit 1
 
+# patch-glyph.sh edits one tracked QML file; restore it so the pull stays a
+# plain fast-forward, then patch the fresh copy.
+as_user git -C "$REPO_DIR" checkout -- config/quickshell/glyph/settings/Rules.qml
+
 echo ":: Updating glyph-rice (main branch)"
 fast_forward_pull "$REPO_DIR"
+"$(dirname "$(readlink -f "$0")")/patch-glyph.sh"
 
 echo ":: glyph-rice updated — restart shell with switch-shell.sh glyph"

@@ -45,6 +45,8 @@ STATE_FILE="$REAL_HOME/.local/state/rice/shell"
 # 1) Upstream checkout. No submodules, no personal fork.
 clone_checkout "$REPO_DIR" "$REPO_URL" "$REPO_BRANCH" "glyph-rice"
 
+"$(dirname "$(readlink -f "$0")")/patch-glyph.sh" || exit 1
+
 # 2) The two Quickshell configs. `glyph` is the desktop; `rice` is its shell
 #    switcher and holds the lock entry point the shell and hypridle call.
 for config in glyph rice; do
