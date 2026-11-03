@@ -57,11 +57,6 @@
     {
       "type": "uptime",
       "key": "\u001b[38;2;{{outline.rgb}}m[\u001b[0m\u001b[1m\u001b[38;2;{{primary.rgb}}m uptime \u001b[0m\u001b[38;2;{{outline.rgb}}m]\u001b[0m"
-    },
-    "break",
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m[\u001b[38;2;{{primary.rgb}}msuper\u001b[38;2;{{outline.rgb}}m] + [\u001b[38;2;{{primary.rgb}}mspace\u001b[38;2;{{outline.rgb}}m]  launcher\u001b[0m"
     }
   ]
 }
