@@ -217,22 +217,29 @@ sufficient. Work through all of these:
     gradient) and re-run `scripts/install-grub-theme.sh` so the watcher picks up the
     new state file. Optionally add a style-table entry in `render-grub-theme.sh` if
     the shell should not get the default `material` layout. See [GRUB.md](GRUB.md).
-12. **SDDM.** Add a `LOOK_TABLE` row (and a `PALETTE_SOURCES` row if the shell writes a
-    colour file) in `scripts/render-sddm-theme.sh`; a bespoke theme goes in
+12. **SDDM.** Add a `LOOK_TABLE` row in `scripts/render-sddm-theme.sh` (and a
+    `PALETTE_SOURCES` row in `scripts/lib/palette.sh` if the shell writes a colour file —
+    the terminal layer reads the same palette); a bespoke theme goes in
     `sddm/themes/<name>/`. Re-run `scripts/install-sddm-theme.sh` to install the new
     theme directory. See [SDDM.md](SDDM.md).
 13. **Terminal.** Starship prompt and fastfetch follow the shell
     (`scripts/apply-terminal-theme.sh`, called by `switch-shell.sh`; it retargets
     `~/.config/starship.toml` and `~/.config/fastfetch`). Add the shell's upstream
     paths to `UPSTREAM_STARSHIP` / `UPSTREAM_FASTFETCH` in `scripts/lib/terminal-theme.sh`
-    if it ships its own (read in place from the checkout; reachable with `--upstream`) — and
-    always commit our own
+    if it ships its own — upstream wins, read in place from the checkout — otherwise
     commit `dotfiles/terminal/<name>/starship.toml` and `fastfetch/{config.jsonc,logo.txt}`
-    (smoke fails without a source for each). A config that references files its checkout
+    (smoke fails without a source for each). Ours are **templates**: `{{primary}}` (#rrggbb)
+    and `{{primary.rgb}}` (`r;g;b`, for fastfetch's `38;2;…`) are filled from the shell's live
+    palette (`lib/palette.sh`) into `state/terminal/render/`, which is what gets linked; an
+    unknown token fails the render. `fish_greeting` runs `apply-terminal-theme.sh --refresh`
+    in the background, so a wallpaper change recolours the next prompt. Upstream shells can
+    also have an opt-in alternate in `dotfiles/terminal/_alt/<name>/`, worn with `--alt`
+    until the next switch, or for every shell from now on with `--use alt` (the
+    `state/terminal/prefer-alt` flag; `--use upstream` clears it). Design each one from the shell's own identity — its logo,
+    mascot and signature surface (ambxst's notch, Dux's spy duck, noctalia's owl on the
+    moon, xenon's flame, ii's chips) — not from its picker blurb. A config that references files its checkout
     keeps elsewhere (ryoku's emblem) lists them in `UPSTREAM_FASTFETCH_EXTRAS`; the applier
-    then links a composed directory under `state/terminal/fastfetch/<name>/`. Every shell has its own config in `dotfiles/terminal/<name>/`; the upstream copy stays one
-    flag away (`scripts/apply-terminal-theme.sh --upstream <name>`, until the next switch), and
-    deleting a shell's file there makes upstream the default again. Never run an upstream installer that
+    then links a composed directory under `state/terminal/fastfetch/<name>/`. Never run an upstream installer that
     would symlink these two paths itself (glyph's did).
 14. **Verify:** `bash tests/smoke.sh`,
     `DCLI_HYPRMOD_SHELL=<name> Hyprland --verify-config -c ~/.config/hypr/hyprland.lua`,

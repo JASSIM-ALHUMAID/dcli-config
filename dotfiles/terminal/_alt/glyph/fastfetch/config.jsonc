@@ -1,0 +1,90 @@
+// glyph (alt) — Nothing's glyph interface: dot meters, one red dot.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "~/.config/fastfetch/logo.txt",
+    "color": {
+      "1": "38;2;{{text.rgb}}",
+      "2": "38;2;{{primary.rgb}}"
+    },
+    "padding": {
+      "top": 2,
+      "left": 2,
+      "right": 4
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "38;2;{{secondary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": {
+        "elapsed": "●",
+        "total": "○"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 10,
+      "color": {
+        "elapsed": "38;2;{{text.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
+      }
+    },
+    "percent": {
+      "color": {
+        "green": "38;2;{{text.rgb}}",
+        "yellow": "38;2;{{text.rgb}}",
+        "red": "38;2;{{primary.rgb}}"
+      }
+    }
+  },
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[38;2;{{text.rgb}}m{$USER}\u001b[0m  \u001b[38;2;{{primary.rgb}}m●\u001b[0m"
+    },
+    "break",
+    {
+      "type": "os",
+      "key": "OS      "
+    },
+    {
+      "type": "kernel",
+      "key": "KERNEL  "
+    },
+    {
+      "type": "wm",
+      "key": "WM      ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "memory",
+      "key": "MEMORY  ",
+      "percent": {
+        "type": [
+          "bar"
+        ]
+      }
+    },
+    {
+      "type": "disk",
+      "key": "DISK    ",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar"
+        ]
+      }
+    },
+    {
+      "type": "uptime",
+      "key": "UPTIME  "
+    }
+  ]
+}

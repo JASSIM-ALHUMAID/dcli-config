@@ -2,6 +2,16 @@
 # config, swapped on every switch by scripts/apply-terminal-theme.sh, and the
 # flags a config expects belong to that config, not to the greeting.
 function fish_greeting
+    # dcli's own prompt/fastfetch configs wear the shell's live palette; a new
+    # wallpaper recolours a Material You shell mid-session, so each terminal
+    # re-renders them in the background (a no-op when nothing changed). The
+    # render is atomic, so the fastfetch below never reads a half-written file.
+    set -l refresher ~/.config/dcli/scripts/apply-terminal-theme.sh
+    if test -x $refresher
+        command $refresher --refresh &>/dev/null &
+        disown 2>/dev/null
+    end
+
     command -q fastfetch; or return
 
     set -l active_conf ~/.config/hypr/shells/active.conf
@@ -10,9 +20,8 @@ function fish_greeting
 
     switch "$active"
         case caelestia
-            # Upstream's config (apply-terminal-theme.sh --upstream) has "logo": null
-            # and indents its own keys, so the banner and padding are for that one only;
-            # ours carries its own logo.
+            # Upstream's config has "logo": null and indents its own keys, so the
+            # banner and padding belong to it; the --alt one carries its own logo.
             if string match -q '*"logo": null*' < ~/.config/fastfetch/config.jsonc 2>/dev/null
                 echo -ne '\x1b[38;5;16m' # primary colour
                 echo '     ______           __          __  _       '

@@ -1,12 +1,12 @@
-// end4 — Illogical Impulse: pastel Material You, the spark of an impulse.
+// end4 — illogical-impulse: Material 3 chips for keys, the logo's trailing dots.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "file",
     "source": "~/.config/fastfetch/logo.txt",
     "color": {
-      "1": "95",
-      "2": "96"
+      "1": "38;2;{{primary.rgb}}"
     },
     "padding": {
       "top": 1,
@@ -17,64 +17,46 @@
   "display": {
     "separator": "  ",
     "color": {
-      "keys": "96",
-      "title": "97",
-      "output": "97",
-      "separator": "90"
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
     }
   },
   "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{primary.rgb}}m󰛄 \u001b[1m\u001b[38;2;{{primary.rgb}}m illogical impulse\u001b[0m"
+    },
     "break",
     {
-      "type": "title",
-      "color": {
-        "user": "1;96",
-        "at": "90",
-        "host": "1;97"
-      }
-    },
-    {
-      "type": "separator",
-      "string": "─",
-      "outputColor": "90"
-    },
-    {
       "type": "os",
-      "key": "os        "
+      "key": "\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[48;2;{{surfaceVariant.rgb}}m\u001b[38;2;{{primary.rgb}}m os      \u001b[0m\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[0m"
     },
     {
       "type": "kernel",
-      "key": "kernel    ",
-      "format": "{release}"
+      "key": "\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[48;2;{{surfaceVariant.rgb}}m\u001b[38;2;{{primary.rgb}}m kernel  \u001b[0m\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[0m"
     },
     {
       "type": "wm",
-      "key": "wm        ",
+      "key": "\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[48;2;{{surfaceVariant.rgb}}m\u001b[38;2;{{primary.rgb}}m wm      \u001b[0m\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[0m",
       "format": "{pretty-name}"
     },
     {
-      "type": "command",
-      "key": "shell     ",
-      "text": "echo 'quickshell · illogical impulse'"
-    },
-    {
-      "type": "terminal",
-      "key": "term      ",
-      "format": "{pretty-name}"
-    },
-    {
-      "type": "uptime",
-      "key": "uptime    "
+      "type": "cpu",
+      "key": "\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[48;2;{{surfaceVariant.rgb}}m\u001b[38;2;{{primary.rgb}}m cpu     \u001b[0m\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[0m",
+      "format": "{name}"
     },
     {
       "type": "memory",
-      "key": "memory    "
+      "key": "\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[48;2;{{surfaceVariant.rgb}}m\u001b[38;2;{{primary.rgb}}m memory  \u001b[0m\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[0m"
+    },
+    {
+      "type": "uptime",
+      "key": "\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[48;2;{{surfaceVariant.rgb}}m\u001b[38;2;{{primary.rgb}}m uptime  \u001b[0m\u001b[38;2;{{surfaceVariant.rgb}}m\u001b[0m"
     },
     "break",
     {
-      "type": "colors",
-      "symbol": "circle"
-    },
-    "break"
+      "type": "custom",
+      "format": "\u001b[38;2;{{primary.rgb}}m  ●  \u001b[38;2;{{secondary.rgb}}m●  \u001b[38;2;{{tertiary.rgb}}m•  \u001b[38;2;{{outline.rgb}}m·\u001b[0m"
+    }
   ]
 }

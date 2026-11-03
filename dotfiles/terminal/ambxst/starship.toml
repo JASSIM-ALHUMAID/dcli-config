@@ -1,41 +1,35 @@
-# ambxst — command deck: a two-line HUD frame, magenta + cyan on black.
+# ambxst — the notch: one dark island (path · branch · clock), the blob's face below it.
 add_newline = true
 command_timeout = 300
-palette = "deck"
 format = """
-[┌─](fg:frame)$directory$git_branch$git_status$cmd_duration
-[└─](fg:frame)$character"""
-
-[palettes.deck]
-frame = "#6b3fa0"
-magenta = "#e879f9"
-cyan = "#22d3ee"
-amber = "#fbbf24"
-alert = "#fb7185"
+[](fg:{{surfaceContainer}})$directory$git_branch$git_status$time[](fg:{{surfaceContainer}})
+$character"""
 
 [directory]
-style = "bold fg:cyan"
+style = "bold fg:{{primary}} bg:{{surfaceContainer}}"
 truncation_length = 3
 truncation_symbol = "…/"
 read_only = " 󰌾"
-read_only_style = "fg:alert"
-format = "[ ◈ ](fg:magenta)[$path]($style)[$read_only]($read_only_style)"
+read_only_style = "fg:{{error}} bg:{{surfaceContainer}}"
+format = "[ $path]($style)[$read_only]($read_only_style)"
 
 [git_branch]
-symbol = ""
-style = "fg:magenta"
-format = "[ ┊ 󰊢 $branch]($style)"
+symbol = "󰊢"
+style = "fg:{{secondary}} bg:{{surfaceContainer}}"
+format = "[  $symbol $branch]($style)"
 
 [git_status]
-style = "fg:amber"
-format = "[ $all_status$ahead_behind]($style)"
+style = "fg:{{tertiary}} bg:{{surfaceContainer}}"
+format = "[( $all_status$ahead_behind)]($style)"
 
-[cmd_duration]
-min_time = 2000
-style = "fg:amber"
-format = "[ ┊ 󰔚 $duration]($style)"
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}} bg:{{surfaceContainer}}"
+format = "[  \U000f0150 $time ]($style)"
 
+# the face: happy, puzzled on a failed command, asleep in vi normal mode
 [character]
-success_symbol = "[▸](bold fg:cyan)"
-error_symbol = "[▸](bold fg:alert)"
-vimcmd_symbol = "[◂](bold fg:magenta)"
+success_symbol = "[ •‿•](bold fg:{{primary}})"
+error_symbol = "[ •_•](bold fg:{{error}})"
+vimcmd_symbol = "[ -‿-](bold fg:{{tertiary}})"

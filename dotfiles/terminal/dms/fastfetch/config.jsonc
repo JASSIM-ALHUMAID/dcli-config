@@ -1,12 +1,12 @@
-// dms — Dux Shell: Material purple, a duck-quiet emblem, rose accents.
+// dms — Dux Shell's spy duck: the greeting is a field dossier.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "file",
     "source": "~/.config/fastfetch/logo.txt",
     "color": {
-      "1": "35",
-      "2": "95"
+      "1": "38;2;{{primary.rgb}}"
     },
     "padding": {
       "top": 1,
@@ -15,66 +15,64 @@
     }
   },
   "display": {
-    "separator": "  ",
+    "separator": " ",
     "color": {
-      "keys": "95",
-      "title": "37",
-      "output": "37",
-      "separator": "90"
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
     }
   },
   "modules": [
-    "break",
     {
-      "type": "title",
-      "color": {
-        "user": "1;95",
-        "at": "90",
-        "host": "1;37"
-      }
+      "type": "custom",
+      "format": "\u001b[48;2;{{error.rgb}}m\u001b[1;38;2;{{background.rgb}}m CLASSIFIED \u001b[0m  \u001b[1m\u001b[38;2;{{primary.rgb}}mDUX · FIELD REPORT\u001b[0m"
     },
     {
-      "type": "separator",
-      "string": "─",
-      "outputColor": "90"
+      "type": "custom",
+      "format": "\u001b[38;2;{{outline.rgb}}m──────────────────────────────────\u001b[0m"
+    },
+    {
+      "type": "title",
+      "key": "AGENT    ",
+      "format": "{user-name}@{host-name}"
     },
     {
       "type": "os",
-      "key": "os        "
+      "key": "OS       "
     },
     {
       "type": "kernel",
-      "key": "kernel    ",
-      "format": "{release}"
+      "key": "KERNEL   "
     },
     {
       "type": "wm",
-      "key": "wm        ",
+      "key": "WM       ",
       "format": "{pretty-name}"
     },
     {
       "type": "command",
-      "key": "shell     ",
-      "text": "echo 'quickshell · dux-shell'"
+      "key": "SHELL    ",
+      "text": "echo 'dux shell'"
     },
     {
-      "type": "terminal",
-      "key": "term      ",
-      "format": "{pretty-name}"
-    },
-    {
-      "type": "uptime",
-      "key": "uptime    "
+      "type": "cpu",
+      "key": "CPU      ",
+      "format": "{name}"
     },
     {
       "type": "memory",
-      "key": "memory    "
+      "key": "MEMORY   "
     },
-    "break",
     {
-      "type": "colors",
-      "symbol": "circle"
+      "type": "uptime",
+      "key": "ON DUTY  "
     },
-    "break"
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{outline.rgb}}m──────────────────────────────────\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{surfaceVariant.rgb}}m█████ ███████ ███ ████\u001b[0m  \u001b[38;2;{{outline.rgb}}meyes only\u001b[0m"
+    }
   ]
 }

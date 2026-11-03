@@ -1,12 +1,12 @@
-// end4pc — Illogical Impulse, remixed by pctrade: end4's spark on a PC-tower frame.
+// end4pc — illogical-impulse remixed: mirrored logo, a B-side tracklist.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "file",
     "source": "~/.config/fastfetch/logo.txt",
     "color": {
-      "1": "93",
-      "2": "95"
+      "1": "38;2;{{tertiary.rgb}}"
     },
     "padding": {
       "top": 1,
@@ -17,64 +17,67 @@
   "display": {
     "separator": "  ",
     "color": {
-      "keys": "93",
-      "title": "97",
-      "output": "97",
-      "separator": "90"
+      "keys": "38;2;{{tertiary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": {
+        "elapsed": "━",
+        "total": "─"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 16,
+      "color": {
+        "elapsed": "38;2;{{tertiary.rgb}}",
+        "total": "38;2;{{surfaceVariant.rgb}}"
+      }
     }
   },
   "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{tertiary.rgb}}m󰛄 \u001b[1m\u001b[38;2;{{tertiary.rgb}}m illogical impulse\u001b[0m\u001b[38;2;{{outline.rgb}}m · remixed by pctrade\u001b[0m"
+    },
     "break",
     {
-      "type": "title",
-      "color": {
-        "user": "1;93",
-        "at": "90",
-        "host": "1;97"
-      }
-    },
-    {
-      "type": "separator",
-      "string": "─",
-      "outputColor": "90"
-    },
-    {
       "type": "os",
-      "key": "os        "
+      "key": "\u001b[38;2;{{outline.rgb}}m01\u001b[0m  \u001b[1m\u001b[38;2;{{tertiary.rgb}}mos      \u001b[0m"
     },
     {
       "type": "kernel",
-      "key": "kernel    ",
-      "format": "{release}"
+      "key": "\u001b[38;2;{{outline.rgb}}m02\u001b[0m  \u001b[1m\u001b[38;2;{{tertiary.rgb}}mkernel  \u001b[0m"
     },
     {
       "type": "wm",
-      "key": "wm        ",
+      "key": "\u001b[38;2;{{outline.rgb}}m03\u001b[0m  \u001b[1m\u001b[38;2;{{tertiary.rgb}}mwm      \u001b[0m",
       "format": "{pretty-name}"
     },
     {
-      "type": "command",
-      "key": "shell     ",
-      "text": "echo 'quickshell · illogical impulse (pc remix)'"
-    },
-    {
-      "type": "terminal",
-      "key": "term      ",
-      "format": "{pretty-name}"
-    },
-    {
-      "type": "uptime",
-      "key": "uptime    "
+      "type": "cpu",
+      "key": "\u001b[38;2;{{outline.rgb}}m04\u001b[0m  \u001b[1m\u001b[38;2;{{tertiary.rgb}}mcpu     \u001b[0m",
+      "format": "{name}"
     },
     {
       "type": "memory",
-      "key": "memory    "
+      "key": "\u001b[38;2;{{outline.rgb}}m05\u001b[0m  \u001b[1m\u001b[38;2;{{tertiary.rgb}}mmemory  \u001b[0m",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      }
+    },
+    {
+      "type": "uptime",
+      "key": "\u001b[38;2;{{outline.rgb}}m06\u001b[0m  \u001b[1m\u001b[38;2;{{tertiary.rgb}}muptime  \u001b[0m"
     },
     "break",
     {
-      "type": "colors",
-      "symbol": "circle"
-    },
-    "break"
+      "type": "custom",
+      "format": "\u001b[38;2;{{tertiary.rgb}}m 󰐊  \u001b[38;2;{{text.rgb}}mside B\u001b[38;2;{{outline.rgb}}m  ·  now playing on \u001b[0m\u001b[38;2;{{text.rgb}}m{$USER}\u001b[0m"
+    }
   ]
 }

@@ -1,0 +1,40 @@
+# caelestia (alt) — softly glowing: a sparkle, the path, and the clock on the right like its bar.
+add_newline = true
+command_timeout = 300
+format = """
+[󰙴 ](fg:{{tertiary}})$directory$git_branch$git_status$cmd_duration
+$character"""
+right_format = "$time"
+
+[directory]
+style = "bold fg:{{primary}}"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "fg:{{error}}"
+format = "[$path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "󰊢"
+style = "fg:{{secondary}}"
+format = "[  $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[  $duration]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time]($style)"
+
+[character]
+success_symbol = "[❯](bold fg:{{primary}})"
+error_symbol = "[❯](bold fg:{{error}})"
+vimcmd_symbol = "[❮](bold fg:{{tertiary}})"

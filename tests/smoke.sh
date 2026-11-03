@@ -681,9 +681,13 @@ fi
 
 # ── terminal: every shell has a prompt and a fastfetch config ────────────────
 # Static: each registry shell resolves to an upstream path (read live from its
-# checkout) or a committed dotfiles/terminal override; overrides must be valid.
-# apply-terminal-theme.sh then retargets fixture links without touching real
-# files, and backs up (never deletes) a real file in the way.
+# checkout) or a committed dotfiles/terminal template. Every template (main and
+# _alt) must render with nothing left unfilled and yield configs fastfetch and
+# starship accept; a live palette file must reach the rendered output, and
+# --refresh must pick up a palette change. apply-terminal-theme.sh retargets
+# fixture links without touching real files, and backs up (never deletes) a real
+# file in the way. All rendering goes to a fixture TERMINAL_STATE_DIR, never the
+# repo's state/.
 terminal_missing=""
 for name in "${registry_shells[@]}"; do
     for tool in starship fastfetch; do
@@ -701,45 +705,93 @@ if [ -z "$terminal_missing" ]; then
 else
     bad "terminal: no source for:$terminal_missing"
 fi
-if command -v fastfetch >/dev/null 2>&1; then
-    t_bad=""
-    for cfg in "$REPO_DIR"/dotfiles/terminal/*/fastfetch/config.jsonc; do
-        [ -e "$cfg" ] || continue
-        fastfetch -c "$cfg" --pipe true >/dev/null 2>&1 || t_bad="$t_bad ${cfg#"$REPO_DIR"/}"
-    done
-    if [ -z "$t_bad" ]; then ok "terminal: shipped fastfetch configs run"; else bad "terminal: fastfetch fails:$t_bad"; fi
-fi
+
 t_home="$fixture_home/term"
-mkdir -p "$t_home/.config"
+t_state="$fixture_home/term-state"
+mkdir -p "$t_home/.config/hypr/shells"
+# render_all: every template with the fixture home's palette; prints failures.
+t_render_all=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
+    . "'"$REPO_DIR"'/scripts/lib/wallpaper.sh" && . "'"$REPO_DIR"'/scripts/lib/palette.sh" &&
+    . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh" || exit 1
+    for src in "$TERMINAL_DOTFILES_DIR"/*/starship.toml "$TERMINAL_DOTFILES_DIR"/*/fastfetch \
+               "$TERMINAL_DOTFILES_DIR"/_alt/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt/*/fastfetch; do
+        [ -e "$src" ] || continue
+        rel=${src#"$TERMINAL_DOTFILES_DIR"/}; shell=${rel#_alt/}; shell=${shell%%/*}
+        terminal_render "$shell" "$src" 2>/dev/null || { echo "render:$rel"; continue; }
+        out=$(terminal_rendered_path "$src")
+        grep -rq "{{" "$out" && echo "unfilled:$rel"
+        if [ -d "$out" ]; then
+            command -v fastfetch >/dev/null 2>&1 || continue
+            [ -z "$(fastfetch -c "$out/config.jsonc" --logo "$out/logo.txt" --pipe true 2>&1 >/dev/null)" ] || echo "fastfetch:$rel"
+        else
+            command -v starship >/dev/null 2>&1 || continue
+            STARSHIP_CONFIG="$out" starship prompt --status=1 --cmd-duration=5000 2>&1 | grep -qi "warn\|error" && echo "starship:$rel"
+        fi
+    done' 2>&1)
+if [ -z "$t_render_all" ]; then
+    ok "terminal: every template renders cleanly (fastfetch + starship accept the output)"
+else
+    bad "terminal: template problems: $(echo "$t_render_all" | tr '\n' ' ')"
+fi
+
+# A live palette must reach the rendered prompt, and --refresh must follow it.
+xenon_palette() { # <primary hex>
+    mkdir -p "$t_home/.cache/xenon"
+    jq -n --arg p "$1" '{colors: ({background:"#101010",surface:"#101010",surface_container:"#202020",
+        surface_variant:"#303030",on_surface:"#eeeeee",primary:$p,on_primary:"#000000",secondary:"#aaaaaa",
+        tertiary:"#bbbbbb",error:"#ff0000",outline:"#777777"} | map_values({dark: .}))}' >"$t_home/.cache/xenon/colors.json"
+}
+printf 'xenon\n' >"$t_home/.config/hypr/shells/active.conf"
 printf 'user prompt\n' >"$t_home/.config/starship.toml"
-if HOME="$t_home" "$REPO_DIR/scripts/apply-terminal-theme.sh" xenon >/dev/null 2>&1 &&
+xenon_palette "#12ab34"
+t_apply() { HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" "$@" >/dev/null 2>&1; }
+if t_apply xenon &&
     [ -L "$t_home/.config/starship.toml" ] &&
-    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$(readlink -f "$REPO_DIR/dotfiles/terminal/xenon/starship.toml")" ] &&
-    [ "$(readlink -f "$t_home/.config/fastfetch")" = "$(readlink -f "$REPO_DIR/dotfiles/terminal/xenon/fastfetch")" ] &&
+    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/main/xenon/starship.toml" ] &&
+    [ "$(readlink -f "$t_home/.config/fastfetch")" = "$t_state/render/main/xenon/fastfetch" ] &&
     grep -q 'user prompt' "$t_home"/.config/starship.toml.bak-* &&
-    HOME="$t_home" "$REPO_DIR/scripts/apply-terminal-theme.sh" noctalia >/dev/null 2>&1 &&
-    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$(readlink -f "$REPO_DIR/dotfiles/terminal/noctalia/starship.toml")" ]; then
-    ok "terminal: apply retargets links, backs up a real file, retargets again"
+    grep -q '#12ab34' "$t_home/.config/starship.toml" &&
+    t_apply noctalia &&
+    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/main/noctalia/starship.toml" ]; then
+    ok "terminal: apply renders with the live palette, links, backs up a real file, retargets"
 else
     bad "terminal: apply-terminal-theme.sh fixture run failed"
 fi
-t_ours=$("$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run ryoku 2>&1)
-t_up=$("$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --upstream ryoku 2>&1)
-if [ ! -d "$HOME/.local/share/ryoku-shell/ryoku/apps" ]; then
-    ok "terminal: --upstream check skipped (no ryoku checkout)"
-elif grep -q "dotfiles/terminal/ryoku/starship.toml" <<<"$t_ours" && grep -q "ryoku-shell/ryoku/apps/starship" <<<"$t_up"; then
-    ok "terminal: ours by default, --upstream selects the checkout's config"
+t_apply xenon
+xenon_palette "#fe0dcb"
+if t_apply --refresh && grep -q '#fe0dcb' "$t_home/.config/starship.toml"; then
+    ok "terminal: --refresh re-renders when the shell's palette changes"
 else
-    bad "terminal: default/--upstream resolution wrong: $t_ours | $t_up"
+    bad "terminal: --refresh did not pick up the new palette"
 fi
-t_bad=""
-for cfg in "$REPO_DIR"/dotfiles/terminal/*/starship.toml; do
-    [ -e "$cfg" ] || continue
-    if command -v starship >/dev/null 2>&1 && STARSHIP_CONFIG="$cfg" starship prompt 2>&1 | grep -qi 'warn\|error'; then
-        t_bad="$t_bad ${cfg#"$REPO_DIR"/}"
-    fi
-done
-if [ -z "$t_bad" ]; then ok "terminal: shipped starship configs parse"; else bad "terminal: starship warns:$t_bad"; fi
+t_alt=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt caelestia 2>&1)
+if grep -q "render/alt/caelestia/starship.toml" <<<"$t_alt" && grep -q "render/alt/caelestia/fastfetch" <<<"$t_alt"; then
+    ok "terminal: --alt resolves the opt-in alternates"
+else
+    bad "terminal: --alt did not pick _alt/caelestia: $t_alt"
+fi
+# (re-applying caelestia after --use upstream fails here by design: the fixture
+# has no caelestia checkout, so the link is left alone and the exit is non-zero)
+printf 'caelestia\n' >"$t_home/.config/hypr/shells/active.conf"
+if t_apply --use alt && [ -e "$t_state/prefer-alt" ] &&
+    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/alt/caelestia/starship.toml" ] &&
+    t_apply noctalia && [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/main/noctalia/starship.toml" ] &&
+    { t_apply --use upstream || true; } && [ ! -e "$t_state/prefer-alt" ]; then
+    ok "terminal: --use alt persists across switches (a shell without one keeps ours); --use upstream ends it"
+else
+    bad "terminal: --use alt|upstream did not persist or reset"
+fi
+t_bad_dir="$fixture_home/term-bad"
+mkdir -p "$t_bad_dir/xenon"
+printf 'format = "{{nosuchkey}}"\n' >"$t_bad_dir/xenon/starship.toml"
+if HOME="$t_home" TERMINAL_STATE_DIR="$fixture_home/term-bad-state" TERMINAL_DOTFILES_DIR="$t_bad_dir" bash -c '
+    . "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; . "'"$REPO_DIR"'/scripts/lib/palette.sh"; . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh"
+    ! terminal_render xenon "$TERMINAL_DOTFILES_DIR/xenon/starship.toml" 2>/dev/null &&
+    [ ! -e "$TERMINAL_RENDER_DIR/main/xenon/starship.toml" ]'; then
+    ok "terminal: an unknown palette token fails the render and ships nothing"
+else
+    bad "terminal: unknown palette token was rendered"
+fi
 if grep -q 'terminal_theme_apply "\$SHELL_NAME"' "$REPO_DIR/scripts/switch-shell.sh"; then
     ok "terminal: switch-shell.sh applies the terminal theme"
 else

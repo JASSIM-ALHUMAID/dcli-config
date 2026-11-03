@@ -1,0 +1,33 @@
+# end4 (alt) — illogical-impulse: Material chips, and the logo's asterisk with its dot trail as the prompt.
+add_newline = true
+command_timeout = 300
+format = """
+$directory$git_branch$git_status$cmd_duration
+$character"""
+
+[directory]
+style = "bold fg:{{primary}} bg:{{surfaceVariant}}"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "fg:{{error}} bg:{{surfaceVariant}}"
+format = "[](fg:{{surfaceVariant}})[󰉋 $path]($style)[$read_only]($read_only_style)[](fg:{{surfaceVariant}}) "
+
+[git_branch]
+symbol = "󰊢"
+style = "fg:{{secondary}} bg:{{surfaceVariant}}"
+format = "[](fg:{{surfaceVariant}})[$symbol $branch]($style)[](fg:{{surfaceVariant}}) "
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "([$all_status$ahead_behind]($style) )"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[󰔟 $duration]($style) "
+
+[character]
+success_symbol = "[·•● ](fg:{{outline}})[\U000f06c4](bold fg:{{primary}})"
+error_symbol = "[·•● ](fg:{{outline}})[\U000f06c4](bold fg:{{error}})"
+vimcmd_symbol = "[·•● ](fg:{{outline}})[\U000f06c4](bold fg:{{tertiary}})"

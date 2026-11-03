@@ -1,0 +1,33 @@
+# ryoku (alt) — a hanko seal as the prompt; the path in ink, the branch in the accent.
+add_newline = true
+command_timeout = 300
+format = """
+$directory$git_branch$git_status$cmd_duration
+$character"""
+
+[directory]
+style = "bold fg:{{text}}"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "fg:{{error}}"
+format = "[$path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "󰊢"
+style = "fg:{{primary}}"
+format = "[ ─ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[ ─ $duration]($style)"
+
+[character]
+success_symbol = "[ 力 ](bold fg:#f3ede1 bg:#e2342a) "
+error_symbol = "[ 力 ](bold fg:#e2342a bg:#f3ede1) "
+vimcmd_symbol = "[ 力 ](bold fg:#f3ede1 bg:{{outline}}) "

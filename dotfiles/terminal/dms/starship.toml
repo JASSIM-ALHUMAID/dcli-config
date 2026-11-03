@@ -1,41 +1,33 @@
-# dms — Dux Shell: Material-purple pills with rounded caps, a duck-quiet ❯.
+# dms — Dux: agent mark, the case file (path) in a Material pill, a quiet ❯.
 add_newline = true
 command_timeout = 300
-palette = "dux"
 format = """
-$directory$git_branch$git_status$cmd_duration
+[󰗹 ](bold fg:{{primary}})$directory$git_branch$git_status$cmd_duration
 $character"""
 
-[palettes.dux]
-pill = "#2b2930"
-purple = "#d0bcff"
-rose = "#efb8c8"
-mist = "#ccc2dc"
-alert = "#f2b8b5"
-
 [directory]
-style = "bold fg:purple bg:pill"
+style = "bold fg:{{onPrimary}} bg:{{primary}}"
 truncation_length = 3
 truncation_symbol = "…/"
 read_only = " 󰌾"
-read_only_style = "fg:alert bg:pill"
-format = "[](fg:pill)[󰉋 $path]($style)[$read_only]($read_only_style)[](fg:pill) "
+read_only_style = "fg:{{onPrimary}} bg:{{primary}}"
+format = "[](fg:{{primary}})[󰉖 $path]($style)[$read_only]($read_only_style)[](fg:{{primary}}) "
 
 [git_branch]
 symbol = "󰊢"
-style = "bold fg:rose bg:pill"
-format = "[](fg:pill)[$symbol $branch]($style)[](fg:pill) "
+style = "fg:{{secondary}} bg:{{surfaceContainer}}"
+format = "[](fg:{{surfaceContainer}})[$symbol $branch]($style)[](fg:{{surfaceContainer}}) "
 
 [git_status]
-style = "fg:mist bg:pill"
-format = "([](fg:pill)[$all_status$ahead_behind]($style)[](fg:pill) )"
+style = "fg:{{tertiary}}"
+format = "([$all_status$ahead_behind]($style) )"
 
 [cmd_duration]
 min_time = 2000
-style = "fg:mist bg:pill"
-format = "[](fg:pill)[󰔚 $duration]($style)[](fg:pill) "
+style = "fg:{{outline}}"
+format = "[󰔟 $duration]($style) "
 
 [character]
-success_symbol = "[❯](bold fg:purple)"
-error_symbol = "[❯](bold fg:alert)"
-vimcmd_symbol = "[❮](bold fg:rose)"
+success_symbol = "[❯](bold fg:{{primary}})"
+error_symbol = "[❯](bold fg:{{error}})"
+vimcmd_symbol = "[❮](bold fg:{{tertiary}})"

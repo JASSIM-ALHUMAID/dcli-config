@@ -1,0 +1,30 @@
+# glyph (alt) — dot-matrix: dots as separators, the prompt a dot that turns red on error.
+add_newline = false
+format = "$directory$git_branch$git_status$cmd_duration$character"
+
+[directory]
+style = "fg:{{text}}"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " ○"
+read_only_style = "fg:{{primary}}"
+format = "[● ](fg:{{outline}})[$path]($style)[$read_only]($read_only_style) "
+
+[git_branch]
+symbol = ""
+style = "fg:{{secondary}}"
+format = "[· $branch]($style) "
+
+[git_status]
+style = "fg:{{secondary}}"
+format = "([$all_status$ahead_behind]($style) )"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{secondary}}"
+format = "[· $duration]($style) "
+
+[character]
+success_symbol = "[●](fg:{{text}})"
+error_symbol = "[●](fg:{{primary}})"
+vimcmd_symbol = "[○](fg:{{text}})"

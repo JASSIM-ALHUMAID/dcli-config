@@ -1,38 +1,31 @@
-# xenon — noble gas, lean: one line, xenon-lamp blue-white, nothing you don't need.
+# xenon — lean: one line, the flame as the prompt (it burns red when a command fails).
 add_newline = false
 command_timeout = 200
-palette = "lamp"
 format = "$directory$git_branch$git_status$cmd_duration$character"
 
-[palettes.lamp]
-glow = "#a5d8ff"
-core = "#e7f5ff"
-haze = "#5c7a99"
-alert = "#ff8787"
-
 [directory]
-style = "fg:glow"
+style = "bold fg:{{primary}}"
 truncation_length = 2
 truncation_symbol = "…/"
-read_only = " ⌀"
-read_only_style = "fg:alert"
+read_only = " 󰌾"
+read_only_style = "fg:{{error}}"
 format = "[$path]($style)[$read_only]($read_only_style) "
 
 [git_branch]
 symbol = ""
-style = "fg:core"
+style = "fg:{{secondary}}"
 format = "[$branch]($style) "
 
 [git_status]
-style = "fg:haze"
+style = "fg:{{tertiary}}"
 format = "([$all_status$ahead_behind]($style) )"
 
 [cmd_duration]
 min_time = 3000
-style = "fg:haze"
-format = "[$duration]($style) "
+style = "fg:#ff9500"
+format = "[󰔟 $duration]($style) "
 
 [character]
-success_symbol = "[◆](bold fg:glow)"
-error_symbol = "[◆](bold fg:alert)"
-vimcmd_symbol = "[◇](bold fg:glow)"
+success_symbol = "[󰈸](bold fg:#ff9500)"
+error_symbol = "[󰈸](bold fg:#ff3d1f)"
+vimcmd_symbol = "[󰈸](bold fg:#ffd000)"

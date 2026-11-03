@@ -318,14 +318,18 @@ check_sddm() {
 # Prompt and fastfetch follow the active shell (docs/ARCHITECTURE.md). WARN only:
 # a shell whose checkout is not installed simply keeps the previous config.
 check_terminal_theme() {
-    local cur tool link want
+    local cur tool link want alt worn
     cur=$(current_shell) || return
     for tool in starship fastfetch; do
         if [ "$tool" = starship ]; then link="$STARSHIP_LINK"; else link="$FASTFETCH_LINK"; fi
-        if ! want=$(terminal_source "$tool" "$cur"); then
+        worn=$(readlink -m "$link")
+        alt=$(TERMINAL_PREFER_ALT=1 terminal_target "$tool" "$cur" 2>/dev/null || true)
+        if ! want=$(terminal_target "$tool" "$cur"); then
             warn "terminal: no $tool config found for $cur (checkout not installed?)"
-        elif [ -L "$link" ] && [ "$(readlink -f "$link")" = "$(readlink -f "$want")" ]; then
+        elif [ -L "$link" ] && [ "$worn" = "$(readlink -m "$want")" ] && [ -e "$link" ]; then
             ok "terminal: $tool follows $cur"
+        elif [ -L "$link" ] && [ -n "$alt" ] && [ "$worn" = "$(readlink -m "$alt")" ] && [ -e "$link" ]; then
+            ok "terminal: $tool follows $cur (alternate, --alt)"
         else
             warn "terminal: ${link/#$HOME/\~} is not $cur's $tool config (run apply-terminal-theme.sh $cur)"
         fi
