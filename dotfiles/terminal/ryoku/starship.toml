@@ -1,0 +1,41 @@
+# ryoku (alt) — vermilion on parchment: a 力 seal for the prompt, torii-red accents, quiet ink path.
+add_newline = true
+command_timeout = 300
+palette = "ink"
+format = """
+$directory$git_branch$git_status$cmd_duration
+$character"""
+
+[palettes.ink]
+vermilion = "#e2342a"
+parchment = "#f3ede1"
+ink = "#8f8770"
+gold = "#d9a441"
+alert = "#ff5f56"
+
+[directory]
+style = "bold fg:parchment"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "fg:alert"
+format = "[■ ](fg:vermilion)[$path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "󰊢"
+style = "fg:gold"
+format = "[ ─ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:ink"
+format = "[ $all_status$ahead_behind]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:ink"
+format = "[ ─ $duration]($style)"
+
+[character]
+success_symbol = "[力](bold fg:vermilion) "
+error_symbol = "[力](bold fg:alert) "
+vimcmd_symbol = "[力](bold fg:gold) "

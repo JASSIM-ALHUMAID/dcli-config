@@ -1,0 +1,41 @@
+# end4pc (alt) — the PC remix: a retro tower-case prompt, amber phosphor on dark, block cursor.
+add_newline = true
+command_timeout = 300
+palette = "phosphor"
+format = """
+[╭─](fg:frame)$directory$git_branch$git_status$cmd_duration
+[╰─](fg:frame)$character"""
+
+[palettes.phosphor]
+frame = "#7a5c1e"
+amber = "#ffb000"
+green = "#7bd88f"
+dim = "#a07a2a"
+alert = "#ff6b6b"
+
+[directory]
+style = "bold fg:amber"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "fg:alert"
+format = "[▌](fg:amber)[$path]($style)[$read_only]($read_only_style)[▐](fg:amber)"
+
+[git_branch]
+symbol = "󰊢"
+style = "fg:green"
+format = "[ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:dim"
+format = "[ $all_status$ahead_behind]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:dim"
+format = "[ ⏱ $duration]($style)"
+
+[character]
+success_symbol = "[█](bold fg:amber)"
+error_symbol = "[█](bold fg:alert)"
+vimcmd_symbol = "[▓](bold fg:green)"

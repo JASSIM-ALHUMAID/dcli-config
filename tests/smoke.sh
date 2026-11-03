@@ -723,6 +723,23 @@ if HOME="$t_home" "$REPO_DIR/scripts/apply-terminal-theme.sh" xenon >/dev/null 2
 else
     bad "terminal: apply-terminal-theme.sh fixture run failed"
 fi
+t_ours=$("$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run ryoku 2>&1)
+t_up=$("$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --upstream ryoku 2>&1)
+if [ ! -d "$HOME/.local/share/ryoku-shell/ryoku/apps" ]; then
+    ok "terminal: --upstream check skipped (no ryoku checkout)"
+elif grep -q "dotfiles/terminal/ryoku/starship.toml" <<<"$t_ours" && grep -q "ryoku-shell/ryoku/apps/starship" <<<"$t_up"; then
+    ok "terminal: ours by default, --upstream selects the checkout's config"
+else
+    bad "terminal: default/--upstream resolution wrong: $t_ours | $t_up"
+fi
+t_bad=""
+for cfg in "$REPO_DIR"/dotfiles/terminal/*/starship.toml; do
+    [ -e "$cfg" ] || continue
+    if command -v starship >/dev/null 2>&1 && STARSHIP_CONFIG="$cfg" starship prompt 2>&1 | grep -qi 'warn\|error'; then
+        t_bad="$t_bad ${cfg#"$REPO_DIR"/}"
+    fi
+done
+if [ -z "$t_bad" ]; then ok "terminal: shipped starship configs parse"; else bad "terminal: starship warns:$t_bad"; fi
 if grep -q 'terminal_theme_apply "\$SHELL_NAME"' "$REPO_DIR/scripts/switch-shell.sh"; then
     ok "terminal: switch-shell.sh applies the terminal theme"
 else

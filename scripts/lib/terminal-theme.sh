@@ -7,7 +7,10 @@
 #   1. dotfiles/terminal/<shell>/{starship.toml,fastfetch/}  — ours, committed
 #   2. the shell's own upstream copy, read in place from its checkout so
 #      update-shells.sh keeps it current
-# Upstream wins wherever it exists (no override dir is created for those shells).
+# Every shell now has its own config in (1); the upstream copy stays one flag
+# away: TERMINAL_PREFER_UPSTREAM=1 (apply-terminal-theme.sh --upstream) skips (1)
+# until the next switch, and deleting a shell's dotfiles/terminal/<shell>/ file
+# makes upstream the default again.
 # Sourced, never executed: callers own `set -euo pipefail`.
 
 TERMINAL_LIB_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -52,16 +55,17 @@ TERMINAL_STATE_DIR="${TERMINAL_STATE_DIR:-$(readlink -f "$TERMINAL_LIB_DIR/../..
 # terminal_source <starship|fastfetch> <shell>: prints the path to link and
 # returns 0, or returns 1 when no candidate exists (checkout not installed yet).
 terminal_source() {
-  local tool="$1" shell="$2" ours upstream
+  local tool="$1" shell="$2" ours upstream prefer_ours=1
+  [ "${TERMINAL_PREFER_UPSTREAM:-0}" = 1 ] && prefer_ours=0
   if [ "$tool" = starship ]; then
     ours="$TERMINAL_DOTFILES_DIR/$shell/starship.toml"
     upstream="${UPSTREAM_STARSHIP[$shell]:-}"
-    [ -f "$ours" ] && { echo "$ours"; return 0; }
+    [ "$prefer_ours" = 1 ] && [ -f "$ours" ] && { echo "$ours"; return 0; }
     [ -n "$upstream" ] && [ -f "$upstream" ] && { echo "$upstream"; return 0; }
   else
     ours="$TERMINAL_DOTFILES_DIR/$shell/fastfetch"
     upstream="${UPSTREAM_FASTFETCH[$shell]:-}"
-    [ -f "$ours/config.jsonc" ] && { echo "$ours"; return 0; }
+    [ "$prefer_ours" = 1 ] && [ -f "$ours/config.jsonc" ] && { echo "$ours"; return 0; }
     if [ -n "$upstream" ] && [ -f "$upstream/config.jsonc" ]; then
       # Extras need a composed directory; terminal_compose_fastfetch fills it.
       if [ -n "${UPSTREAM_FASTFETCH_EXTRAS[$shell]:-}" ]; then
@@ -72,6 +76,9 @@ terminal_source() {
       return 0
     fi
   fi
+  # --upstream on a shell with no upstream copy (ambxst, dms, ...) keeps ours.
+  [ -f "$ours" ] && { echo "$ours"; return 0; }
+  [ -f "$ours/config.jsonc" ] && { echo "$ours"; return 0; }
   return 1
 }
 

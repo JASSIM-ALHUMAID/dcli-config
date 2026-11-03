@@ -225,11 +225,14 @@ sufficient. Work through all of these:
     (`scripts/apply-terminal-theme.sh`, called by `switch-shell.sh`; it retargets
     `~/.config/starship.toml` and `~/.config/fastfetch`). Add the shell's upstream
     paths to `UPSTREAM_STARSHIP` / `UPSTREAM_FASTFETCH` in `scripts/lib/terminal-theme.sh`
-    if it ships its own — upstream wins, read in place from the checkout — otherwise
+    if it ships its own (read in place from the checkout; reachable with `--upstream`) — and
+    always commit our own
     commit `dotfiles/terminal/<name>/starship.toml` and `fastfetch/{config.jsonc,logo.txt}`
     (smoke fails without a source for each). A config that references files its checkout
     keeps elsewhere (ryoku's emblem) lists them in `UPSTREAM_FASTFETCH_EXTRAS`; the applier
-    then links a composed directory under `state/terminal/fastfetch/<name>/`. Never run an upstream installer that
+    then links a composed directory under `state/terminal/fastfetch/<name>/`. Every shell has its own config in `dotfiles/terminal/<name>/`; the upstream copy stays one
+    flag away (`scripts/apply-terminal-theme.sh --upstream <name>`, until the next switch), and
+    deleting a shell's file there makes upstream the default again. Never run an upstream installer that
     would symlink these two paths itself (glyph's did).
 14. **Verify:** `bash tests/smoke.sh`,
     `DCLI_HYPRMOD_SHELL=<name> Hyprland --verify-config -c ~/.config/hypr/hyprland.lua`,

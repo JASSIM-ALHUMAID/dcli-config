@@ -2,7 +2,10 @@
 # Point ~/.config/starship.toml and ~/.config/fastfetch at the given shell's
 # prompt and system-info configs (resolution rules: lib/terminal-theme.sh).
 # Called by switch-shell.sh on every shell change; also runnable by hand:
-#   apply-terminal-theme.sh [--dry-run] <shell>
+#   apply-terminal-theme.sh [--dry-run] [--upstream] <shell>
+# --upstream wears the shell's own upstream prompt/fastfetch instead of ours in
+# dotfiles/terminal/<shell>/, until the next switch (a shell with no upstream copy
+# keeps ours).
 #
 # A symlink is simply retargeted. A real file or directory at either path is
 # the user's own and is moved aside to <path>.bak-<timestamp> first, never
@@ -20,14 +23,17 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 . "$SCRIPT_DIR/lib/terminal-theme.sh" || exit 1
 
 dry_run=0
-if [ "${1:-}" = "--dry-run" ]; then
-  dry_run=1
+while [ "${1:-}" = "--dry-run" ] || [ "${1:-}" = "--upstream" ]; do
+  case "$1" in
+    --dry-run) dry_run=1 ;;
+    --upstream) export TERMINAL_PREFER_UPSTREAM=1 ;;
+  esac
   shift
-fi
+done
 shell_name="${1:-}"
 load_registry || exit 1
 if ! printf '%s\n' "${KNOWN[@]}" | grep -qx -- "$shell_name"; then
-  echo "usage: apply-terminal-theme.sh [--dry-run] <${KNOWN[*]// /|}>" >&2
+  echo "usage: apply-terminal-theme.sh [--dry-run] [--upstream] <${KNOWN[*]// /|}>" >&2
   exit 2
 fi
 

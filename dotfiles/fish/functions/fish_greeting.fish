@@ -10,15 +10,21 @@ function fish_greeting
 
     switch "$active"
         case caelestia
-            echo -ne '\x1b[38;5;16m' # primary colour
-            echo '     ______           __          __  _       '
-            echo '    / ____/___ ____  / /__  _____/ /_(_)___ _ '
-            echo '   / /   / __ `/ _ \/ / _ \/ ___/ __/ / __ `/ '
-            echo '  / /___/ /_/ /  __/ /  __(__  ) /_/ / /_/ /  '
-            echo '  \____/\__,_/\___/_/\___/____/\__/_/\__,_/   '
-            set_color normal
-            # caelestia's config has no logo and indents its own keys
-            fastfetch --key-padding-left 5
+            # Upstream's config (apply-terminal-theme.sh --upstream) has "logo": null
+            # and indents its own keys, so the banner and padding are for that one only;
+            # ours carries its own logo.
+            if string match -q '*"logo": null*' < ~/.config/fastfetch/config.jsonc 2>/dev/null
+                echo -ne '\x1b[38;5;16m' # primary colour
+                echo '     ______           __          __  _       '
+                echo '    / ____/___ ____  / /__  _____/ /_(_)___ _ '
+                echo '   / /   / __ `/ _ \/ / _ \/ ___/ __/ / __ `/ '
+                echo '  / /___/ /_/ /  __/ /  __(__  ) /_/ / /_/ /  '
+                echo '  \____/\__,_/\___/_/\___/____/\__/_/\__,_/   '
+                set_color normal
+                fastfetch --key-padding-left 5
+            else
+                fastfetch
+            end
         case ryoku
             # ryoku-fastfetch exports this; its config prints it verbatim otherwise
             # (`command -q`, not a 2>/dev/null: fish reports an unknown command itself)
