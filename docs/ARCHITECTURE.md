@@ -85,7 +85,7 @@ These are the actual paths on a synced machine.
 | `~/.config/quickshell/caelestia` | the installed caelestia QML (written by the fork's scripts, refreshed by `sync-live.sh`) | fork |
 | `~/.config/caelestia` -> `~/Projects/shell/real/caelestia-configs` | caelestia's runtime config (`shell.json`, `keybinds.json`, `hypr-vars.lua`, `hypr-user.lua`) — version-controlled *inside the fork*, not here | `setup-caelestia.sh` |
 | `~/.local/lib/qt6/qml`, `~/.local/lib/caelestia` | the C++ plugin built from the fork | fork `scripts/install.sh --skip-sddm` |
-| `~/.local/share/caelestia` | upstream `caelestia-dots` dots clone; provides `hypr/hyprland.lua` (the Lua config caelestia loads). `~/.config/fish`, `~/.config/fastfetch` and `~/.config/uwsm` are symlinks into it, **not created by this repo** | `setup-caelestia.sh` |
+| `~/.local/share/caelestia` | upstream `caelestia-dots` dots clone; provides `hypr/hyprland.lua` (the Lua config caelestia loads). `~/.config/uwsm` is a symlink into it, **not created by this repo**. `~/.config/fish` is dcli's own (`dotfiles/fish`) and `~/.config/fastfetch` + `starship.toml` follow the active shell (`apply-terminal-theme.sh`) | `setup-caelestia.sh` |
 | `~/.local/src/ambxst`, `~/.local/share/ambxst` (link) | **ambxst fork** — origin `JASSIM-ALHUMAID/my-Ambxst`, branch `my-ambxst`, upstream `Axenide/Ambxst`; ships its own `hyprland.lua` | `setup-ambxst.sh` |
 | `~/.config/ambxst` -> `dcli/dotfiles/ambxst` | ambxst user config | `link-dotfiles.sh` |
 | `~/.local/share/dots-hyprland` | **end4 fork** — origin `JASSIM-ALHUMAID/my-end4`, branch `my-ii`, upstream `end-4/dots-hyprland` | `setup-end4.sh` |
@@ -221,6 +221,16 @@ sufficient. Work through all of these:
     colour file) in `scripts/render-sddm-theme.sh`; a bespoke theme goes in
     `sddm/themes/<name>/`. Re-run `scripts/install-sddm-theme.sh` to install the new
     theme directory. See [SDDM.md](SDDM.md).
-13. **Verify:** `bash tests/smoke.sh`,
+13. **Terminal.** Starship prompt and fastfetch follow the shell
+    (`scripts/apply-terminal-theme.sh`, called by `switch-shell.sh`; it retargets
+    `~/.config/starship.toml` and `~/.config/fastfetch`). Add the shell's upstream
+    paths to `UPSTREAM_STARSHIP` / `UPSTREAM_FASTFETCH` in `scripts/lib/terminal-theme.sh`
+    if it ships its own — upstream wins, read in place from the checkout — otherwise
+    commit `dotfiles/terminal/<name>/starship.toml` and `fastfetch/{config.jsonc,logo.txt}`
+    (smoke fails without a source for each). A config that references files its checkout
+    keeps elsewhere (ryoku's emblem) lists them in `UPSTREAM_FASTFETCH_EXTRAS`; the applier
+    then links a composed directory under `state/terminal/fastfetch/<name>/`. Never run an upstream installer that
+    would symlink these two paths itself (glyph's did).
+14. **Verify:** `bash tests/smoke.sh`,
     `DCLI_HYPRMOD_SHELL=<name> Hyprland --verify-config -c ~/.config/hypr/hyprland.lua`,
     `scripts/switch-shell.sh --dry-run <name>`, then `scripts/doctor.sh`.

@@ -1,0 +1,2 @@
+# Fish rewrites universal variables here on every `set -U`; machine state, not config.
+/fish_variables

@@ -1,0 +1,36 @@
+# The greeting follows the active shell: each one ships its own fastfetch
+# config, swapped on every switch by scripts/apply-terminal-theme.sh, and the
+# flags a config expects belong to that config, not to the greeting.
+function fish_greeting
+    command -q fastfetch; or return
+
+    set -l active_conf ~/.config/hypr/shells/active.conf
+    set -l active
+    test -r $active_conf; and set active (string match -rv '^\s*(#|$)' < $active_conf)[1]
+
+    switch "$active"
+        case caelestia
+            echo -ne '\x1b[38;5;16m' # primary colour
+            echo '     ______           __          __  _       '
+            echo '    / ____/___ ____  / /__  _____/ /_(_)___ _ '
+            echo '   / /   / __ `/ _ \/ / _ \/ ___/ __/ / __ `/ '
+            echo '  / /___/ /_/ /  __/ /  __(__  ) /_/ / /_/ /  '
+            echo '  \____/\__,_/\___/_/\___/____/\__/_/\__,_/   '
+            set_color normal
+            # caelestia's config has no logo and indents its own keys
+            fastfetch --key-padding-left 5
+        case ryoku
+            # ryoku-fastfetch exports this; its config prints it verbatim otherwise
+            # (`command -q`, not a 2>/dev/null: fish reports an unknown command itself)
+            if not set -q RYOKU_BASE_OS
+                if command -q ryoku-base-os
+                    set -gx RYOKU_BASE_OS (ryoku-base-os)
+                else
+                    set -gx RYOKU_BASE_OS Linux
+                end
+            end
+            fastfetch
+        case '*'
+            fastfetch
+    end
+end

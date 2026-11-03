@@ -152,6 +152,19 @@ sddm_theme_render() {
   setsid -f "$SDDM_RENDERER" --active "$1" all >"$SDDM_RENDER_LOG" 2>&1 </dev/null || true
 }
 
+# ── Terminal theme ───────────────────────────────────────────────────────────
+# The prompt (starship) and system-info (fastfetch) configs follow the shell
+# too: two symlink retargets, so it runs inline and instant, not detached. A
+# failure is reported by the helper and never fails the switch.
+# DCLI_SKIP_TERMINAL_THEME=1 bypasses it.
+TERMINAL_APPLIER="$SCRIPT_DIR/apply-terminal-theme.sh"
+
+terminal_theme_apply() {
+  [ "${DCLI_SKIP_TERMINAL_THEME:-0}" = 1 ] && return 0
+  [ -x "$TERMINAL_APPLIER" ] || return 0
+  "$TERMINAL_APPLIER" "$1" || true
+}
+
 # ── Shell lifecycle table ────────────────────────────────────────────────────
 # Per registry name, everything switch-shell.sh knows about running that shell:
 #   MATCH_SPECS     newline-separated "<pgrep flag> <pattern>" lines. The FIRST
@@ -425,6 +438,12 @@ print_plan() {
   else
     echo "sddm theme (detached, non-fatal): $SDDM_RENDERER --active $SHELL_NAME all  [log: $SDDM_RENDER_LOG]"
   fi
+  if [ "${DCLI_SKIP_TERMINAL_THEME:-0}" = 1 ]; then
+    echo "terminal theme: skipped (DCLI_SKIP_TERMINAL_THEME=1)"
+  else
+    echo "terminal theme (starship + fastfetch links, inline):"
+    "$TERMINAL_APPLIER" --dry-run "$SHELL_NAME" 2>&1 | sed 's/^/  /' || true
+  fi
   echo
   echo "active.conf ($ACTIVE) would become:"
   printf '# Written by switch-shell.sh — do not edit by hand\n%s\n' "$SHELL_NAME"
@@ -495,6 +514,7 @@ exec {LOCK_FD}>&-
 
 grub_theme_render "$SHELL_NAME"
 sddm_theme_render "$SHELL_NAME"
+terminal_theme_apply "$SHELL_NAME"
 
 launch_shell "$SHELL_NAME"
 

@@ -8,7 +8,12 @@ packages:
   - starship
   - zoxide
 
-# No dotfiles entry: ~/.config/fish is a symlink into the upstream caelestia-dots
-# clone at ~/.local/share/caelestia/fish. Neither dcli nor link-dotfiles.sh
-# creates or manages that link (and nothing in this repo clones that checkout),
-# so a fresh machine gets stock fish until it is made by hand.
+# ~/.config/fish is dcli's own (dotfiles/fish), no longer a symlink into the
+# caelestia-dots checkout: the greeting must follow whichever shell is active,
+# and the main shell's checkout is not the place to keep that. config.fish still
+# reads caelestia's sequences.txt and user-config.fish when they exist.
+# fish_variables is machine state and git-ignored. As always, the real linking is
+# done by scripts/link-dotfiles.sh; this key is documentation.
+dotfiles:
+  - source: fish
+    target: ~/.config/fish

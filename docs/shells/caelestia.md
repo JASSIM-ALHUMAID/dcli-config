@@ -24,7 +24,8 @@ serious breakage so far.
 | `~/.local/lib/caelestia/version` | `beat` version helper lib |
 | `~/.config/caelestia` → `fork/caelestia-configs` | Runtime config, version-controlled **inside the fork** |
 | `~/.local/share/caelestia/hypr/hyprland.lua` | Its Hyprland config (upstream caelestia-dots clone, not in this repo). caelestia does **not** use `dotfiles/hypr/common/`; its input lives in the fork's `hypr-vars.lua` |
-| `~/.config/{fish,fastfetch}` | Symlinks into `~/.local/share/caelestia`; **not created by this repo** (unmanaged) |
+| `~/.config/fish` | `dotfiles/fish` (dcli-owned; the caelestia banner shows only while caelestia is active) |
+| `~/.config/fastfetch` | follows the active shell; for caelestia it is `~/.local/share/caelestia/fastfetch` |
 | `~/.config/{foot,btop}` → `dcli/dotfiles/{foot,btop}` | **No longer caelestia's** — see below |
 
 ### foot and btop moved out of the clone (2026-08-20)

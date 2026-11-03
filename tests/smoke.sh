@@ -679,6 +679,56 @@ else
     bad "sddm: switch-shell.sh SDDM hook or dry-run plan line missing"
 fi
 
+# ── terminal: every shell has a prompt and a fastfetch config ────────────────
+# Static: each registry shell resolves to an upstream path (read live from its
+# checkout) or a committed dotfiles/terminal override; overrides must be valid.
+# apply-terminal-theme.sh then retargets fixture links without touching real
+# files, and backs up (never deletes) a real file in the way.
+terminal_missing=""
+for name in "${registry_shells[@]}"; do
+    for tool in starship fastfetch; do
+        has=$(bash -c '. "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh"
+            if [ "'"$tool"'" = starship ]; then
+                [ -n "${UPSTREAM_STARSHIP['"$name"']:-}" ] || [ -f "$TERMINAL_DOTFILES_DIR/'"$name"'/starship.toml" ] && echo y
+            else
+                [ -n "${UPSTREAM_FASTFETCH['"$name"']:-}" ] || [ -f "$TERMINAL_DOTFILES_DIR/'"$name"'/fastfetch/config.jsonc" ] && echo y
+            fi')
+        [ "$has" = y ] || terminal_missing="$terminal_missing $name/$tool"
+    done
+done
+if [ -z "$terminal_missing" ]; then
+    ok "terminal: every registry shell has a starship and a fastfetch source"
+else
+    bad "terminal: no source for:$terminal_missing"
+fi
+if command -v fastfetch >/dev/null 2>&1; then
+    t_bad=""
+    for cfg in "$REPO_DIR"/dotfiles/terminal/*/fastfetch/config.jsonc; do
+        [ -e "$cfg" ] || continue
+        fastfetch -c "$cfg" --pipe true >/dev/null 2>&1 || t_bad="$t_bad ${cfg#"$REPO_DIR"/}"
+    done
+    if [ -z "$t_bad" ]; then ok "terminal: shipped fastfetch configs run"; else bad "terminal: fastfetch fails:$t_bad"; fi
+fi
+t_home="$fixture_home/term"
+mkdir -p "$t_home/.config"
+printf 'user prompt\n' >"$t_home/.config/starship.toml"
+if HOME="$t_home" "$REPO_DIR/scripts/apply-terminal-theme.sh" xenon >/dev/null 2>&1 &&
+    [ -L "$t_home/.config/starship.toml" ] &&
+    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$(readlink -f "$REPO_DIR/dotfiles/terminal/xenon/starship.toml")" ] &&
+    [ "$(readlink -f "$t_home/.config/fastfetch")" = "$(readlink -f "$REPO_DIR/dotfiles/terminal/xenon/fastfetch")" ] &&
+    grep -q 'user prompt' "$t_home"/.config/starship.toml.bak-* &&
+    HOME="$t_home" "$REPO_DIR/scripts/apply-terminal-theme.sh" noctalia >/dev/null 2>&1 &&
+    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$(readlink -f "$REPO_DIR/dotfiles/terminal/noctalia/starship.toml")" ]; then
+    ok "terminal: apply retargets links, backs up a real file, retargets again"
+else
+    bad "terminal: apply-terminal-theme.sh fixture run failed"
+fi
+if grep -q 'terminal_theme_apply "\$SHELL_NAME"' "$REPO_DIR/scripts/switch-shell.sh"; then
+    ok "terminal: switch-shell.sh applies the terminal theme"
+else
+    bad "terminal: switch-shell.sh terminal hook missing"
+fi
+
 # ── verdict ──────────────────────────────────────────────────────────────────
 if [ "$failures" -eq 0 ]; then
     printf 'smoke: all checks passed\n'

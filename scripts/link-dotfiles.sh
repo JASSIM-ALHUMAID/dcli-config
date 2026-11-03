@@ -29,7 +29,7 @@ set -euo pipefail
 . "$(dirname "$(readlink -f "$0")")/lib/hook-common.sh" || exit 1
 
 DOTFILES="$REAL_HOME/.config/dcli/dotfiles"
-TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc fuzzel cava foot btop nvim yazi lazygit git environment.d)
+TARGETS=(hypr ambxst noctalia omarchy xenon DankMaterialShell matugen-end4pc fuzzel cava foot btop nvim yazi lazygit git environment.d fish)
 
 ts=$(date +%Y%m%d-%H%M%S)
 for name in "${TARGETS[@]}"; do

@@ -1,0 +1,41 @@
+# noctalia — a quiet night sky: lavender path, a star for the git branch, ✦ to type on.
+add_newline = true
+command_timeout = 300
+palette = "night"
+format = """
+[ ⋆ ˖ ·  ](fg:dim)$directory$git_branch$git_status$cmd_duration
+[   ](fg:dim)$character"""
+
+[palettes.night]
+dim = "#4c4a7a"
+lavender = "#c4b5fd"
+star = "#fde68a"
+sky = "#93c5fd"
+alert = "#fca5a5"
+
+[directory]
+style = "fg:lavender"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " 󰌾"
+read_only_style = "fg:alert"
+format = "[$path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "✧"
+style = "fg:star"
+format = "[ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:sky"
+format = "[ $all_status$ahead_behind]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:dim"
+format = "[ · $duration]($style)"
+
+[character]
+success_symbol = "[✦](bold fg:star)"
+error_symbol = "[✦](bold fg:alert)"
+vimcmd_symbol = "[✧](bold fg:lavender)"

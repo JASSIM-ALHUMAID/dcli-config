@@ -42,6 +42,8 @@ SHELL_LINKS=(caelestia quickshell/ii quickshell/end4-pC quickshell/xenon quicksh
 . "$SCRIPT_DIR/lib/grub-common.sh" || exit 1
 # shellcheck source=lib/sddm-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/sddm-common.sh" || exit 1
+# shellcheck source=lib/terminal-theme.sh disable=SC1091
+. "$SCRIPT_DIR/lib/terminal-theme.sh" || exit 1
 
 # ── Output ───────────────────────────────────────────────────────────────────
 fail_count=0
@@ -312,6 +314,24 @@ check_sddm() {
     fi
 }
 
+# ── terminal theme ───────────────────────────────────────────────────────────
+# Prompt and fastfetch follow the active shell (docs/ARCHITECTURE.md). WARN only:
+# a shell whose checkout is not installed simply keeps the previous config.
+check_terminal_theme() {
+    local cur tool link want
+    cur=$(current_shell) || return
+    for tool in starship fastfetch; do
+        if [ "$tool" = starship ]; then link="$STARSHIP_LINK"; else link="$FASTFETCH_LINK"; fi
+        if ! want=$(terminal_source "$tool" "$cur"); then
+            warn "terminal: no $tool config found for $cur (checkout not installed?)"
+        elif [ -L "$link" ] && [ "$(readlink -f "$link")" = "$(readlink -f "$want")" ]; then
+            ok "terminal: $tool follows $cur"
+        else
+            warn "terminal: ${link/#$HOME/\~} is not $cur's $tool config (run apply-terminal-theme.sh $cur)"
+        fi
+    done
+}
+
 check_dcli_sync
 check_quickshell_provider
 check_hypr_errors
@@ -323,6 +343,7 @@ check_services
 check_stray_backups
 check_grub
 check_sddm
+check_terminal_theme
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo

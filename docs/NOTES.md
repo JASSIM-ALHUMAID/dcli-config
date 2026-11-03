@@ -186,9 +186,10 @@ and dirty count.
   it — the same is true of `~/.config/quickshell/{caelestia,ii,end4-pC,xenon,glyph,rice}`.
 - `~/.config/ryoku` is the opposite case: the ryoku daemon is its only writer and
   dcli has no counterpart. Do not link a `dotfiles/ryoku` over it.
-- `~/.config/fish` and `~/.config/fastfetch` are symlinks into
-  `~/.local/share/caelestia` (the caelestia-dots clone). This repo does not create
-  them; they are unmanaged.
+- `~/.config/fish` is `dotfiles/fish` (it used to be a symlink into the caelestia-dots
+  clone; that checkout's own `fish/` is now unused). Its `fish_greeting` picks the
+  banner/flags by the active shell. `~/.config/fastfetch` and `starship.toml` are
+  links the shell switcher retargets (`apply-terminal-theme.sh`) — never edit through them.
 - `link-dotfiles.sh` backs up a real directory it replaces to
   `~/.config/<name>.bak-<timestamp>`; `doctor.sh` warns about the ones left over.
   Delete them once you have checked nothing was lost.
