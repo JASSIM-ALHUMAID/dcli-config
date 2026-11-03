@@ -21,9 +21,8 @@
 #   .stamp                   rewritten LAST — the root path unit watches it
 #
 # PALETTE
-#   Each shell writes its live colours somewhere (PALETTE_SOURCES below); this
-#   normalises them to one key set. A shell with no live file gets matugen run
-#   on its own wallpaper, then the static default for the shell. Caelestia is
+#   lib/palette.sh resolves each shell's colours (its live file, a palette fixed
+#   by design, matugen on its wallpaper, then a default). Caelestia is
 #   special: its own template already renders a complete theme.conf, which is
 #   passed through (its theme is the upstream "locklike" one).
 set -uo pipefail
@@ -36,6 +35,8 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 . "$SCRIPT_DIR/lib/wallpaper.sh" || exit 1
 # shellcheck source=lib/sddm-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/sddm-common.sh" || exit 1
+# shellcheck source=lib/palette.sh disable=SC1091
+. "$SCRIPT_DIR/lib/palette.sh" || exit 1
 
 # ── Constants ────────────────────────────────────────────────────────────────
 STAGE_DIR="${DCLI_SDDM_STAGE:-$SDDM_STAGING_DIR}"
@@ -45,109 +46,30 @@ SCREEN_W=1920
 SCREEN_H=1080
 JPEG_QUALITY=88
 AVATAR_PX=256
-MATUGEN_PREFER=saturation
 CAELESTIA_CONF=".local/state/caelestia/theme/sddm-theme.conf"
 SHELL_RE='^[a-z0-9][a-z0-9-]*$'
 
-# Colours used when neither a live file nor a wallpaper is available.
-DEFAULT_PALETTE='{"background":"#111318","surface":"#111318","surfaceContainer":"#1d2024","surfaceVariant":"#43474e","text":"#e2e2e9","primary":"#a8c8ff","onPrimary":"#062e6f","secondary":"#bec6dc","tertiary":"#ddbce0","error":"#ffb4ab","outline":"#8d9199"}'
-
-# Per-shell look: shell|variant|font|radius|cardRadius|fallback palette.
+# Per-shell look: shell|variant|font|radius|cardRadius.
 # variants: card | minimal | terminal | dots   (sddm/base/Main.qml)
-# The fallback column overrides DEFAULT_PALETTE for shells whose palette is
-# fixed by design (glyph) — "-" keeps the default.
+# Colours come from lib/palette.sh (live file, fixed palette, matugen, default).
 LOOK_TABLE=(
-    "caelestia|locklike|Rubik|20|30|-"
-    "ambxst|card|Roboto Condensed|16|28|-"
-    "dms|card|Google Sans Flex|20|28|-"
-    "noctalia|minimal|Sans Serif|12|20|-"
-    "end4|card|Google Sans Flex|17|30|-"
-    "end4pc|minimal|Google Sans Flex|17|30|-"
-    "omarchy|terminal|JetBrainsMono Nerd Font|0|0|-"
-    "xenon|card|JetBrainsMono Nerd Font|12|20|-"
-    "glyph|dots|Space Grotesk|4|27|{\"background\":\"#000000\",\"surface\":\"#000000\",\"surfaceContainer\":\"#0e0e0e\",\"surfaceVariant\":\"#1a1a1a\",\"text\":\"#f2f2f2\",\"primary\":\"#d71921\",\"onPrimary\":\"#f2f2f2\",\"secondary\":\"#8c8c8c\",\"tertiary\":\"#8c8c8c\",\"error\":\"#d71921\",\"outline\":\"#2a2a2a\"}"
-    "ryoku|minimal|Space Grotesk|10|18|-"
-)
-
-# Live palette sources: shell|file (relative to $HOME)|jq program producing the
-# normalised object. First existing file wins; none = matugen on the wallpaper.
-read -r -d '' JQ_SNAKE <<'JQ' || true
-{background:.background, surface:.surface, surfaceContainer:.surface_container, surfaceVariant:.surface_variant,
- text:.on_surface, primary:.primary, onPrimary:.on_primary, secondary:.secondary, tertiary:.tertiary,
- error:.error, outline:.outline}
-JQ
-read -r -d '' JQ_CAMEL <<'JQ' || true
-{background:.background, surface:.surface, surfaceContainer:.surfaceContainer, surfaceVariant:.surfaceVariant,
- text:(.onSurface // .foreground), primary:.primary, onPrimary:.onPrimary, secondary:.secondary, tertiary:.tertiary,
- error:.error, outline:.outline}
-JQ
-read -r -d '' JQ_AMBXST <<'JQ' || true
-{background:.background, surface:.surface, surfaceContainer:.surfaceContainer, surfaceVariant:.surfaceVariant,
- text:.overBackground, primary:.primary, onPrimary:.overPrimary, secondary:.secondary, tertiary:.tertiary,
- error:.error, outline:.outline}
-JQ
-read -r -d '' JQ_XENON <<'JQ' || true
-.colors as $c | ($c | map_values(.dark)) as $d |
-{background:$d.background, surface:$d.surface, surfaceContainer:$d.surface_container, surfaceVariant:$d.surface_variant,
- text:$d.on_surface, primary:$d.primary, onPrimary:$d.on_primary, secondary:$d.secondary, tertiary:$d.tertiary,
- error:$d.error, outline:$d.outline}
-JQ
-read -r -d '' JQ_DMS <<'JQ' || true
-.colors.dark | {background:.background, surface:.surface, surfaceContainer:.surface_container, surfaceVariant:.surface_variant,
- text:.on_surface, primary:.primary, onPrimary:.on_primary, secondary:.secondary, tertiary:.tertiary,
- error:.error, outline:.outline}
-JQ
-PALETTE_SOURCES=(
-    "ambxst|.cache/ambxst/colors.json|$JQ_AMBXST"
-    "dms|.cache/DankMaterialShell/dms-colors.json|$JQ_DMS"
-    "end4|.local/state/quickshell/user/generated/colors.json|$JQ_SNAKE"
-    "end4pc|.local/state/quickshell/user/generated/colors.json|$JQ_SNAKE"
-    "xenon|.cache/xenon/colors.json|$JQ_XENON"
-    "ryoku|.cache/ryoku/colors.json|$JQ_CAMEL"
+    "caelestia|locklike|Rubik|20|30"
+    "ambxst|card|Roboto Condensed|16|28"
+    "dms|card|Google Sans Flex|20|28"
+    "noctalia|minimal|Sans Serif|12|20"
+    "end4|card|Google Sans Flex|17|30"
+    "end4pc|minimal|Google Sans Flex|17|30"
+    "omarchy|terminal|JetBrainsMono Nerd Font|0|0"
+    "xenon|card|JetBrainsMono Nerd Font|12|20"
+    "glyph|dots|Space Grotesk|4|27"
+    "ryoku|minimal|Space Grotesk|10|18"
 )
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 log() { echo "render-sddm-theme: $*"; }
 warn() { echo "render-sddm-theme: !! $*" >&2; }
 
-HEX_RE='^#[0-9a-fA-F]{6}$'
-
-# normalised_ok <json>: every key present and a #rrggbb colour.
-normalised_ok() {
-    jq -e --arg re "$HEX_RE" '
-        ([.background,.surface,.surfaceContainer,.surfaceVariant,.text,.primary,.onPrimary,.secondary,.tertiary,.error,.outline]
-         | all(.[]; type == "string" and test($re)))' <<<"$1" >/dev/null 2>&1
-}
-
-# live_palette <shell>: normalised JSON from the shell's own file, or nothing.
-live_palette() {
-    local want="$1" rec shell file program out home
-    home=$(wallpaper_home)
-    for rec in "${PALETTE_SOURCES[@]}"; do
-        shell=${rec%%|*}
-        [ "$shell" = "$want" ] || continue
-        file=${rec#*|}
-        program=${file#*|}
-        file=${file%%|*}
-        [ -r "$home/$file" ] || continue
-        out=$(jq -c "$program" "$home/$file" 2>/dev/null) || continue
-        normalised_ok "$out" && { echo "$out"; return 0; }
-    done
-    return 0
-}
-
-# matugen_palette <wallpaper>: Material-3 dark palette for that image.
-matugen_palette() {
-    command -v matugen >/dev/null 2>&1 || return 0
-    local out
-    out=$(matugen image "$1" --json hex --dry-run -m dark --prefer "$MATUGEN_PREFER" 2>/dev/null) || return 0
-    jq -c '.colors | def d(k): .[k].dark.color;
-        {background:d("background"), surface:d("surface"), surfaceContainer:d("surface_container"),
-         surfaceVariant:d("surface_variant"), text:d("on_surface"), primary:d("primary"), onPrimary:d("on_primary"),
-         secondary:d("secondary"), tertiary:d("tertiary"), error:d("error"), outline:d("outline")}' <<<"$out" 2>/dev/null
-}
-
-look_field() { # <shell> <field index 1..5>
+look_field() { # <shell> <field index 1..4>
     local rec
     for rec in "${LOOK_TABLE[@]}"; do
         [ "${rec%%|*}" = "$1" ] || continue
@@ -156,20 +78,6 @@ look_field() { # <shell> <field index 1..5>
         return 0
     done
     return 1
-}
-
-# palette_for <shell> <wallpaper>: normalised JSON, best source first.
-palette_for() {
-    local shell="$1" wall="$2" out fallback
-    out=$(live_palette "$shell")
-    [ -n "$out" ] && { echo "$out"; return; }
-    fallback=$(look_field "$shell" 5 || echo "-")
-    if [ "$fallback" != "-" ] && [ -n "$fallback" ]; then echo "$fallback"; return; fi
-    if [ -n "$wall" ]; then
-        out=$(matugen_palette "$wall")
-        normalised_ok "$out" && { echo "$out"; return; }
-    fi
-    echo "$DEFAULT_PALETTE"
 }
 
 # write_conf <shell> <palette json> <out file>

@@ -61,18 +61,19 @@ The choice lives in `~/.local/state/dcli/sddm-theme` (`auto` when absent).
 | --- | --- | --- |
 | caelestia | upstream "locklike" (`/home/awhss/Projects/shell/real/sddm/themes/locklike`, background path patched to `.jpg`) | caelestia's own `~/.local/state/caelestia/theme/sddm-theme.conf`, verbatim |
 | omarchy | upstream omarchy greeter (`~/.local/share/omarchy/default/sddm/omarchy`), unmodified | baked into its PNGs — it does not follow omarchy theme switches |
-| ambxst, dms, end4, end4pc, xenon, ryoku | `sddm/base` greeter, one layout each (`card` / `minimal`) | the shell's own colour file (`PALETTE_SOURCES` in `render-sddm-theme.sh`) |
+| ambxst, dms, end4, end4pc, xenon, ryoku | `sddm/base` greeter, one layout each (`card` / `minimal`) | the shell's own colour file (`PALETTE_SOURCES` in `lib/palette.sh`) |
 | noctalia | `sddm/base`, `minimal` | none is written (v5 is native), so matugen on its wallpaper |
 | glyph | `sddm/base`, `dots` (Doto dot-matrix clock) | fixed: black, white, one red |
 
 `sddm/base` reads `theme.conf.user` through SDDM's `config` object
 (`components/Palette.qml`): `variant` (`card` `minimal` `terminal` `dots`),
 `fontFamily`, `radius`, `cardRadius`, the eleven colours. The per-shell look is
-`LOOK_TABLE` in the renderer. Wallpaper comes from `lib/wallpaper.sh`, the same
+`LOOK_TABLE` in the renderer; the colours come from `lib/palette.sh` (shared with
+the terminal prompt/fastfetch layer). Wallpaper comes from `lib/wallpaper.sh`, the same
 table GRUB uses; the avatar from `~/.face` / `~/.face.icon`.
 
-Adding a shell: a registry record, a `LOOK_TABLE` row, a `PALETTE_SOURCES` row if
-it writes colours, optionally `sddm/themes/<shell>/` for a bespoke theme, then
+Adding a shell: a registry record, a `LOOK_TABLE` row, a `PALETTE_SOURCES` row in
+`lib/palette.sh` if it writes colours, optionally `sddm/themes/<shell>/` for a bespoke theme, then
 re-run the installer.
 
 ## Security model
