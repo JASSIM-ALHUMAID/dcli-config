@@ -1,11 +1,44 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# ryoku (alt-v2) — an editorial issue. The masthead is the cover, the prompt is
+# the red sun, and the tagline is the one the project actually uses.
+add_newline = true
+command_timeout = 300
+format = """
+[RYOKU](bold fg:{{text}}) [·](fg:{{outline}}) [ISSUE 1.0](fg:#e2342a) [·](fg:{{outline}}) [AMATERASU](fg:{{tertiary}})$fill$time
+[───](fg:{{outline}})$directory$git_branch$git_status$cmd_duration
+[力](bold fg:#f3ede1 bg:#e2342a) $character """
+
+[fill]
+symbol = " "
 
 [directory]
-style = "bold fg:{{primary}}"
+style = "bold fg:{{text}}"
 truncation_length = 3
 truncation_symbol = "…/"
+read_only = " ○"
+read_only_style = "fg:{{error}}"
+format = "[ $path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "·"
+style = "fg:{{tertiary}}"
+format = "[ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{error}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[— $duration]($style) "
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[◉](bold fg:#e2342a)"
+error_symbol = "[◉](bold fg:{{error}})"
+vimcmd_symbol = "[○](bold fg:{{outline}})"

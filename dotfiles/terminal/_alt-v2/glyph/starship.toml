@@ -1,11 +1,43 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# glyph (alt-v2) — the Glyph Matrix. A dot-matrix ticker, white dots, and the
+# one red pixel that means something is live.
+add_newline = false
+command_timeout = 200
+format = """
+[● ○ ●](fg:{{text}}) $directory$git_branch$git_status$fill$time
+[○ ● ○](fg:{{outline}}) $character """
+
+[fill]
+symbol = " "
 
 [directory]
-style = "bold fg:{{primary}}"
+style = "fg:{{text}}"
 truncation_length = 3
 truncation_symbol = "…/"
+read_only = " ○"
+read_only_style = "fg:{{primary}}"
+format = "[● ](fg:{{outline}})[$path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "·"
+style = "fg:{{secondary}}"
+format = "[ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{secondary}}"
+format = "([$all_status$ahead_behind]($style) )"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[· $duration]($style) "
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[●](bold fg:{{text}})"
+error_symbol = "[●](bold fg:{{primary}})"
+vimcmd_symbol = "[○](bold fg:{{text}})"
