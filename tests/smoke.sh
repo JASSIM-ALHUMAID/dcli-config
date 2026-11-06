@@ -724,6 +724,13 @@ if [ -z "$terminal_v2_missing" ]; then
 else
     bad "terminal: no alt-v2 source for:$terminal_v2_missing"
 fi
+# fish_greeting treats a caelestia config with `"logo": null` as upstream and
+# prints its own banner first; the alt-v2 cover must not match that probe.
+if grep -q '"logo": null' "$REPO_DIR/dotfiles/terminal/_alt-v2/caelestia/fastfetch/config.jsonc"; then
+    bad "terminal: caelestia alt-v2 would trigger fish_greeting's upstream banner"
+else
+    ok "terminal: caelestia alt-v2 owns its greeting (no upstream banner probe)"
+fi
 
 t_home="$fixture_home/term"
 t_state="$fixture_home/term-state"
@@ -747,6 +754,9 @@ t_render_all=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
             [ -z "$(fastfetch -c "$out/config.jsonc" --logo "$out/logo.txt" --pipe true 2>&1 >/dev/null)" ] || echo "fastfetch:$rel"
         else
             command -v starship >/dev/null 2>&1 || continue
+            if grep -q "^\[cmd_duration\]" "$out" && ! grep -q "\$cmd_duration" "$out"; then
+                echo "cmd-duration:$rel"
+            fi
             STARSHIP_CONFIG="$out" starship prompt --status=1 --cmd-duration=5000 2>&1 | grep -qi "warn\|error" && echo "starship:$rel"
         fi
     done' 2>&1)
@@ -788,12 +798,18 @@ else
 fi
 t_apply --alt-v2 xenon
 xenon_palette "#0af00d"
-if t_apply --refresh && grep -q '#0af00d' "$t_home/.config/starship.toml"; then
+if [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/alt-v2/xenon/starship.toml" ] &&
+    t_apply --refresh && grep -q '#0af00d' "$t_home/.config/starship.toml"; then
     ok "terminal: --refresh follows an alt-v2 link"
 else
     bad "terminal: --refresh did not follow the alt-v2 link"
 fi
 t_apply xenon
+if [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/main/xenon/starship.toml" ]; then
+    ok "terminal: --alt-v2 is one switch, then the plain config returns"
+else
+    bad "terminal: --alt-v2 did not return to the main config"
+fi
 t_alt=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt caelestia 2>&1)
 if grep -q "render/alt/caelestia/starship.toml" <<<"$t_alt" && grep -q "render/alt/caelestia/fastfetch" <<<"$t_alt"; then
     ok "terminal: --alt resolves the opt-in alternates"
@@ -819,6 +835,26 @@ if t_apply --use alt-v2 && [ -e "$t_state/prefer-alt-v2" ] && [ ! -e "$t_state/p
     ok "terminal: --use alt-v2 persists, --use alt supersedes it, --use upstream ends both"
 else
     bad "terminal: --use alt-v2|alt|upstream did not persist or reset"
+fi
+t_apply --use alt-v2
+t_alt_oneshot=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt caelestia 2>&1)
+if grep -q "render/alt/caelestia/starship.toml" <<<"$t_alt_oneshot"; then
+    ok "terminal: a one-shot --alt wins over a standing alt-v2 choice"
+else
+    bad "terminal: --alt lost to the standing alt-v2 flag: $t_alt_oneshot"
+fi
+t_apply --use upstream
+t_fallback="$fixture_home/term-fallback"
+mkdir -p "$t_fallback/xenon"
+cp "$REPO_DIR/dotfiles/terminal/xenon/starship.toml" "$t_fallback/xenon/"
+cp -r "$REPO_DIR/dotfiles/terminal/xenon/fastfetch" "$t_fallback/xenon/"
+t_fallback_src=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" TERMINAL_DOTFILES_DIR="$t_fallback" TERMINAL_PREFER_ALT_V2=1 bash -c '
+    . "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; . "'"$REPO_DIR"'/scripts/lib/palette.sh"; . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh"
+    terminal_source starship xenon')
+if [ "$t_fallback_src" = "$t_fallback/xenon/starship.toml" ]; then
+    ok "terminal: alt-v2 preference falls back to main when a shell has no alt-v2"
+else
+    bad "terminal: alt-v2 fallback resolved '$t_fallback_src'"
 fi
 t_bad_dir="$fixture_home/term-bad"
 mkdir -p "$t_bad_dir/xenon"

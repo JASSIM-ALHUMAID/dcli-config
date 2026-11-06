@@ -12,9 +12,10 @@
 # shells; TERMINAL_PREFER_ALT=1 (apply-terminal-theme.sh --alt, one switch) or
 # the persistent state/terminal/prefer-alt flag (--use alt) puts them first.
 # dotfiles/terminal/_alt-v2/<shell>/ is the second, hand-built alternate layer;
-# TERMINAL_PREFER_ALT_V2=1 (--alt-v2) or state/terminal/prefer-alt-v2
-# (--use alt-v2) puts it first, ahead of _alt. Both layers are ours for every
-# registry shell, so a standing alt-v2 choice never falls through to upstream.
+# it exists for every registry shell, and TERMINAL_PREFER_ALT_V2=1 (--alt-v2) or
+# state/terminal/prefer-alt-v2 (--use alt-v2) puts it first, ahead of _alt. A
+# one-shot --alt still beats a standing alt-v2 choice; with neither one-shot set,
+# a saved alt-v2 flag beats a saved alt flag.
 #
 # Ours are TEMPLATES, never linked directly: most of these shells are Material
 # You and recolour themselves from the wallpaper, so {{key}} (#rrggbb) and
@@ -63,8 +64,23 @@ TERMINAL_RENDER_DIR="$TERMINAL_STATE_DIR/render"
 TERMINAL_PREFER_ALT_FLAG="$TERMINAL_STATE_DIR/prefer-alt"
 TERMINAL_PREFER_ALT_V2_FLAG="$TERMINAL_STATE_DIR/prefer-alt-v2"
 
-terminal_prefers_alt() { [ "${TERMINAL_PREFER_ALT:-0}" = 1 ] || [ -e "$TERMINAL_PREFER_ALT_FLAG" ]; }
-terminal_prefers_alt_v2() { [ "${TERMINAL_PREFER_ALT_V2:-0}" = 1 ] || [ -e "$TERMINAL_PREFER_ALT_V2_FLAG" ]; }
+# A one-shot flag on this invocation beats a saved preference; between saved
+# preferences alt-v2 wins. That keeps `--alt` meaningful even while the standing
+# choice is alt-v2.
+terminal_alt_choice() {
+  if [ "${TERMINAL_PREFER_ALT_V2:-0}" = 1 ]; then
+    echo alt-v2
+  elif [ "${TERMINAL_PREFER_ALT:-0}" = 1 ]; then
+    echo alt
+  elif [ -e "$TERMINAL_PREFER_ALT_V2_FLAG" ]; then
+    echo alt-v2
+  elif [ -e "$TERMINAL_PREFER_ALT_FLAG" ]; then
+    echo alt
+  fi
+}
+
+terminal_prefers_alt() { [ "$(terminal_alt_choice)" = alt ]; }
+terminal_prefers_alt_v2() { [ "$(terminal_alt_choice)" = alt-v2 ]; }
 
 # ── Resolver ─────────────────────────────────────────────────────────────────
 # terminal_source <starship|fastfetch> <shell>: prints the path to link and
@@ -127,7 +143,7 @@ terminal_compose_fastfetch() {
 
 # ── Templates ────────────────────────────────────────────────────────────────
 # A source under dotfiles/terminal/ is a template; its rendered twin keeps the
-# variant (main | alt) in the path, so --refresh can tell which one is worn.
+# variant (main | alt | alt-v2) in the path, so --refresh can tell which one is worn.
 terminal_is_template() { case "$1" in "$TERMINAL_DOTFILES_DIR"/*) return 0 ;; *) return 1 ;; esac; }
 
 terminal_rendered_path() { # <template path> -> its rendered twin

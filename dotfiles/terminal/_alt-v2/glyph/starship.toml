@@ -3,7 +3,7 @@
 add_newline = false
 command_timeout = 200
 format = """
-[● ○ ●](fg:{{text}}) $directory$git_branch$git_status$fill$time
+[● ○ ●](fg:{{text}}) $directory$git_branch$git_status$cmd_duration$fill$time
 [○ ● ○](fg:{{outline}}) $character """
 
 [fill]

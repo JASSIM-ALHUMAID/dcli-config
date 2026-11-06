@@ -3,7 +3,7 @@
 add_newline = true
 command_timeout = 300
 format = """
-[╭─](fg:{{outline}})[ pC-001 ](bold fg:{{tertiary}})[ ★ 3.7k ](fg:{{primary}})$directory$git_branch$git_status$fill$time[ ─╮](fg:{{outline}})
+[╭─](fg:{{outline}})[ pC-001 ](bold fg:{{tertiary}})[ ★ 3.7k ](fg:{{primary}})$directory$git_branch$git_status$cmd_duration$fill$time[ ─╮](fg:{{outline}})
 [╰─](fg:{{outline}})[ DOWNLOAD ](fg:{{primary}})$character """
 
 [fill]

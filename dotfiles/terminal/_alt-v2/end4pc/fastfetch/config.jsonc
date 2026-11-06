@@ -48,15 +48,15 @@
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m│\u001b[0m \u001b[1m\u001b[38;2;{{text.rgb}}m\"Material 3 Expressive\"\u001b[0m \u001b[38;2;{{outline.rgb}}m· remixed by pctrade\u001b[0m          \u001b[38;2;{{outline.rgb}}m│\u001b[0m"
+      "format": "\u001b[38;2;{{outline.rgb}}m│\u001b[0m \u001b[1m\u001b[38;2;{{text.rgb}}m\"Material 3 Expressive\"\u001b[0m \u001b[38;2;{{outline.rgb}}m· remixed by pctrade\u001b[0m   \u001b[38;2;{{outline.rgb}}m│\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m│\u001b[0m \u001b[38;2;{{primary.rgb}}m███\u001b[38;2;{{secondary.rgb}}m███\u001b[38;2;{{tertiary.rgb}}m███\u001b[38;2;{{error.rgb}}m███\u001b[38;2;{{text.rgb}}m███\u001b[38;2;{{outline.rgb}}m███\u001b[0m  \u001b[38;2;{{outline.rgb}}m#material3 #expressive\u001b[0m   \u001b[38;2;{{outline.rgb}}m│\u001b[0m"
+      "format": "\u001b[38;2;{{outline.rgb}}m│\u001b[0m \u001b[38;2;{{primary.rgb}}m███\u001b[38;2;{{secondary.rgb}}m███\u001b[38;2;{{tertiary.rgb}}m███\u001b[38;2;{{error.rgb}}m███\u001b[38;2;{{text.rgb}}m███\u001b[38;2;{{outline.rgb}}m███\u001b[0m  \u001b[38;2;{{outline.rgb}}m#material3 #expressive\u001b[0m     \u001b[38;2;{{outline.rgb}}m│\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m╰────────────────────────────────────────────────────╯\u001b[0m"
+      "format": "\u001b[38;2;{{outline.rgb}}m╰────────────────────────────────────────────────╯\u001b[0m"
     },
     "break",
     {

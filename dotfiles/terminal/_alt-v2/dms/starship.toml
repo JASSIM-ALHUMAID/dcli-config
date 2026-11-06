@@ -3,11 +3,9 @@
 add_newline = true
 command_timeout = 300
 format = """
-[◜](fg:{{primary}})[ DUX ](bold fg:{{primary}})[◝](fg:{{primary}})$directory$git_branch$git_status$fill$time
-[╰─●](fg:{{primary}}) ${custom.duck}$character """
+[◜](fg:{{primary}})[ DUX ](bold fg:{{primary}})[◝](fg:{{primary}})$directory$git_branch$git_status$cmd_duration
+[╰─●](fg:{{primary}}) $time [>o](fg:{{secondary}}) $character """
 
-[fill]
-symbol = " "
 
 [directory]
 style = "bold fg:{{primary}}"
@@ -36,12 +34,6 @@ format = "[$time ]($style)"
 min_time = 2000
 style = "fg:{{outline}}"
 format = "[◌ $duration]($style) "
-
-[custom.duck]
-command = "printf '{o,o}'"
-when = true
-format = "[$output]($style) "
-style = "fg:{{secondary}}"
 
 [character]
 success_symbol = "[─❯](bold fg:{{primary}})"

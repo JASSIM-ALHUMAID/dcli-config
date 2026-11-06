@@ -62,11 +62,11 @@ case "$use" in
     mkdir -p "$TERMINAL_STATE_DIR" || exit 1
     case "$use" in
       alt)
-        : >"$TERMINAL_PREFER_ALT_FLAG"
+        : >"$TERMINAL_PREFER_ALT_FLAG" || exit 1
         rm -f "$TERMINAL_PREFER_ALT_V2_FLAG" || exit 1
         ;;
       alt-v2)
-        : >"$TERMINAL_PREFER_ALT_V2_FLAG"
+        : >"$TERMINAL_PREFER_ALT_V2_FLAG" || exit 1
         rm -f "$TERMINAL_PREFER_ALT_FLAG" || exit 1
         ;;
       upstream)

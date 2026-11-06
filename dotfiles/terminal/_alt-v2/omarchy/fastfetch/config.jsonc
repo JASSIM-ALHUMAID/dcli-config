@@ -47,7 +47,7 @@
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{error.rgb}}m│\u001b[0m  \u001b[1m\u001b[38;2;{{error.rgb}}mCHEF'S CHOICE\u001b[0m  \u001b[38;2;{{error.rgb}}m│\u001b[0m"
+      "format": "\u001b[38;2;{{error.rgb}}m│\u001b[0m  \u001b[1m\u001b[38;2;{{error.rgb}}mCHEF'S CHOICE\u001b[0m   \u001b[38;2;{{error.rgb}}m│\u001b[0m"
     },
     {
       "type": "custom",

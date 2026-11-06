@@ -2,9 +2,7 @@
 # ramp, Mach-style duration, and the flame as the character.
 add_newline = false
 command_timeout = 200
-format = """
-[󰈸](bold fg:{{primary}}) [XENON](bold fg:{{primary}}) [T+](fg:{{outline}}) $directory$git_branch$git_status$fill$time
-[╰─](fg:{{outline}})[░▒▓█](fg:{{primary}})[▓▒░](fg:{{secondary}}) $character """
+format = "[󰈸](bold fg:{{primary}}) [XENON](bold fg:{{primary}}) [T+](fg:{{outline}}) $directory$git_branch$git_status $cmd_duration [░▒▓█](fg:{{primary}})[▓▒░](fg:{{secondary}}) $fill$time $character"
 
 [fill]
 symbol = " "

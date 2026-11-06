@@ -4,7 +4,7 @@ add_newline = true
 command_timeout = 300
 format = """
 [╭─](fg:{{outline}})[✦](fg:{{tertiary}}) $directory$git_branch$git_status$fill$time[ ─╮](fg:{{outline}})
-[│](fg:{{outline}}) ${custom.aurora}$fill$cmd_duration[ │](fg:{{outline}})
+[│](fg:{{outline}}) [▁▂▃▄▅▆▇█▇▆▅▄▃▂▁](fg:{{secondary}})$fill$cmd_duration[ │](fg:{{outline}})
 [╰─](fg:{{outline}})$character """
 
 [fill]
@@ -37,12 +37,6 @@ disabled = false
 time_format = "%H:%M"
 style = "fg:{{outline}}"
 format = "[$time ]($style)"
-
-[custom.aurora]
-command = "printf '▁▂▃▄▅▆▇█▇▆▅▄▃▂▁'"
-when = true
-format = "[$output]($style)"
-style = "fg:{{secondary}}"
 
 [character]
 success_symbol = "[❯](bold fg:{{primary}})"

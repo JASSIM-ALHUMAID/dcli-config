@@ -44,7 +44,7 @@
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{secondary.rgb}}m∿∿∿∿∿∿  {o,o}  ∿∿∿∿∿∿\u001b[0m  \u001b[38;2;{{outline.rgb}}mduck on the scope\u001b[0m"
+      "format": "\u001b[38;2;{{secondary.rgb}}m∿∿∿∿∿∿  >o  ∿∿∿∿∿∿\u001b[0m  \u001b[38;2;{{outline.rgb}}mduck on the scope\u001b[0m"
     },
     {
       "type": "os",
@@ -87,7 +87,7 @@
     "break",
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{primary.rgb}}m╰─●───────●\u001b[0m  \u001b[38;2;{{secondary.rgb}}m{o,o}\u001b[0m  \u001b[38;2;{{outline.rgb}}mscope · no signal lost\u001b[0m"
+      "format": "\u001b[38;2;{{primary.rgb}}m╰─●───────●\u001b[0m  \u001b[38;2;{{secondary.rgb}}m>o\u001b[0m  \u001b[38;2;{{outline.rgb}}mscope · no signal lost\u001b[0m"
     }
   ]
 }

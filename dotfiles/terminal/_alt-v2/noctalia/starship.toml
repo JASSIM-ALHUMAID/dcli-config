@@ -3,11 +3,9 @@
 add_newline = true
 command_timeout = 300
 format = """
-[☾](fg:{{tertiary}}) ${custom.moon}[│](fg:{{outline}}) $directory$git_branch$git_status$fill$time
+[$time](fg:{{outline}}) [☾](fg:{{tertiary}}) ${custom.moon}[│](fg:{{outline}}) $directory$git_branch$git_status$cmd_duration
 [╰─](fg:{{outline}}) $character """
 
-[fill]
-symbol = " "
 
 [directory]
 style = "bold fg:{{primary}}"
@@ -40,6 +38,7 @@ format = "[◌ $duration]($style) "
 [custom.moon]
 command = '''awk 'BEGIN { a=int(((systime()-947182440)/86400)%29.530588); if(a<1.85) print "new moon"; else if(a<7.38) print "waxing crescent"; else if(a<11.07) print "first quarter"; else if(a<14.77) print "waxing gibbous"; else if(a<18.46) print "full moon"; else if(a<22.15) print "waning gibbous"; else if(a<25.84) print "last quarter"; else print "waning crescent" }' '''
 when = true
+shell = ["sh"]
 format = "[$output]($style)"
 style = "fg:{{tertiary}}"
 

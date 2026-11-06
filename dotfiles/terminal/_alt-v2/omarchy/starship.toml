@@ -3,7 +3,7 @@
 add_newline = true
 command_timeout = 200
 format = """
-[┌─](fg:{{outline}})[ OMAKASE ](bold fg:{{primary}})[ ─](fg:{{outline}})$directory$git_branch$git_status$fill$time[ ─┐](fg:{{outline}})
+[┌─](fg:{{outline}})[ OMAKASE ](bold fg:{{primary}})[ ─](fg:{{outline}})$directory$git_branch$git_status$cmd_duration$fill$time[ ─┐](fg:{{outline}})
 [└─](fg:{{outline}})[ CHEF'S CHOICE ](fg:{{tertiary}})$character """
 
 [fill]
