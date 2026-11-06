@@ -143,7 +143,7 @@ for shell in "${shells[@]}"; do
 
     printf '\n\033[1;38;2;%sm▌\033[0m %s%s%s %s· %s · %s%s\n' \
         "$(hex_rgb "$primary")" "$BOLD" "$shell" "$RESET" "$DIM" "$variant" "$blurb" "$RESET"
-    printf '%s  palette  %s  %s  %s%s\n' \
+    printf '%s  palette  %s  %s  %s%s\n\n' \
         "$DIM" "$primary" "$secondary" "$tertiary" "$RESET"
 
     rendered_any=0
@@ -152,15 +152,17 @@ for shell in "${shells[@]}"; do
             rendered_any=1
             if [ "$have_starship" = 1 ]; then
                 starship_rendered=$(terminal_rendered_path "$starship_src")
-                printf '\n%s  starship%s\n' "$DIM" "$RESET"
-                if ! env -u STARSHIP_SHELL STARSHIP_CONFIG="$starship_rendered" \
+                printf '%s  starship%s\n\n' "$DIM" "$RESET"
+                starship_out=""
+                if ! starship_out=$(env -u STARSHIP_SHELL STARSHIP_CONFIG="$starship_rendered" \
                     starship prompt --path "$REPO_DIR" --terminal-width "$PREVIEW_WIDTH" \
-                    --status 0 --cmd-duration "$PREVIEW_CMD_MS" 2>&1 | sed 's/^/  /'; then
+                    --status 0 --cmd-duration "$PREVIEW_CMD_MS" 2>&1 | sed 's/^/  /'); then
                     echo "!! starship failed for $shell ($variant)" >&2
                     status=1
                 fi
+                printf '%s\n\n' "$starship_out"
             else
-                printf '%s  starship not installed%s\n' "$DIM" "$RESET"
+                printf '%s  starship not installed%s\n\n' "$DIM" "$RESET"
             fi
         else
             echo "!! starship render failed for $shell ($variant)" >&2
@@ -183,13 +185,15 @@ for shell in "${shells[@]}"; do
                         status=1
                     fi
                 fi
-                printf '\n%s  fastfetch%s\n' "$DIM" "$RESET"
-                if ! fastfetch "${ff_args[@]}" 2>&1; then
+                printf '%s  fastfetch%s\n\n' "$DIM" "$RESET"
+                fastfetch_out=""
+                if ! fastfetch_out=$(fastfetch "${ff_args[@]}" 2>&1); then
                     echo "!! fastfetch failed for $shell ($variant)" >&2
                     status=1
                 fi
+                printf '%s\n\n' "$fastfetch_out"
             else
-                printf '%s  fastfetch not installed%s\n' "$DIM" "$RESET"
+                printf '%s  fastfetch not installed%s\n\n' "$DIM" "$RESET"
             fi
         else
             echo "!! fastfetch render failed for $shell ($variant)" >&2
@@ -200,5 +204,6 @@ for shell in "${shells[@]}"; do
     [ "$rendered_any" = 1 ] && previewed=$((previewed + 1))
 done
 
-printf '\n%s%s shell(s) · %s%s\n' "$DIM" "$previewed" "$variant" "$RESET"
+[ "$previewed" -eq 0 ] && printf '\n'
+printf '%s%s shell(s) · %s%s\n' "$DIM" "$previewed" "$variant" "$RESET"
 exit "$status"
