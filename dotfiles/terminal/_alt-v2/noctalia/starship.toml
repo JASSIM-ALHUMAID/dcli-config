@@ -1,11 +1,49 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# noctalia (alt-v2) — the observatory logbook. The moon phase is computed from
+# the local date; the owl keeps the watch at the eyepiece.
+add_newline = true
+command_timeout = 300
+format = """
+[☾](fg:{{tertiary}}) ${custom.moon}[│](fg:{{outline}}) $directory$git_branch$git_status$fill$time
+[╰─](fg:{{outline}}) $character """
+
+[fill]
+symbol = " "
 
 [directory]
 style = "bold fg:{{primary}}"
 truncation_length = 3
 truncation_symbol = "…/"
+read_only = " ◐"
+read_only_style = "fg:{{error}}"
+format = "[ $path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "⋆"
+style = "fg:{{secondary}}"
+format = "[  $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[◌ $duration]($style) "
+
+[custom.moon]
+command = '''awk 'BEGIN { a=int(((systime()-947182440)/86400)%29.530588); if(a<1.85) print "new moon"; else if(a<7.38) print "waxing crescent"; else if(a<11.07) print "first quarter"; else if(a<14.77) print "waxing gibbous"; else if(a<18.46) print "full moon"; else if(a<22.15) print "waning gibbous"; else if(a<25.84) print "last quarter"; else print "waning crescent" }' '''
+when = true
+format = "[$output]($style)"
+style = "fg:{{tertiary}}"
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[{o,o}](bold fg:{{primary}})"
+error_symbol = "[{O,O}](bold fg:{{error}})"
+vimcmd_symbol = "[{-,-}](bold fg:{{tertiary}})"

@@ -1,13 +1,93 @@
-// alt-v2 placeholder — replaced by the shell's own identity below.
+// dms (alt-v2) — a modular patchbay: every field is a module on a cable, with
+// the Dux duck watching the scope. Dux Modular Shell, plugged in.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "file",
     "source": "~/.config/fastfetch/logo.txt",
-    "color": { "1": "38;2;{{primary.rgb}}" }
+    "color": {
+      "1": "38;2;{{primary.rgb}}",
+      "2": "38;2;{{secondary.rgb}}",
+      "3": "38;2;{{tertiary.rgb}}"
+    },
+    "padding": { "top": 1, "left": 1, "right": 3 }
   },
   "display": {
-    "color": { "keys": "38;2;{{primary.rgb}}", "output": "38;2;{{text.rgb}}" }
+    "separator": " ",
+    "color": {
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": { "elapsed": "▰", "total": "▱" },
+      "border": { "left": "", "right": "" },
+      "width": 14,
+      "color": {
+        "elapsed": "38;2;{{secondary.rgb}}",
+        "total": "38;2;{{surfaceVariant.rgb}}"
+      }
+    },
+    "percent": {
+      "type": ["bar", "num"],
+      "color": {
+        "green": "38;2;{{secondary.rgb}}",
+        "yellow": "38;2;{{tertiary.rgb}}",
+        "red": "38;2;{{error.rgb}}"
+      }
+    }
   },
-  "modules": ["title", "os", "kernel", "wm", "cpu", "memory", "uptime"]
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1;38;2;{{primary.rgb}}mDUX MODULAR\u001b[0m \u001b[38;2;{{outline.rgb}}m// PATCHBAY 01\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{secondary.rgb}}m∿∿∿∿∿∿  {o,o}  ∿∿∿∿∿∿\u001b[0m  \u001b[38;2;{{outline.rgb}}mduck on the scope\u001b[0m"
+    },
+    {
+      "type": "os",
+      "key": "◜ os ◝────────●   ",
+      "format": "{name} {version}"
+    },
+    {
+      "type": "wm",
+      "key": "◜ wm ◝────────●   ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "kernel",
+      "key": "◜ sys ◝───────●   "
+    },
+    {
+      "type": "shell",
+      "key": "◜ shl ◝───────●   ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "cpu",
+      "key": "◜ cpu ◝───────●   ",
+      "format": "{name}"
+    },
+    {
+      "type": "memory",
+      "key": "◜ mem ◝───────●   ",
+      "percent": { "type": ["bar", "num"] }
+    },
+    {
+      "type": "packages",
+      "key": "◜ dsp ◝───────●   ",
+      "format": "{pacman} pacman · {flatpak-user} flatpak"
+    },
+    {
+      "type": "uptime",
+      "key": "◜ out ◝───────●   "
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{primary.rgb}}m╰─●───────●\u001b[0m  \u001b[38;2;{{secondary.rgb}}m{o,o}\u001b[0m  \u001b[38;2;{{outline.rgb}}mscope · no signal lost\u001b[0m"
+    }
+  ]
 }

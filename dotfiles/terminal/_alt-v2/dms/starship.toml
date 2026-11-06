@@ -1,11 +1,49 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# dms (alt-v2) — Dux Modular Shell as a patchbay. The first line is the rack,
+# the second is the cable run, the duck sits on the scope.
+add_newline = true
+command_timeout = 300
+format = """
+[◜](fg:{{primary}})[ DUX ](bold fg:{{primary}})[◝](fg:{{primary}})$directory$git_branch$git_status$fill$time
+[╰─●](fg:{{primary}}) ${custom.duck}$character """
+
+[fill]
+symbol = " "
 
 [directory]
 style = "bold fg:{{primary}}"
 truncation_length = 3
 truncation_symbol = "…/"
+read_only = " ◉"
+read_only_style = "fg:{{error}}"
+format = "[ $path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "⌁"
+style = "fg:{{secondary}}"
+format = "[  $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[◌ $duration]($style) "
+
+[custom.duck]
+command = "printf '{o,o}'"
+when = true
+format = "[$output]($style) "
+style = "fg:{{secondary}}"
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[─❯](bold fg:{{primary}})"
+error_symbol = "[─✕](bold fg:{{error}})"
+vimcmd_symbol = "[─◌](bold fg:{{tertiary}})"

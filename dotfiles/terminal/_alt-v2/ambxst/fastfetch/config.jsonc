@@ -1,13 +1,85 @@
-// alt-v2 placeholder — replaced by the shell's own identity below.
+// ambxst (alt-v2) — AxLab boot console, lifted from axeni.de/ambxst's own
+// terminal: `~ » Terminal ▏`, OVERCLOCKED, AxLab counters. Every metric is a
+// boot line that reports OK.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "file",
     "source": "~/.config/fastfetch/logo.txt",
-    "color": { "1": "38;2;{{primary.rgb}}" }
+    "color": {
+      "1": "38;2;{{primary.rgb}}",
+      "2": "38;2;{{secondary.rgb}}",
+      "3": "38;2;{{error.rgb}}"
+    },
+    "padding": { "top": 1, "left": 1, "right": 4 }
   },
   "display": {
-    "color": { "keys": "38;2;{{primary.rgb}}", "output": "38;2;{{text.rgb}}" }
+    "separator": " ",
+    "color": {
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    }
   },
-  "modules": ["title", "os", "kernel", "wm", "cpu", "memory", "uptime"]
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1;38;2;{{primary.rgb}}mAxLab\u001b[0m \u001b[38;2;{{outline.rgb}}m// AMBXST BOOT CONSOLE\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{error.rgb}}m~ » Terminal ▏\u001b[0m  \u001b[38;2;{{outline.rgb}}mOVERCLOCKED · 195 / 1423\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{outline.rgb}}m──────────────────────────────────────────────\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "key": "[00.000] boot     ",
+      "format": "ambxst · Quickshell / Go"
+    },
+    {
+      "type": "wm",
+      "key": "[00.013] wm       ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "shell",
+      "key": "[00.021] shell    ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "os",
+      "key": "[00.034] system   ",
+      "format": "{name} {version}"
+    },
+    {
+      "type": "kernel",
+      "key": "[00.047] kernel   "
+    },
+    {
+      "type": "cpu",
+      "key": "[00.055] cpu      ",
+      "format": "{name}"
+    },
+    {
+      "type": "memory",
+      "key": "[00.089] memory   "
+    },
+    {
+      "type": "custom",
+      "key": "[00.144] axlab    ",
+      "format": "195 / 1423  ·  built for creation"
+    },
+    {
+      "type": "uptime",
+      "key": "[00.233] uptime   "
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{primary.rgb}}m[ OK ]\u001b[0m \u001b[38;2;{{outline.rgb}}mall subsystems nominal · \u001b[0m\u001b[38;2;{{text.rgb}}m{$USER}@axlab\u001b[0m"
+    }
+  ]
 }
