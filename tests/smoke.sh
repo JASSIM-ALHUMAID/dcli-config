@@ -682,8 +682,9 @@ fi
 # ── terminal: every shell has a prompt and a fastfetch config ────────────────
 # Static: each registry shell resolves to an upstream path (read live from its
 # checkout) or a committed dotfiles/terminal template. Every template (main and
-# _alt) must render with nothing left unfilled and yield configs fastfetch and
-# starship accept; a live palette file must reach the rendered output, and
+# _alt, _alt-v2) must render with nothing left unfilled and yield configs
+# fastfetch and starship accept; a live palette file must reach the rendered
+# output, and
 # --refresh must pick up a palette change. apply-terminal-theme.sh retargets
 # fixture links without touching real files, and backs up (never deletes) a real
 # file in the way. All rendering goes to a fixture TERMINAL_STATE_DIR, never the
@@ -706,6 +707,24 @@ else
     bad "terminal: no source for:$terminal_missing"
 fi
 
+# The alt-v2 layer is ours for every shell, unlike _alt which may defer upstream.
+terminal_v2_missing=""
+for name in "${registry_shells[@]}"; do
+    for tool in starship fastfetch; do
+        if [ "$tool" = starship ]; then
+            path="$REPO_DIR/dotfiles/terminal/_alt-v2/$name/starship.toml"
+        else
+            path="$REPO_DIR/dotfiles/terminal/_alt-v2/$name/fastfetch/config.jsonc"
+        fi
+        [ -f "$path" ] || terminal_v2_missing="$terminal_v2_missing $name/$tool"
+    done
+done
+if [ -z "$terminal_v2_missing" ]; then
+    ok "terminal: every registry shell has an alt-v2 starship and fastfetch config"
+else
+    bad "terminal: no alt-v2 source for:$terminal_v2_missing"
+fi
+
 t_home="$fixture_home/term"
 t_state="$fixture_home/term-state"
 mkdir -p "$t_home/.config/hypr/shells"
@@ -714,9 +733,12 @@ t_render_all=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
     . "'"$REPO_DIR"'/scripts/lib/wallpaper.sh" && . "'"$REPO_DIR"'/scripts/lib/palette.sh" &&
     . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh" || exit 1
     for src in "$TERMINAL_DOTFILES_DIR"/*/starship.toml "$TERMINAL_DOTFILES_DIR"/*/fastfetch \
-               "$TERMINAL_DOTFILES_DIR"/_alt/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt/*/fastfetch; do
+               "$TERMINAL_DOTFILES_DIR"/_alt/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt/*/fastfetch \
+               "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/fastfetch; do
         [ -e "$src" ] || continue
-        rel=${src#"$TERMINAL_DOTFILES_DIR"/}; shell=${rel#_alt/}; shell=${shell%%/*}
+        rel=${src#"$TERMINAL_DOTFILES_DIR"/}
+        shell=${rel%%/*}
+        case "$shell" in _alt|_alt-v2) shell=${rel#*/}; shell=${shell%%/*} ;; esac
         terminal_render "$shell" "$src" 2>/dev/null || { echo "render:$rel"; continue; }
         out=$(terminal_rendered_path "$src")
         grep -rq "{{" "$out" && echo "unfilled:$rel"
@@ -764,22 +786,39 @@ if t_apply --refresh && grep -q '#fe0dcb' "$t_home/.config/starship.toml"; then
 else
     bad "terminal: --refresh did not pick up the new palette"
 fi
+t_apply --alt-v2 xenon
+xenon_palette "#0af00d"
+if t_apply --refresh && grep -q '#0af00d' "$t_home/.config/starship.toml"; then
+    ok "terminal: --refresh follows an alt-v2 link"
+else
+    bad "terminal: --refresh did not follow the alt-v2 link"
+fi
+t_apply xenon
 t_alt=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt caelestia 2>&1)
 if grep -q "render/alt/caelestia/starship.toml" <<<"$t_alt" && grep -q "render/alt/caelestia/fastfetch" <<<"$t_alt"; then
     ok "terminal: --alt resolves the opt-in alternates"
 else
     bad "terminal: --alt did not pick _alt/caelestia: $t_alt"
 fi
+t_alt2=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt-v2 caelestia 2>&1)
+if grep -q "render/alt-v2/caelestia/starship.toml" <<<"$t_alt2" && grep -q "render/alt-v2/caelestia/fastfetch" <<<"$t_alt2"; then
+    ok "terminal: --alt-v2 resolves the second opt-in layer"
+else
+    bad "terminal: --alt-v2 did not pick _alt-v2/caelestia: $t_alt2"
+fi
 # (re-applying caelestia after --use upstream fails here by design: the fixture
 # has no caelestia checkout, so the link is left alone and the exit is non-zero)
 printf 'caelestia\n' >"$t_home/.config/hypr/shells/active.conf"
-if t_apply --use alt && [ -e "$t_state/prefer-alt" ] &&
+if t_apply --use alt-v2 && [ -e "$t_state/prefer-alt-v2" ] && [ ! -e "$t_state/prefer-alt" ] &&
+    [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/alt-v2/caelestia/starship.toml" ] &&
+    t_apply noctalia && [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/alt-v2/noctalia/starship.toml" ] &&
+    t_apply --use alt && [ -e "$t_state/prefer-alt" ] && [ ! -e "$t_state/prefer-alt-v2" ] &&
     [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/alt/caelestia/starship.toml" ] &&
     t_apply noctalia && [ "$(readlink -f "$t_home/.config/starship.toml")" = "$t_state/render/main/noctalia/starship.toml" ] &&
-    { t_apply --use upstream || true; } && [ ! -e "$t_state/prefer-alt" ]; then
-    ok "terminal: --use alt persists across switches (a shell without one keeps ours); --use upstream ends it"
+    { t_apply --use upstream || true; } && [ ! -e "$t_state/prefer-alt" ] && [ ! -e "$t_state/prefer-alt-v2" ]; then
+    ok "terminal: --use alt-v2 persists, --use alt supersedes it, --use upstream ends both"
 else
-    bad "terminal: --use alt|upstream did not persist or reset"
+    bad "terminal: --use alt-v2|alt|upstream did not persist or reset"
 fi
 t_bad_dir="$fixture_home/term-bad"
 mkdir -p "$t_bad_dir/xenon"

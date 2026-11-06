@@ -11,6 +11,10 @@
 # dotfiles/terminal/_alt/<shell>/ holds opt-in alternates for the upstream
 # shells; TERMINAL_PREFER_ALT=1 (apply-terminal-theme.sh --alt, one switch) or
 # the persistent state/terminal/prefer-alt flag (--use alt) puts them first.
+# dotfiles/terminal/_alt-v2/<shell>/ is the second, hand-built alternate layer;
+# TERMINAL_PREFER_ALT_V2=1 (--alt-v2) or state/terminal/prefer-alt-v2
+# (--use alt-v2) puts it first, ahead of _alt. Both layers are ours for every
+# registry shell, so a standing alt-v2 choice never falls through to upstream.
 #
 # Ours are TEMPLATES, never linked directly: most of these shells are Material
 # You and recolour themselves from the wallpaper, so {{key}} (#rrggbb) and
@@ -57,14 +61,20 @@ declare -A UPSTREAM_FASTFETCH_EXTRAS=(
 TERMINAL_STATE_DIR="${TERMINAL_STATE_DIR:-$(readlink -f "$TERMINAL_LIB_DIR/../../state")/terminal}"
 TERMINAL_RENDER_DIR="$TERMINAL_STATE_DIR/render"
 TERMINAL_PREFER_ALT_FLAG="$TERMINAL_STATE_DIR/prefer-alt"
+TERMINAL_PREFER_ALT_V2_FLAG="$TERMINAL_STATE_DIR/prefer-alt-v2"
 
 terminal_prefers_alt() { [ "${TERMINAL_PREFER_ALT:-0}" = 1 ] || [ -e "$TERMINAL_PREFER_ALT_FLAG" ]; }
+terminal_prefers_alt_v2() { [ "${TERMINAL_PREFER_ALT_V2:-0}" = 1 ] || [ -e "$TERMINAL_PREFER_ALT_V2_FLAG" ]; }
 
 # ── Resolver ─────────────────────────────────────────────────────────────────
 # terminal_source <starship|fastfetch> <shell>: prints the path to link and
 # returns 0, or returns 1 when no candidate exists (checkout not installed yet).
 terminal_source() {
-  local tool="$1" shell="$2" ours upstream alt="$TERMINAL_DOTFILES_DIR/_alt/$2"
+  local tool="$1" shell="$2" ours upstream alt="$TERMINAL_DOTFILES_DIR/_alt/$2" alt2="$TERMINAL_DOTFILES_DIR/_alt-v2/$2"
+  if terminal_prefers_alt_v2; then
+    [ "$tool" = starship ] && [ -f "$alt2/starship.toml" ] && { echo "$alt2/starship.toml"; return 0; }
+    [ "$tool" = fastfetch ] && [ -f "$alt2/fastfetch/config.jsonc" ] && { echo "$alt2/fastfetch"; return 0; }
+  fi
   if terminal_prefers_alt; then
     [ "$tool" = starship ] && [ -f "$alt/starship.toml" ] && { echo "$alt/starship.toml"; return 0; }
     [ "$tool" = fastfetch ] && [ -f "$alt/fastfetch/config.jsonc" ] && { echo "$alt/fastfetch"; return 0; }
@@ -122,7 +132,10 @@ terminal_is_template() { case "$1" in "$TERMINAL_DOTFILES_DIR"/*) return 0 ;; *)
 
 terminal_rendered_path() { # <template path> -> its rendered twin
   local rel="${1#"$TERMINAL_DOTFILES_DIR"/}" variant=main
-  case "$rel" in _alt/*) variant=alt; rel="${rel#_alt/}" ;; esac
+  case "$rel" in
+    _alt-v2/*) variant="alt-v2"; rel="${rel#_alt-v2/}" ;;
+    _alt/*) variant=alt; rel="${rel#_alt/}" ;;
+  esac
   echo "$TERMINAL_RENDER_DIR/$variant/$rel"
 }
 

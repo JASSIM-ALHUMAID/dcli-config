@@ -1,0 +1,11 @@
+# alt-v2 placeholder — replaced by the shell's own identity below.
+format = "$directory$character"
+
+[directory]
+style = "bold fg:{{primary}}"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[character]
+success_symbol = "[❯](bold fg:{{primary}})"
+error_symbol = "[❯](bold fg:{{error}})"

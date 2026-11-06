@@ -2,13 +2,15 @@
 # Point ~/.config/starship.toml and ~/.config/fastfetch at the given shell's
 # prompt and system-info configs (resolution and rendering: lib/terminal-theme.sh).
 # Called by switch-shell.sh on every shell change; also runnable by hand:
-#   apply-terminal-theme.sh [--dry-run] [--alt] <shell>
+#   apply-terminal-theme.sh [--dry-run] [--alt|--alt-v2] <shell>
 #   apply-terminal-theme.sh --refresh
-#   apply-terminal-theme.sh --use alt|upstream
+#   apply-terminal-theme.sh --use alt|alt-v2|upstream
 # --alt wears the opt-in alternates in dotfiles/terminal/_alt/<shell>/ until the
-# next switch (a shell without one keeps its normal config). --use alt makes that
-# the standing choice for every shell and every switch; --use upstream ends it.
-# Either --use re-applies the running shell straight away.
+# next switch (a shell without one keeps its normal config). --alt-v2 wears the
+# second set in dotfiles/terminal/_alt-v2/<shell>/, which every registry shell
+# has. --use alt|alt-v2 makes that the standing choice for every shell and every
+# switch; --use upstream ends both. Either --use re-applies the running shell
+# straight away.
 # --refresh re-renders whatever the links currently wear when the shell's
 # palette changed (a new wallpaper recolours a Material You shell mid-session);
 # it never moves a link. fish_greeting runs it in the background.
@@ -41,6 +43,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry_run=1 ;;
     --alt) export TERMINAL_PREFER_ALT=1 ;;
+    --alt-v2) export TERMINAL_PREFER_ALT_V2=1 ;;
     --refresh) refresh=1 ;;
     --use)
       use="${2:-}"
@@ -55,18 +58,27 @@ load_registry || exit 1
 # ── Standing choice ──────────────────────────────────────────────────────────
 case "$use" in
   "") ;;
-  alt | upstream)
-    if [ "$use" = alt ]; then
-      mkdir -p "$TERMINAL_STATE_DIR" && : >"$TERMINAL_PREFER_ALT_FLAG" || exit 1
-    else
-      rm -f "$TERMINAL_PREFER_ALT_FLAG" || exit 1
-    fi
+  alt | alt-v2 | upstream)
+    mkdir -p "$TERMINAL_STATE_DIR" || exit 1
+    case "$use" in
+      alt)
+        : >"$TERMINAL_PREFER_ALT_FLAG"
+        rm -f "$TERMINAL_PREFER_ALT_V2_FLAG" || exit 1
+        ;;
+      alt-v2)
+        : >"$TERMINAL_PREFER_ALT_V2_FLAG"
+        rm -f "$TERMINAL_PREFER_ALT_FLAG" || exit 1
+        ;;
+      upstream)
+        rm -f "$TERMINAL_PREFER_ALT_FLAG" "$TERMINAL_PREFER_ALT_V2_FLAG" || exit 1
+        ;;
+    esac
     echo ":: terminal: wearing the ${use} configs from now on"
     running=$(current_shell) || exit 0
     exec "$0" "$running"
     ;;
   *)
-    echo "usage: apply-terminal-theme.sh --use alt|upstream" >&2
+    echo "usage: apply-terminal-theme.sh --use alt|alt-v2|upstream" >&2
     exit "$EXIT_USAGE"
     ;;
 esac
@@ -82,6 +94,7 @@ if [ "$refresh" = 1 ]; then
     rel="${worn#"$TERMINAL_RENDER_DIR"/}"
     case "$rel" in
       main/*) rel="${rel#main/}"; template="$TERMINAL_DOTFILES_DIR/$rel" ;;
+      alt-v2/*) rel="${rel#alt-v2/}"; template="$TERMINAL_DOTFILES_DIR/_alt-v2/$rel" ;;
       alt/*) rel="${rel#alt/}"; template="$TERMINAL_DOTFILES_DIR/_alt/$rel" ;;
       *) continue ;;
     esac
@@ -93,7 +106,7 @@ fi
 
 shell_name="${1:-}"
 if ! printf '%s\n' "${KNOWN[@]}" | grep -qx -- "$shell_name"; then
-  echo "usage: apply-terminal-theme.sh [--dry-run] [--alt] <${KNOWN[*]// /|}> | --refresh | --use alt|upstream" >&2
+  echo "usage: apply-terminal-theme.sh [--dry-run] [--alt|--alt-v2] <${KNOWN[*]// /|}> | --refresh | --use alt|alt-v2|upstream" >&2
   exit "$EXIT_USAGE"
 fi
 
