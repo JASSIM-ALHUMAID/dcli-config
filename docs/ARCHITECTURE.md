@@ -243,7 +243,9 @@ sufficient. Work through all of these:
     and AxLab console, Dux's spy duck on a patchbay, noctalia's owl and live moon phase,
     xenon's flame and flight control, ii's oscilloscope, pC's preset card, omarchy's
     omakase menu, glyph's matrix, ryoku's Amaterasu issue, caelestia's aurora tank) — not
-    from its picker blurb. A config that references files its checkout
+    from its picker blurb. To review a layer without moving either link, run
+    `scripts/preview-terminal-themes.sh [--variant main|alt|alt-v2] [shell…]`: it renders
+    into a throw-away tree and prints each prompt and greeting. A config that references files its checkout
     keeps elsewhere (ryoku's emblem) lists them in `UPSTREAM_FASTFETCH_EXTRAS`; the applier
     then links a composed directory under `state/terminal/fastfetch/<name>/`. Never run an upstream installer that
     would symlink these two paths itself (glyph's did).

@@ -872,6 +872,14 @@ if grep -q 'terminal_theme_apply "\$SHELL_NAME"' "$REPO_DIR/scripts/switch-shell
 else
     bad "terminal: switch-shell.sh terminal hook missing"
 fi
+# The preview is read-only: same live link before and after, temp state only.
+t_preview_before=$(readlink -f "$t_home/.config/starship.toml" 2>/dev/null || true)
+if HOME="$t_home" "$REPO_DIR/scripts/preview-terminal-themes.sh" --variant alt-v2 xenon >/dev/null 2>&1 &&
+    [ "$(readlink -f "$t_home/.config/starship.toml" 2>/dev/null || true)" = "$t_preview_before" ]; then
+    ok "terminal: preview renders a shell without retargeting the live links"
+else
+    bad "terminal: preview-terminal-themes.sh failed or moved a live link"
+fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────
 if [ "$failures" -eq 0 ]; then
