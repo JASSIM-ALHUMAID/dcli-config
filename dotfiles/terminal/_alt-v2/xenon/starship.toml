@@ -1,11 +1,43 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# xenon (alt-v2) — flight control. The prompt is the ignition rail: afterburner
+# ramp, Mach-style duration, and the flame as the character.
+add_newline = false
+command_timeout = 200
+format = """
+[󰈸](bold fg:{{primary}}) [XENON](bold fg:{{primary}}) [T+](fg:{{outline}}) $directory$git_branch$git_status$fill$time
+[╰─](fg:{{outline}})[░▒▓█](fg:{{primary}})[▓▒░](fg:{{secondary}}) $character """
+
+[fill]
+symbol = " "
 
 [directory]
 style = "bold fg:{{primary}}"
-truncation_length = 3
+truncation_length = 2
 truncation_symbol = "…/"
+read_only = " ◇"
+read_only_style = "fg:{{error}}"
+format = "[$path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "⌁"
+style = "fg:{{secondary}}"
+format = "[ $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 3000
+style = "fg:{{tertiary}}"
+format = "[MACH $duration]($style) "
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[󰈸](bold fg:{{primary}})"
+error_symbol = "[󰈸](bold fg:{{error}})"
+vimcmd_symbol = "[󰈸](bold fg:{{tertiary}})"

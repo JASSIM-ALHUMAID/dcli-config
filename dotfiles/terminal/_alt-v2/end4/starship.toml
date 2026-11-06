@@ -1,11 +1,49 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# end4 (alt-v2) — illogical impulse as a live signal: the prompt is an
+# oscilloscope channel, the waveform follows the machine's load average.
+add_newline = true
+command_timeout = 300
+format = """
+[CH1](bold fg:{{primary}}) ${custom.wave}[│](fg:{{outline}}) $directory$git_branch$git_status$fill$time
+[╰─](fg:{{outline}})$character """
+
+[fill]
+symbol = " "
 
 [directory]
 style = "bold fg:{{primary}}"
 truncation_length = 3
 truncation_symbol = "…/"
+read_only = " ◌"
+read_only_style = "fg:{{error}}"
+format = "[ $path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "∿"
+style = "fg:{{secondary}}"
+format = "[  $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[LAT $duration]($style) "
+
+[custom.wave]
+command = '''awk '{ l=$1; for(i=0;i<14;i++){ v=int((sin(i/2.0+l)+1)*3.5); printf substr("▁▂▃▄▅▆▇█",v+1,1) } }' /proc/loadavg'''
+when = true
+format = "[$output]($style)"
+style = "fg:{{secondary}}"
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[●](bold fg:{{primary}})"
+error_symbol = "[✕](bold fg:{{error}})"
+vimcmd_symbol = "[◌](bold fg:{{tertiary}})"

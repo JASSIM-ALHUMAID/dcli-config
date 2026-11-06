@@ -1,13 +1,99 @@
-// alt-v2 placeholder — replaced by the shell's own identity below.
+// end4 (alt-v2) — illogical impulse as a live signal. The greeting is an
+// oscilloscope: a load-average trace, eight channels, a trigger that stays auto.
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
     "type": "file",
     "source": "~/.config/fastfetch/logo.txt",
-    "color": { "1": "38;2;{{primary.rgb}}" }
+    "color": {
+      "1": "38;2;{{primary.rgb}}",
+      "2": "38;2;{{secondary.rgb}}",
+      "3": "38;2;{{tertiary.rgb}}"
+    },
+    "padding": { "top": 1, "left": 1, "right": 3 }
   },
   "display": {
-    "color": { "keys": "38;2;{{primary.rgb}}", "output": "38;2;{{text.rgb}}" }
+    "separator": "  ",
+    "color": {
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": { "elapsed": "▰", "total": "▱" },
+      "border": { "left": "", "right": "" },
+      "width": 14,
+      "color": {
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{surfaceVariant.rgb}}"
+      }
+    },
+    "percent": {
+      "type": ["bar", "num"],
+      "color": {
+        "green": "38;2;{{primary.rgb}}",
+        "yellow": "38;2;{{secondary.rgb}}",
+        "red": "38;2;{{error.rgb}}"
+      }
+    }
   },
-  "modules": ["title", "os", "kernel", "wm", "cpu", "memory", "uptime"]
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1;38;2;{{primary.rgb}}mILLOGICAL IMPULSE\u001b[0m  \u001b[38;2;{{outline.rgb}}m// LIVE SIGNAL\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{secondary.rgb}}mCH1  ∿∿∿∿∿∿∿∿\u001b[0m  \u001b[38;2;{{outline.rgb}}mtrigger auto · 5 ms/div\u001b[0m"
+    },
+    {
+      "type": "command",
+      "key": "trace ",
+      "text": "awk '{ l=$1; for(i=0;i<34;i++){ v=int((sin(i/2.0+l)+1)*3.5); printf substr(\"▁▂▃▄▅▆▇█\",v+1,1) } }' /proc/loadavg"
+    },
+    "break",
+    {
+      "type": "cpu",
+      "key": "CH1  cpu    ",
+      "format": "{name}"
+    },
+    {
+      "type": "memory",
+      "key": "CH2  mem    ",
+      "percent": { "type": ["bar", "num"] }
+    },
+    {
+      "type": "os",
+      "key": "CH3  sys    ",
+      "format": "{name} {version}"
+    },
+    {
+      "type": "wm",
+      "key": "CH4  wm     ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "shell",
+      "key": "CH5  shl    ",
+      "format": "{pretty-name}"
+    },
+    {
+      "type": "packages",
+      "key": "CH6  pkg    ",
+      "format": "{pacman} pacman · {flatpak-user} flatpak"
+    },
+    {
+      "type": "uptime",
+      "key": "CH7  up     "
+    },
+    {
+      "type": "loadavg",
+      "key": "CH8  load   "
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{primary.rgb}}m●\u001b[0m \u001b[38;2;{{outline.rgb}}mtrigger auto · noise floor −∞ · \u001b[0m\u001b[38;2;{{secondary.rgb}}m{ o,o }\u001b[0m"
+    }
+  ]
 }

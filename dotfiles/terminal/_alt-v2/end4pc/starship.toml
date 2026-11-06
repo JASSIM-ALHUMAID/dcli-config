@@ -1,11 +1,43 @@
-# alt-v2 placeholder — replaced by the shell's own identity below.
-format = "$directory$character"
+# end4pc (alt-v2) — a community preset card. The prompt is the card header and
+# its install line; the duration is the download meter.
+add_newline = true
+command_timeout = 300
+format = """
+[╭─](fg:{{outline}})[ pC-001 ](bold fg:{{tertiary}})[ ★ 3.7k ](fg:{{primary}})$directory$git_branch$git_status$fill$time[ ─╮](fg:{{outline}})
+[╰─](fg:{{outline}})[ DOWNLOAD ](fg:{{primary}})$character """
+
+[fill]
+symbol = " "
 
 [directory]
-style = "bold fg:{{primary}}"
+style = "bold fg:{{tertiary}}"
 truncation_length = 3
 truncation_symbol = "…/"
+read_only = " ▮"
+read_only_style = "fg:{{error}}"
+format = "[ $path]($style)[$read_only]($read_only_style)"
+
+[git_branch]
+symbol = "#"
+style = "fg:{{primary}}"
+format = "[  $symbol$branch]($style)"
+
+[git_status]
+style = "fg:{{secondary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time ]($style)"
+
+[cmd_duration]
+min_time = 1000
+style = "fg:{{outline}}"
+format = "[▓▓▓░░ $duration]($style) "
 
 [character]
-success_symbol = "[❯](bold fg:{{primary}})"
-error_symbol = "[❯](bold fg:{{error}})"
+success_symbol = "[↓](bold fg:{{tertiary}})"
+error_symbol = "[✕](bold fg:{{error}})"
+vimcmd_symbol = "[▮](bold fg:{{tertiary}})"
