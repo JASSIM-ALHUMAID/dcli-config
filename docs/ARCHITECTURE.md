@@ -235,9 +235,15 @@ sufficient. Work through all of these:
     in the background, so a wallpaper change recolours the next prompt. Upstream shells can
     also have an opt-in alternate in `dotfiles/terminal/_alt/<name>/`, worn with `--alt`
     until the next switch, or for every shell from now on with `--use alt` (the
-    `state/terminal/prefer-alt` flag; `--use upstream` clears it). Design each one from the shell's own identity — its logo,
-    mascot and signature surface (ambxst's notch, Dux's spy duck, noctalia's owl on the
-    moon, xenon's flame, ii's chips) — not from its picker blurb. A config that references files its checkout
+    `state/terminal/prefer-alt` flag). The second opt-in layer,
+    `dotfiles/terminal/_alt-v2/<name>/`, is ours for **every** registry shell: `--alt-v2`
+    wears it once, `--use alt-v2` keeps it across switches, and `--use upstream` clears
+    both flags. `alt-v2` takes precedence over `_alt`, then ours/upstream. Design each one
+    from the shell's own identity — its logo, mascot and signature surface (ambxst's notch
+    and AxLab console, Dux's spy duck on a patchbay, noctalia's owl and live moon phase,
+    xenon's flame and flight control, ii's oscilloscope, pC's preset card, omarchy's
+    omakase menu, glyph's matrix, ryoku's Amaterasu issue, caelestia's aurora tank) — not
+    from its picker blurb. A config that references files its checkout
     keeps elsewhere (ryoku's emblem) lists them in `UPSTREAM_FASTFETCH_EXTRAS`; the applier
     then links a composed directory under `state/terminal/fastfetch/<name>/`. Never run an upstream installer that
     would symlink these two paths itself (glyph's did).
