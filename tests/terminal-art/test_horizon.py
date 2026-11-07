@@ -53,11 +53,28 @@ STILL_BUDGET_S = 0.3
 STILL_MAX_BYTES = 500_000
 FULL_MAX_BYTES = 2_000_000
 FRAMES = range(12, 17)
-LABEL_COLUMNS = 32
+TERMINAL_COLUMNS = 80
 
 
 def at(day: int, hour: int, minute: int = 0, month: int = 11) -> datetime:
     return datetime(2026, month, day, hour, minute, tzinfo=RIYADH_TZ)
+
+
+def greeting_config() -> dict:
+    """The theme's fastfetch config with its // comments stripped."""
+    text = (THEME_DIR / "fastfetch" / "config.jsonc").read_text(encoding="utf-8")
+    return json.loads("\n".join(line for line in text.splitlines() if not line.lstrip().startswith("//")))
+
+
+def greeting_room() -> int:
+    """Text columns left at 80 for a greeting line: counted from the real config, not assumed."""
+    config = greeting_config()
+    logo = config["logo"]
+    pad = logo["padding"]
+    logo_cells = pad.get("left", 0) + logo["width"] + pad.get("right", 0)
+    separator = len(config["display"]["separator"])
+    keys = [re.sub(r"\x1b\[[0-9;]*m", "", re.sub(r"\{\{[^}]*\}\}", "0", m.get("key", ""))) for m in config["modules"] if m.get("type") == "command"]
+    return TERMINAL_COLUMNS - logo_cells - max(len(key) for key in keys) - separator
 
 
 class HorizonCase(unittest.TestCase):
@@ -164,14 +181,27 @@ class TextFilesTest(HorizonCase):
         self.assertIn("lit", self.text(out, "moon"))
         self.assertRegex(self.text(out, "daylight"), r"^11 h 0\d m of daylight\n$")
 
-    def test_each_greeting_line_is_one_short_line(self) -> None:
-        for now in (at(7, 3), at(7, 12), at(7, 18, 40), at(24, 21)):
-            out, _ = self.paint(now, name=f"t-{now.day}-{now.hour}")
+    def test_each_greeting_line_is_one_line_that_fits_80_columns(self) -> None:
+        room = greeting_room()
+        for now in (at(7, 3), at(7, 12), at(7, 18, 40), at(24, 21), at(7, 17, 50), at(7, 18, 35)):
+            out, _ = self.paint(now, name=f"t-{now.day}-{now.hour}-{now.minute}")
             for name in ("place", "sky", "almanac", "moon", "daylight"):
                 with self.subTest(now=now, file=name):
                     content = self.text(out, name)
                     self.assertTrue(content.endswith("\n") and content.count("\n") == 1, content)
-                    self.assertLessEqual(len(content.rstrip("\n")), LABEL_COLUMNS, content)
+                    self.assertLessEqual(len(content.rstrip("\n")), room, content)
+
+    def test_worst_case_lines_fit_80_columns(self) -> None:
+        room = greeting_room()
+        # Deep twilight with a two-digit height is the longest sky line; the longest day name and month the longest date.
+        for state in horizon.SkyState:
+            self.assertLessEqual(len(f"{state.value}{horizon.SEPARATOR}sun {horizon.MINUS}18°"), room, state)
+        env = {"TZ": "Asia/Riyadh", "DCLI_HORIZON_LATLON": "51.5,-0.12", "DCLI_HORIZON_PLACE": "x" * 80}
+        with mock.patch.dict(os.environ, env, clear=True):
+            out, _ = self.paint(datetime(2026, 9, 30, 12, tzinfo=RIYADH_TZ), name="worst")
+        self.assertEqual(self.text(out, "place").rstrip("\n").endswith("Wednesday 30 September"), True)
+        self.assertLessEqual(len(self.text(out, "place").rstrip("\n")), room)
+        self.assertLessEqual(len("full moon · 100 % lit"), room)
 
     def test_sky_line_names_the_phase_and_the_sun_height(self) -> None:
         out, _ = self.paint(at(7, 22))
@@ -191,17 +221,27 @@ class TextFilesTest(HorizonCase):
         with mock.patch.dict(os.environ, env, clear=True):
             out, _ = self.paint(at(7, 12), name="long")
         line = self.text(out, "place").rstrip("\n")
-        self.assertLessEqual(len(line), LABEL_COLUMNS)
+        self.assertLessEqual(len(line), greeting_room())
         self.assertIn("…", line)
         self.assertTrue(line.endswith("Saturday 7 November"))
 
-    def test_invalid_location_override_warns_on_stderr_and_paints_riyadh(self) -> None:
+    def test_invalid_location_override_warns_in_the_greeting_and_on_stderr(self) -> None:
         env = {"TZ": "Asia/Riyadh", "DCLI_HORIZON_LATLON": "north"}
         stderr = io.StringIO()
         with mock.patch.dict(os.environ, env, clear=True), contextlib.redirect_stderr(stderr):
             out, _ = self.paint(at(7, 12), name="bad")
         self.assertIn("DCLI_HORIZON_LATLON", stderr.getvalue())
+        # The greeting discards stderr, so the user-visible channel is the `warning` file the config shows.
+        warning = self.text(out, "warning")
+        self.assertEqual(warning, "check DCLI_HORIZON_LATLON\n")
+        self.assertLessEqual(len(warning.rstrip("\n")), greeting_room())
         self.assertTrue(self.text(out, "place").startswith("Riyadh"))
+        modules = [m.get("text", "") for m in greeting_config()["modules"]]
+        self.assertTrue(any("{{live}}/warning" in text for text in modules))
+
+    def test_valid_location_writes_no_warning(self) -> None:
+        out, _ = self.paint(at(7, 12), name="fine")
+        self.assertFalse((out / "warning").exists())
 
 
 class ZoneTest(HorizonCase):
@@ -323,13 +363,22 @@ class DunesTest(HorizonCase):
         self.assertEqual(coverage.getpixel((column, SKY_SIZE[1] - 1)), 255)
 
     def test_the_land_does_not_depend_on_the_time_of_day(self) -> None:
-        def ground(now: datetime, name: str) -> bytes:
-            out, _ = self.paint(now, name=name)
-            with Image.open(out / "logo.png") as image:
-                row = image.convert("L").crop((0, SKY_SIZE[1] - 1, SKY_SIZE[0], SKY_SIZE[1]))
-            return bytes(1 if value else 0 for value in row.tobytes())
+        def silhouette(now: datetime) -> bytes:
+            scene = horizon.build_scene(now, RIYADH, RIYADH_TZ)
+            return b"".join(horizon.ridge_coverage(p).tobytes() for p in horizon.dune_profiles(scene.day))
 
-        self.assertEqual(ground(at(7, 10, 0), "ten"), ground(at(7, 10, 20), "twenty"))
+        self.assertEqual(silhouette(at(7, 10, 0)), silhouette(at(7, 10, 20)))
+        self.assertEqual(silhouette(at(7, 0, 5)), silhouette(at(7, 23, 55)))
+        self.assertNotEqual(silhouette(at(7, 10)), silhouette(at(8, 10)))
+
+    def test_painted_ridges_use_the_dates_silhouette(self) -> None:
+        # Paint at two times with the land's generator spied on: both paints ask for the same date's dunes.
+        seen = []
+        real = horizon.dune_profiles
+        with mock.patch.object(horizon, "dune_profiles", side_effect=lambda day: seen.append(day) or real(day)):
+            self.paint(at(7, 10, 0), name="a")
+            self.paint(at(7, 10, 20), name="b")
+        self.assertEqual(seen, [date(2026, 11, 7)] * 2)
 
 
 class MoonMaskTest(unittest.TestCase):

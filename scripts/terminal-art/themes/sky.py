@@ -56,7 +56,7 @@ class SkyState(Enum):
     """The sky's phase of the day by sun altitude; the value is the greeting's wording."""
 
     NIGHT = "night"
-    ASTRONOMICAL = "astronomical twilight"
+    ASTRONOMICAL = "astro twilight"
     NAUTICAL = "nautical twilight"
     CIVIL = "civil twilight"
     GOLDEN = "golden hour"

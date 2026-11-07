@@ -35,6 +35,7 @@ from themes.sky import (
     DEFAULT_LOCALTIME,
     HORIZON_Y,
     SKY_SIZE,
+    LATLON_VAR,
     Location,
     SkyState,
     SunTimes,
@@ -154,7 +155,14 @@ SLIP_FACE_RATIO = 0.45  # the steep side of a crest is this fraction as wide as 
 CREST_SHARPNESS = 1.6
 
 # ── words ────────────────────────────────────────────────────────────────────
-LABEL_COLUMNS = 32
+# 80 columns is the narrowest terminal a greeting must fit: the logo box with its
+# padding (config.jsonc: 1 + 44 + 2), a one-cell key, the two-cell separator and
+# one spare cell. tests/terminal-art/test_horizon.py checks these against the config.
+TERMINAL_COLUMNS = 80
+LOGO_CELLS = 1 + 44 + 2
+KEY_AND_SEPARATOR_CELLS = 1 + 2
+LABEL_COLUMNS = TERMINAL_COLUMNS - LOGO_CELLS - KEY_AND_SEPARATOR_CELLS - 1
+WARNING_FILE = "warning"
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
 MONTHS = (
     "January", "February", "March", "April", "May", "June",
@@ -745,7 +753,9 @@ def paint(ctx: PaintContext) -> Painted:
         raise ValueError("horizon needs an aware clock")
     location, warning = location_from_env(os.environ)
     if warning:
+        # stderr is discarded by the greeting; the one-line `warning` file is shown in it until fixed.
         print(f"horizon: {warning}", file=sys.stderr)
+        write_text_atomic(ctx.out_dir / WARNING_FILE, f"check {LATLON_VAR}\n")
     zone = resolve_zone(os.environ, DEFAULT_LOCALTIME, ctx.now.tzinfo)
     scene = build_scene(ctx.now, location, zone)
     _save_logo(render_frames(scene, ctx.mode), ctx.out_dir / LOGO_NAME)
