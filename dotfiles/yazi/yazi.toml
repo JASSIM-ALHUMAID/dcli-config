@@ -10,3 +10,13 @@ sort_reverse = false
 max_width  = 1200   # or larger
 max_height = 1920   # or larger
 
+[opener]
+wordcraft = [
+  { run = '"/home/awhss/Applications/wordcraft-0.15.2-linux-x86_64.AppImage" %s1', desc = "WordCraft", orphan = true },
+]
+
+[open]
+prepend_rules = [
+  { url = "*.docx", use = "wordcraft" },
+]
+
