@@ -2,9 +2,9 @@
 # Point ~/.config/starship.toml and ~/.config/fastfetch at the given shell's
 # prompt and system-info configs (resolution and rendering: lib/terminal-theme.sh).
 # Called by switch-shell.sh on every shell change; also runnable by hand:
-#   apply-terminal-theme.sh [--dry-run] [--alt|--alt-v2|--alt-v3] <shell>
+#   apply-terminal-theme.sh [--dry-run] [--theme <name>|--alt|--alt-v2|--alt-v3] <shell>
 #   apply-terminal-theme.sh --refresh
-#   apply-terminal-theme.sh --use alt|alt-v2|alt-v3|upstream
+#   apply-terminal-theme.sh --use alt|alt-v2|alt-v3|upstream|theme:<name>
 # --alt wears the opt-in alternates in dotfiles/terminal/_alt/<shell>/ until the
 # next switch (a shell without one keeps its normal config). --alt-v2 wears the
 # second set in dotfiles/terminal/_alt-v2/<shell>/, which every registry shell
@@ -12,6 +12,11 @@
 # stays alt-v2's). --use alt|alt-v2|alt-v3 makes that the standing choice for every shell and every
 # switch; --use upstream ends both. Either --use re-applies the running shell
 # straight away.
+# --theme <name> wears a shell-independent theme from dotfiles/terminal/_themes/
+# until the next switch; --use theme:<name> makes it the standing choice for
+# every shell (any alt flag is cleared, and any --use alt* clears the theme).
+# A theme beats every layer above, except that a one-shot --alt* beats a
+# standing theme. An unknown theme name is a usage error and changes nothing.
 # --refresh re-renders whatever the links currently wear when the shell's
 # palette changed (a new wallpaper recolours a Material You shell mid-session);
 # it never moves a link. fish_greeting runs it in the background.
@@ -36,16 +41,37 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 . "$SCRIPT_DIR/lib/terminal-theme.sh" || exit 1
 
 EXIT_USAGE=2
+THEME_USE_PREFIX="theme:"
+
+usage() {
+  echo "usage: apply-terminal-theme.sh [--dry-run] [--theme <name>|--alt|--alt-v2|--alt-v3] <${KNOWN[*]// /|}> | --refresh | --use alt|alt-v2|alt-v3|upstream|theme:<name>" >&2
+  echo "themes: $(terminal_themes | tr '\n' ' ')" >&2
+}
+
+# require_theme <name>: exits with usage when it is not an installed theme.
+require_theme() {
+  terminal_themes | grep -qxF -- "$1" && return 0
+  echo "!! terminal: unknown theme '$1'" >&2
+  usage
+  exit "$EXIT_USAGE"
+}
 
 dry_run=0
 refresh=0
 use=""
+theme_flag=""
+theme_flag_given=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run) dry_run=1 ;;
     --alt) export TERMINAL_PREFER_ALT=1 ;;
     --alt-v2) export TERMINAL_PREFER_ALT_V2=1 ;;
     --alt-v3) export TERMINAL_PREFER_ALT_V3=1 ;;
+    --theme)
+      theme_flag="${2:-}"
+      theme_flag_given=1
+      shift $(($# > 1 ? 1 : 0))
+      ;;
     --refresh) refresh=1 ;;
     --use)
       use="${2:-}"
@@ -56,6 +82,13 @@ while [ $# -gt 0 ]; do
   shift
 done
 load_registry || exit 1
+if [ "$theme_flag_given" = 1 ]; then
+  require_theme "$theme_flag"
+  export TERMINAL_THEME="$theme_flag"
+fi
+# Warn once, here, about a one-shot or saved theme that is gone; the resolver
+# then skips it silently on its many later calls.
+terminal_theme_choice >/dev/null
 
 # ── Standing choice ──────────────────────────────────────────────────────────
 case "$use" in
@@ -79,12 +112,25 @@ case "$use" in
         rm -f "$TERMINAL_PREFER_ALT_FLAG" "$TERMINAL_PREFER_ALT_V2_FLAG" "$TERMINAL_PREFER_ALT_V3_FLAG" || exit 1
         ;;
     esac
+    # Every alt* choice and upstream ends a standing theme.
+    rm -f "$TERMINAL_THEME_FILE" || exit 1
     echo ":: terminal: wearing the ${use} configs from now on"
     running=$(current_shell) || exit 0
     exec "$0" "$running"
     ;;
+  "$THEME_USE_PREFIX"*)
+    use_theme="${use#"$THEME_USE_PREFIX"}"
+    require_theme "$use_theme"
+    mkdir -p "$TERMINAL_STATE_DIR" || exit 1
+    # Atomic, so a terminal opening mid-write never reads half a name.
+    printf '%s\n' "$use_theme" >"$TERMINAL_THEME_FILE.tmp" && mv -f "$TERMINAL_THEME_FILE.tmp" "$TERMINAL_THEME_FILE" || exit 1
+    rm -f "$TERMINAL_PREFER_ALT_FLAG" "$TERMINAL_PREFER_ALT_V2_FLAG" "$TERMINAL_PREFER_ALT_V3_FLAG" || exit 1
+    echo ":: terminal: wearing the ${use_theme} theme from now on"
+    running=$(current_shell) || exit 0
+    exec "$0" "$running"
+    ;;
   *)
-    echo "usage: apply-terminal-theme.sh --use alt|alt-v2|alt-v3|upstream" >&2
+    usage
     exit "$EXIT_USAGE"
     ;;
 esac
@@ -98,7 +144,9 @@ if [ "$refresh" = 1 ]; then
     worn=$(readlink -m "$link")
     case "$worn" in "$TERMINAL_RENDER_DIR"/*) ;; *) continue ;; esac
     rel="${worn#"$TERMINAL_RENDER_DIR"/}"
+    render_shell=""
     case "$rel" in
+      theme/*) rel="${rel#theme/}"; template="$TERMINAL_THEMES_DIR/$rel"; render_shell="$shell_name" ;;
       main/*) rel="${rel#main/}"; template="$TERMINAL_DOTFILES_DIR/$rel" ;;
       alt-v3/*) rel="${rel#alt-v3/}"; template="$TERMINAL_DOTFILES_DIR/_alt-v3/$rel" ;;
       alt-v2/*) rel="${rel#alt-v2/}"; template="$TERMINAL_DOTFILES_DIR/_alt-v2/$rel" ;;
@@ -106,14 +154,15 @@ if [ "$refresh" = 1 ]; then
       *) continue ;;
     esac
     [ -e "$template" ] || continue
-    terminal_render "${rel%%/*}" "$template" >/dev/null || status=1
+    # A theme belongs to no shell; it wears the running shell's palette.
+    terminal_render "${render_shell:-${rel%%/*}}" "$template" >/dev/null || status=1
   done
   exit "$status"
 fi
 
 shell_name="${1:-}"
 if ! printf '%s\n' "${KNOWN[@]}" | grep -qx -- "$shell_name"; then
-  echo "usage: apply-terminal-theme.sh [--dry-run] [--alt|--alt-v2] <${KNOWN[*]// /|}> | --refresh | --use alt|alt-v2|alt-v3|upstream" >&2
+  usage
   exit "$EXIT_USAGE"
 fi
 

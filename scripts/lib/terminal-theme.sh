@@ -4,6 +4,14 @@
 # file does shell X wear", so the three never disagree.
 #
 # Resolution order, per shell and per tool:
+#   0. dotfiles/terminal/_themes/<name>/{starship.toml,fastfetch/} — a THEME is
+#      shell-independent and wins over every layer below. It is worn when
+#      TERMINAL_THEME=<name> is set (apply-terminal-theme.sh --theme, one switch)
+#      or state/terminal/theme names it (--use theme:<name>, standing). Any
+#      one-shot --alt/--alt-v2/--alt-v3 beats a standing theme; a standing theme
+#      that no longer exists is warned about once and skipped, so a deleted theme
+#      can never break the prompt. A theme template may use {{live}}: the
+#      directory state/terminal/live/<name>, where its generators keep art.
 #   1. dotfiles/terminal/<shell>/{starship.toml,fastfetch/}  — ours, committed,
 #      only for shells that ship no config of their own
 #   2. the shell's own upstream copy, read in place from its checkout so
@@ -68,6 +76,48 @@ TERMINAL_RENDER_DIR="$TERMINAL_STATE_DIR/render"
 TERMINAL_PREFER_ALT_FLAG="$TERMINAL_STATE_DIR/prefer-alt"
 TERMINAL_PREFER_ALT_V2_FLAG="$TERMINAL_STATE_DIR/prefer-alt-v2"
 TERMINAL_PREFER_ALT_V3_FLAG="$TERMINAL_STATE_DIR/prefer-alt-v3"
+TERMINAL_THEMES_DIR="$TERMINAL_DOTFILES_DIR/_themes"
+TERMINAL_THEME_FILE="$TERMINAL_STATE_DIR/theme"
+TERMINAL_LIVE_DIR="$TERMINAL_STATE_DIR/live"
+
+# ── Themes ───────────────────────────────────────────────────────────────────
+# terminal_themes: the usable theme names, sorted, one per line. A directory
+# missing either template is not a theme yet.
+terminal_themes() {
+  local dir
+  for dir in "$TERMINAL_THEMES_DIR"/*/; do
+    [ -f "${dir}starship.toml" ] && [ -f "${dir}fastfetch/config.jsonc" ] && { dir=${dir%/}; echo "${dir##*/}"; }
+  done | sort
+}
+
+terminal_alt_oneshot() {
+  [ "${TERMINAL_PREFER_ALT_V3:-0}" = 1 ] || [ "${TERMINAL_PREFER_ALT_V2:-0}" = 1 ] || [ "${TERMINAL_PREFER_ALT:-0}" = 1 ]
+}
+
+# terminal_theme_choice [--quiet]: prints the theme to wear, or nothing. The
+# one-shot TERMINAL_THEME beats everything, a one-shot alt flag beats a saved
+# theme. A name that is not a theme warns on stderr and is ignored; --quiet
+# silences that for the resolver, which asks on every call (the apply script
+# asks once, loudly, up front).
+terminal_theme_choice() {
+  local quiet=0 name="" origin
+  [ "${1:-}" = --quiet ] && quiet=1
+  if [ -n "${TERMINAL_THEME:-}" ]; then
+    name=$TERMINAL_THEME origin="unknown theme '$TERMINAL_THEME'"
+  elif terminal_alt_oneshot || [ ! -f "$TERMINAL_THEME_FILE" ]; then
+    return 0
+  else
+    IFS= read -r name <"$TERMINAL_THEME_FILE" || true
+    name=${name//[[:space:]]/}
+    origin="saved theme '$name' no longer exists"
+  fi
+  [ -n "$name" ] || return 0
+  if terminal_themes | grep -qxF -- "$name"; then
+    echo "$name"
+  elif [ "$quiet" = 0 ]; then
+    echo "!! terminal: $origin — ignoring it" >&2
+  fi
+}
 
 # A one-shot flag on this invocation beats a saved preference; between saved
 # preferences the newest layer wins. That keeps `--alt` meaningful even while the
@@ -96,7 +146,12 @@ terminal_prefers_alt_v3() { [ "$(terminal_alt_choice)" = alt-v3 ]; }
 # terminal_source <starship|fastfetch> <shell>: prints the path to link and
 # returns 0, or returns 1 when no candidate exists (checkout not installed yet).
 terminal_source() {
-  local tool="$1" shell="$2" ours upstream alt="$TERMINAL_DOTFILES_DIR/_alt/$2" alt2="$TERMINAL_DOTFILES_DIR/_alt-v2/$2" alt3="$TERMINAL_DOTFILES_DIR/_alt-v3/$2"
+  local tool="$1" shell="$2" theme ours upstream alt="$TERMINAL_DOTFILES_DIR/_alt/$2" alt2="$TERMINAL_DOTFILES_DIR/_alt-v2/$2" alt3="$TERMINAL_DOTFILES_DIR/_alt-v3/$2"
+  theme=$(terminal_theme_choice --quiet)
+  if [ -n "$theme" ]; then
+    if [ "$tool" = starship ]; then echo "$TERMINAL_THEMES_DIR/$theme/starship.toml"; else echo "$TERMINAL_THEMES_DIR/$theme/fastfetch"; fi
+    return 0
+  fi
   # alt-v3 owns the greeting only; its prompt is alt-v2's.
   if terminal_prefers_alt_v3; then
     [ "$tool" = fastfetch ] && [ -f "$alt3/fastfetch/config.jsonc" ] && { echo "$alt3/fastfetch"; return 0; }
@@ -157,12 +212,13 @@ terminal_compose_fastfetch() {
 
 # ── Templates ────────────────────────────────────────────────────────────────
 # A source under dotfiles/terminal/ is a template; its rendered twin keeps the
-# variant (main | alt | alt-v2 | alt-v3) in the path, so --refresh can tell which one is worn.
+# variant (main | alt | alt-v2 | alt-v3 | theme) in the path, so --refresh can tell which one is worn.
 terminal_is_template() { case "$1" in "$TERMINAL_DOTFILES_DIR"/*) return 0 ;; *) return 1 ;; esac; }
 
 terminal_rendered_path() { # <template path> -> its rendered twin
   local rel="${1#"$TERMINAL_DOTFILES_DIR"/}" variant=main
   case "$rel" in
+    _themes/*) variant=theme; rel="${rel#_themes/}" ;;
     _alt-v3/*) variant="alt-v3"; rel="${rel#_alt-v3/}" ;;
     _alt-v2/*) variant="alt-v2"; rel="${rel#_alt-v2/}" ;;
     _alt/*) variant=alt; rel="${rel#_alt/}" ;;
@@ -178,22 +234,32 @@ terminal_target() {
 }
 
 # terminal_render <shell> <template path>: fill the template (file or fastfetch
-# directory) from the shell's palette into its rendered twin. Skipped when the
+# directory) from the shell's palette (and, for a theme, its {{live}} dir) into its rendered twin. Skipped when the
 # palette and template are unchanged since the last render (a cheap signature),
 # so --refresh can run on every terminal start. Atomic: a reader never sees a
 # half-written config, and an unfilled {{token}} fails the render instead of
 # shipping it.
 terminal_render() {
-  local shell="$1" src="$2" out palette sig tmp k v hex f
+  local shell="$1" src="$2" out palette sig tmp k v hex f live="" live_escaped
   local -a sed_args=()
   out=$(terminal_rendered_path "$src")
   palette=$(palette_for "$shell" "$(shell_wallpaper "$shell")")
-  sig=$( { echo "$palette"; find "$src" -type f -exec cat {} +; } | sha256sum | cut -c1-32)
+  case "$src" in
+    "$TERMINAL_THEMES_DIR"/*)
+      live="${src#"$TERMINAL_THEMES_DIR"/}"
+      live="$TERMINAL_LIVE_DIR/${live%%/*}"
+      ;;
+  esac
+  sig=$( { echo "$palette"; [ -z "$live" ] || echo "live=$live"; find "$src" -type f -exec cat {} +; } | sha256sum | cut -c1-32)
   [ -e "$out" ] && [ "$(cat "$out.sig" 2>/dev/null)" = "$sig" ] && return 0
   while IFS='=' read -r k v; do
     hex=${v#\#}
     sed_args+=(-e "s/{{$k}}/$v/g" -e "s/{{$k.rgb}}/$((16#${hex:0:2}));$((16#${hex:2:2}));$((16#${hex:4:2}))/g")
   done < <(jq -r 'to_entries[] | "\(.key)=\(.value)"' <<<"$palette")
+  if [ -n "$live" ]; then
+    live_escaped=$(printf '%s' "$live" | sed 's/[&|\\]/\\&/g') || return 1
+    sed_args+=(-e "s|{{live}}|$live_escaped|g")
+  fi
   mkdir -p "$(dirname "$out")" || return 1
   tmp="$out.tmp"
   rm -rf "$tmp"

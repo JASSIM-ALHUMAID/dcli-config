@@ -4,12 +4,14 @@
 # ~/.config/starship.toml and ~/.config/fastfetch links are never touched.
 #
 # Usage:
-#   preview-terminal-themes.sh [--variant main|alt|alt-v2|alt-v3] [shell...]
+#   preview-terminal-themes.sh [--variant main|alt|alt-v2|alt-v3|theme:<name>] [shell...]
 #   preview-terminal-themes.sh --help
 #
 # Defaults to every registry shell in picker order, wearing alt-v2 with each
 # shell's live palette. `main`/`alt` show the matching template where one
 # exists; upstream-only configs are reported as not previewable, not guessed.
+# theme:<name> shows a shell-independent theme (dotfiles/terminal/_themes/<name>)
+# wearing each shell's palette.
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
@@ -38,12 +40,13 @@ RESET=$'\033[0m'
 
 usage() {
     cat <<EOF
-usage: preview-terminal-themes.sh [--variant main|alt|alt-v2|alt-v3] [shell...]
+usage: preview-terminal-themes.sh [--variant main|alt|alt-v2|alt-v3|theme:<name>] [shell...]
 
 Renders each shell's prompt and greeting into a temporary directory and prints
 them for review. No live symlink is changed.
 
-  --variant main|alt|alt-v2|alt-v3   layer to preview (default: alt-v2)
+  --variant main|alt|alt-v2|alt-v3|theme:<name>
+                              layer or theme to preview (default: alt-v2)
   --help                      show this text
 
 With no shell names, every registry shell is shown in picker order.
@@ -85,6 +88,12 @@ done
 
 case "$variant" in
     main | alt | alt-v2 | alt-v3) ;;
+    theme:*)
+        terminal_themes | grep -qxF -- "${variant#theme:}" || {
+            echo "preview-terminal-themes: unknown theme: ${variant#theme:} (have: $(terminal_themes | tr '\n' ' '))" >&2
+            exit 2
+        }
+        ;;
     *)
         echo "preview-terminal-themes: unknown variant: $variant" >&2
         usage >&2
@@ -124,6 +133,7 @@ for shell in "${shells[@]}"; do
         alt) src="$TERMINAL_DOTFILES_DIR/_alt/$shell" ;;
         alt-v2) src="$TERMINAL_DOTFILES_DIR/_alt-v2/$shell" ;;
         alt-v3) src="$TERMINAL_DOTFILES_DIR/_alt-v3/$shell" ;;
+        theme:*) src="$TERMINAL_THEMES_DIR/${variant#theme:}" ;;
     esac
     starship_src="$src/starship.toml"
     # alt-v3 is a greeting-only layer; its prompt is alt-v2's.

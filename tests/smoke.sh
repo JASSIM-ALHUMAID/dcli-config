@@ -761,11 +761,12 @@ t_render_all=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
     for src in "$TERMINAL_DOTFILES_DIR"/*/starship.toml "$TERMINAL_DOTFILES_DIR"/*/fastfetch \
                "$TERMINAL_DOTFILES_DIR"/_alt/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt/*/fastfetch \
                "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/fastfetch \
-               "$TERMINAL_DOTFILES_DIR"/_alt-v3/*/fastfetch; do
+               "$TERMINAL_DOTFILES_DIR"/_alt-v3/*/fastfetch \
+               "$TERMINAL_DOTFILES_DIR"/_themes/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_themes/*/fastfetch; do
         [ -e "$src" ] || continue
         rel=${src#"$TERMINAL_DOTFILES_DIR"/}
         shell=${rel%%/*}
-        case "$shell" in _alt|_alt-v2|_alt-v3) shell=${rel#*/}; shell=${shell%%/*} ;; esac
+        case "$shell" in _alt|_alt-v2|_alt-v3) shell=${rel#*/}; shell=${shell%%/*} ;; _themes) shell=xenon ;; esac
         terminal_render "$shell" "$src" 2>/dev/null || { echo "render:$rel"; continue; }
         out=$(terminal_rendered_path "$src")
         grep -rIq "{{" "$out" && echo "unfilled:$rel"
@@ -922,6 +923,114 @@ if t_stations=$(bash "$REPO_DIR/tests/terminal-art/test_transit_stations.sh" 2>&
     ok "terminal: transit stations render every path shape"
 else
     bad "terminal: $t_stations"
+fi
+
+# ── terminal: the shell-independent _themes layer ────────────────────────────
+t_lib() { # <body>: run a snippet with the terminal libraries sourced, fixture home and state
+    HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
+        . "'"$REPO_DIR"'/scripts/lib/wallpaper.sh" && . "'"$REPO_DIR"'/scripts/lib/palette.sh" &&
+        . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh" || exit 1
+        '"$1"
+}
+t_link() { readlink -f "$t_home/.config/$1" 2>/dev/null || true; }
+t_apply_rc() { HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" "$@" >/dev/null 2>&1; echo $?; }
+t_theme_list=$(t_lib 'terminal_themes' 2>/dev/null || true)
+t_theme_gaps=""
+for t_name in $t_theme_list; do
+    [ -f "$REPO_DIR/dotfiles/terminal/_themes/$t_name/starship.toml" ] &&
+        [ -f "$REPO_DIR/dotfiles/terminal/_themes/$t_name/fastfetch/config.jsonc" ] || t_theme_gaps="$t_theme_gaps $t_name"
+done
+if [ -n "$t_theme_list" ] && [ -z "$t_theme_gaps" ] &&
+    [ "$(find "$REPO_DIR/dotfiles/terminal/_themes" -mindepth 1 -maxdepth 1 -type d | wc -l)" -eq "$(wc -w <<<"$t_theme_list")" ]; then
+    ok "theme: every _themes theme has a starship and fastfetch template"
+else
+    bad "theme: _themes incomplete or empty (listed: ${t_theme_list:-none}; gaps:${t_theme_gaps:- none})"
+fi
+t_apply xenon
+if t_apply --theme transit xenon &&
+    [ "$(t_link starship.toml)" = "$t_state/render/theme/transit/starship.toml" ] &&
+    [ "$(t_link fastfetch)" = "$t_state/render/theme/transit/fastfetch" ] &&
+    t_apply xenon &&
+    [ "$(t_link starship.toml)" = "$t_state/render/main/xenon/starship.toml" ] &&
+    [ "$(t_link fastfetch)" = "$t_state/render/main/xenon/fastfetch" ]; then
+    ok "theme: --theme is one switch"
+else
+    bad "theme: --theme did not link the theme or did not return to main"
+fi
+if t_apply --use alt-v2 && [ -e "$t_state/prefer-alt-v2" ] &&
+    t_apply --use theme:transit && [ "$(cat "$t_state/theme")" = transit ] &&
+    [ ! -e "$t_state/prefer-alt" ] && [ ! -e "$t_state/prefer-alt-v2" ] && [ ! -e "$t_state/prefer-alt-v3" ] &&
+    [ "$(t_link starship.toml)" = "$t_state/render/theme/transit/starship.toml" ] &&
+    t_apply noctalia &&
+    [ "$(t_link starship.toml)" = "$t_state/render/theme/transit/starship.toml" ] &&
+    [ "$(t_link fastfetch)" = "$t_state/render/theme/transit/fastfetch" ] &&
+    t_apply --use alt-v2 && [ ! -e "$t_state/theme" ]; then
+    ok "theme: --use theme:transit persists across shells and clears alt flags"
+else
+    bad "theme: --use theme:transit did not persist, clear the alt flags, or yield to --use alt-v2"
+fi
+t_apply --use upstream
+t_apply xenon
+t_apply --use theme:transit
+t_theme_oneshot=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt-v2 xenon 2>&1)
+if grep -q "render/alt-v2/xenon/starship.toml" <<<"$t_theme_oneshot" && ! grep -q "render/theme/" <<<"$t_theme_oneshot"; then
+    ok "theme: a one-shot --alt-v2 beats a saved theme"
+else
+    bad "theme: a saved theme beat the one-shot --alt-v2: $t_theme_oneshot"
+fi
+t_apply --use upstream
+t_apply xenon
+t_before_s=$(t_link starship.toml)
+t_before_f=$(t_link fastfetch)
+if [ "$(t_apply_rc --theme nope xenon)" = 2 ] && [ "$(t_apply_rc --use theme:nope)" = 2 ] &&
+    [ "$(t_apply_rc --theme)" = 2 ] && [ ! -e "$t_state/theme" ] &&
+    [ "$(t_link starship.toml)" = "$t_before_s" ] && [ "$(t_link fastfetch)" = "$t_before_f" ]; then
+    ok "theme: unknown theme is a usage error"
+else
+    bad "theme: an unknown theme was not rejected with exit 2 and no change"
+fi
+printf 'ghost\n' >"$t_state/theme"
+t_ghost_err=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" xenon 2>&1 >/dev/null) && t_ghost_rc=0 || t_ghost_rc=$?
+if [ "$t_ghost_rc" = 0 ] && grep -q "saved theme 'ghost' no longer exists" <<<"$t_ghost_err" &&
+    [ "$(grep -c "no longer exists" <<<"$t_ghost_err")" = 1 ] &&
+    [ "$(t_link starship.toml)" = "$t_state/render/main/xenon/starship.toml" ]; then
+    ok "theme: saved theme that no longer exists falls through"
+else
+    bad "theme: a vanished saved theme broke the apply (rc=$t_ghost_rc): $t_ghost_err"
+fi
+rm -f "$t_state/theme"
+# --refresh paints with the running shell's palette, so the running shell must be the one xenon_palette recolours.
+printf 'xenon\n' >"$t_home/.config/hypr/shells/active.conf"
+t_apply --use theme:transit
+t_sig_before=$(cat "$t_state/render/theme/transit/starship.toml.sig" 2>/dev/null || true)
+xenon_palette "#3344cc"
+if [ -n "$t_sig_before" ] && t_apply --refresh &&
+    [ "$(t_link starship.toml)" = "$t_state/render/theme/transit/starship.toml" ] &&
+    [ -n "$(cat "$t_state/render/theme/transit/starship.toml.sig" 2>/dev/null)" ] &&
+    [ "$(cat "$t_state/render/theme/transit/starship.toml.sig")" != "$t_sig_before" ]; then
+    ok "theme: --refresh follows a theme link with the running shell's palette"
+else
+    bad "theme: --refresh did not re-render the worn theme"
+fi
+t_apply --use upstream
+t_probe="$fixture_home/term-probe"
+mkdir -p "$t_probe/_themes/probe/fastfetch"
+printf '{{live}}\n' >"$t_probe/_themes/probe/fastfetch/live-art"
+if HOME="$t_home" TERMINAL_STATE_DIR="$t_state" TERMINAL_DOTFILES_DIR="$t_probe" bash -c '
+    . "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; . "'"$REPO_DIR"'/scripts/lib/palette.sh"; . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh"
+    terminal_render xenon "$TERMINAL_THEMES_DIR/probe/fastfetch" &&
+    [ "$(cat "$TERMINAL_RENDER_DIR/theme/probe/fastfetch/live-art")" = "$TERMINAL_STATE_DIR/live/probe" ]'; then
+    ok "theme: {{live}} renders to the theme's live dir"
+else
+    bad "theme: {{live}} did not render to <state>/live/<theme>"
+fi
+t_preview_before=$(t_link starship.toml)
+if HOME="$t_home" "$REPO_DIR/scripts/preview-terminal-themes.sh" --variant theme:transit xenon >/dev/null 2>&1 &&
+    [ "$(t_link starship.toml)" = "$t_preview_before" ] &&
+    ! HOME="$t_home" "$REPO_DIR/scripts/preview-terminal-themes.sh" --variant theme:nope xenon >/dev/null 2>&1; then
+    ok "theme: preview renders a theme without retargeting live links"
+else
+    bad "theme: preview --variant theme:<name> failed, moved a live link, or accepted an unknown theme"
 fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────
