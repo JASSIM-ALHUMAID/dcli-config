@@ -11,7 +11,8 @@
 # shell's live palette. `main`/`alt` show the matching template where one
 # exists; upstream-only configs are reported as not previewable, not guessed.
 # theme:<name> shows a shell-independent theme (dotfiles/terminal/_themes/<name>)
-# wearing each shell's palette.
+# wearing each shell's palette; a live-art theme gets its logo painted (a still,
+# in that palette) into the throw-away tree first.
 set -euo pipefail
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
@@ -89,7 +90,7 @@ done
 case "$variant" in
     main | alt | alt-v2 | alt-v3) ;;
     theme:*)
-        terminal_themes | grep -qxF -- "${variant#theme:}" || {
+        terminal_theme_exists "${variant#theme:}" || {
             echo "preview-terminal-themes: unknown theme: ${variant#theme:} (have: $(terminal_themes | tr '\n' ' '))" >&2
             exit 2
         }
@@ -189,11 +190,22 @@ for shell in "${shells[@]}"; do
             if [ "$have_fastfetch" = 1 ]; then
                 fastfetch_rendered=$(terminal_rendered_path "$fastfetch_src")
                 ff_args=(-c "$fastfetch_rendered/config.jsonc")
+                # Live art is painted, not shipped: paint this shell's still into the temp
+                # state (in the palette just rendered) so the preview has its picture.
+                live=""
+                if live=$(terminal_live_art "$fastfetch_rendered") &&
+                    ! "$SCRIPT_DIR/paint-terminal-art.sh" --still --theme "${variant#theme:}"; then
+                    # The log goes with the temp tree, so show its newest entry (summary + traceback) now.
+                    echo "!! live art failed to paint for $shell ($variant):" >&2
+                    awk '/^[^ ]/ { entry = "" } { entry = entry "   " $0 "\n" } END { printf "%s", entry }' \
+                        "$TERMINAL_LIVE_DIR/paint.log" >&2 2>/dev/null || true
+                    status=1
+                fi
                 if ! grep -qE '"logo"[[:space:]]*:[[:space:]]*(null|\{[[:space:]]*"type"[[:space:]]*:[[:space:]]*"none")' \
                     "$fastfetch_rendered/config.jsonc"; then
                     logo_file=""
-                    for candidate in logo.png logo.txt; do
-                        [ -f "$fastfetch_rendered/$candidate" ] && { logo_file="$fastfetch_rendered/$candidate"; break; }
+                    for candidate in ${live:+"$live/logo.png"} "$fastfetch_rendered/logo.png" "$fastfetch_rendered/logo.txt"; do
+                        [ -f "$candidate" ] && { logo_file="$candidate"; break; }
                     done
                     if [ -n "$logo_file" ]; then
                         ff_args+=(--logo "$logo_file")

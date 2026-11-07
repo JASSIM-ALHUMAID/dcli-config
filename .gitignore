@@ -61,3 +61,8 @@ dotfiles/environment.d/*dank*
 # ~/.local/state/omarchy and is not linked here at all, so it needs no rule.
 dotfiles/omarchy/plugins/
 dotfiles/omarchy/themes/
+
+# Python bytecode: paint-terminal-art.sh imports scripts/terminal-art/*.py on
+# every greeting and the cache keeps that start-up short; the unit tests in
+# tests/terminal-art leave one too.
+__pycache__/

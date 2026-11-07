@@ -18,6 +18,24 @@ function fish_greeting
     set -l active
     test -r $active_conf; and set active (string match -rv '^\s*(#|$)' < $active_conf)[1]
 
+    # A live-art theme (its fastfetch ships live-art) draws its logo with Python,
+    # too slow to wait for in full: the art is painted ahead into the directory
+    # live-art names and shown from disk. Only when it is missing or expired does
+    # the greeting wait, for a quick still frame; the full art is painted in the
+    # background below, for the next terminal. A failed paint keeps the old art
+    # (or none: fastfetch then shows the distro logo) and is in paint.log.
+    set -l painter ~/.config/dcli/scripts/paint-terminal-art.sh
+    set -l live_art ~/.config/fastfetch/live-art
+    if test -r $live_art; and test -x $painter
+        set -l expires
+        read -l live_dir <$live_art
+        and test -r $live_dir/expires
+        and read expires <$live_dir/expires
+        if not string match -qr '^\d+$' -- "$expires"; or test "$expires" -le (date +%s)
+            command $painter --still &>/dev/null
+        end
+    end
+
     switch "$active"
         case caelestia
             # Upstream's config has "logo": null and indents its own keys, so the
@@ -47,5 +65,10 @@ function fish_greeting
             fastfetch
         case '*'
             fastfetch
+    end
+
+    if test -r $live_art; and test -x $painter
+        command $painter --next &>/dev/null &
+        disown 2>/dev/null
     end
 end

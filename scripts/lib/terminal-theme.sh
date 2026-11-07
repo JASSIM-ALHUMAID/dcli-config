@@ -33,7 +33,11 @@
 # You and recolour themselves from the wallpaper, so {{key}} (#rrggbb) and
 # {{key.rgb}} (r;g;b, for fastfetch's 38;2;… codes) are filled from the shell's
 # live palette (lib/palette.sh) into state/terminal/render/, which is linked.
-# Sourced after lib/wallpaper.sh and lib/palette.sh; callers own `set -euo pipefail`.
+# Each render records the palette it used (<rendered>.palette) for live art:
+# a theme greeting whose fastfetch ships live-art draws its logo with Python,
+# painted ahead of time by paint-terminal-art.sh into state/terminal/live/.
+# Sourced after lib/wallpaper.sh and lib/palette.sh (only terminal_render needs
+# them); callers own `set -euo pipefail`.
 
 TERMINAL_LIB_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 TERMINAL_DOTFILES_DIR="${TERMINAL_DOTFILES_DIR:-$(readlink -f "$TERMINAL_LIB_DIR/../../dotfiles/terminal")}"
@@ -81,13 +85,31 @@ TERMINAL_THEME_FILE="$TERMINAL_STATE_DIR/theme"
 TERMINAL_LIVE_DIR="$TERMINAL_STATE_DIR/live"
 
 # ── Themes ───────────────────────────────────────────────────────────────────
-# terminal_themes: the usable theme names, sorted, one per line. A directory
-# missing either template is not a theme yet.
+# terminal_theme_exists <name>: whether <name> is a usable theme — a directory
+# under _themes/ with both templates (one missing either is not a theme yet).
+# A name is never a path, so "../_alt-v2/xenon" is no theme.
+terminal_theme_exists() {
+  case "$1" in "" | .* | */*) return 1 ;; esac
+  [ -f "$TERMINAL_THEMES_DIR/$1/starship.toml" ] && [ -f "$TERMINAL_THEMES_DIR/$1/fastfetch/config.jsonc" ]
+}
+
+# terminal_themes: the usable theme names, sorted, one per line.
 terminal_themes() {
   local dir
   for dir in "$TERMINAL_THEMES_DIR"/*/; do
-    [ -f "${dir}starship.toml" ] && [ -f "${dir}fastfetch/config.jsonc" ] && { dir=${dir%/}; echo "${dir##*/}"; }
+    dir=${dir%/}
+    terminal_theme_exists "${dir##*/}" && echo "${dir##*/}"
   done | sort
+}
+
+# terminal_live_art <fastfetch dir>: the live-art directory that greeting shows
+# — a theme opts in by shipping fastfetch/live-art holding {{live}}, rendered to
+# state/terminal/live/<theme> — or return 1 when the greeting has no live art.
+terminal_live_art() {
+  local live=""
+  [ -r "$1/live-art" ] || return 1
+  IFS= read -r live <"$1/live-art" || true
+  case "$live" in /*) echo "$live" ;; *) return 1 ;; esac
 }
 
 terminal_alt_oneshot() {
@@ -112,7 +134,7 @@ terminal_theme_choice() {
     origin="saved theme '$name' no longer exists"
   fi
   [ -n "$name" ] || return 0
-  if terminal_themes | grep -qxF -- "$name"; then
+  if terminal_theme_exists "$name"; then
     echo "$name"
   elif [ "$quiet" = 0 ]; then
     echo "!! terminal: $origin — ignoring it" >&2
@@ -233,12 +255,36 @@ terminal_target() {
   if terminal_is_template "$src"; then terminal_rendered_path "$src"; else echo "$src"; fi
 }
 
+# terminal_keep_palette <rendered path> <palette json>: record the palette a
+# render used as <rendered path>.palette, beside its .sig. Live art paints with
+# it (paint-terminal-art.sh): the picture matches the greeting it sits in, and
+# palette_for — seconds when it has to run matugen — stays off the greeting's
+# path. Rewritten only when it differs; atomic, so a painter never reads half.
+terminal_keep_palette() {
+  local file="$1.palette" kept=""
+  [ -r "$file" ] && { IFS= read -r kept <"$file" || true; }
+  [ "$kept" = "$2" ] && return 0
+  printf '%s\n' "$2" >"$file.$BASHPID.tmp" && mv -f "$file.$BASHPID.tmp" "$file" && return 0
+  rm -f "$file.$BASHPID.tmp"
+  return 1
+}
+
+# terminal_render_palette <rendered path>: the palette JSON its last render
+# used, or return 1 when none is on record.
+terminal_render_palette() {
+  local palette=""
+  [ -r "$1.palette" ] || return 1
+  IFS= read -r palette <"$1.palette" || true
+  [ -n "$palette" ] || return 1
+  echo "$palette"
+}
+
 # terminal_render <shell> <template path>: fill the template (file or fastfetch
 # directory) from the shell's palette (and, for a theme, its {{live}} dir) into its rendered twin. Skipped when the
 # palette and template are unchanged since the last render (a cheap signature),
 # so --refresh can run on every terminal start. Atomic: a reader never sees a
 # half-written config, and an unfilled {{token}} fails the render instead of
-# shipping it.
+# shipping it. Either way the palette it wears is on record (terminal_keep_palette).
 terminal_render() {
   local shell="$1" src="$2" out palette sig tmp k v hex f live="" live_escaped
   local -a sed_args=()
@@ -251,7 +297,10 @@ terminal_render() {
       ;;
   esac
   sig=$( { echo "$palette"; [ -z "$live" ] || echo "live=$live"; find "$src" -type f -exec cat {} +; } | sha256sum | cut -c1-32)
-  [ -e "$out" ] && [ "$(cat "$out.sig" 2>/dev/null)" = "$sig" ] && return 0
+  if [ -e "$out" ] && [ "$(cat "$out.sig" 2>/dev/null)" = "$sig" ]; then
+    terminal_keep_palette "$out" "$palette"
+    return
+  fi
   while IFS='=' read -r k v; do
     hex=${v#\#}
     sed_args+=(-e "s/{{$k}}/$v/g" -e "s/{{$k.rgb}}/$((16#${hex:0:2}));$((16#${hex:2:2}));$((16#${hex:4:2}))/g")
@@ -276,5 +325,6 @@ terminal_render() {
     return 1
   fi
   rm -rf "$out" && mv -T "$tmp" "$out" || return 1
+  terminal_keep_palette "$out" "$palette" || return 1
   echo "$sig" >"$out.sig"
 }

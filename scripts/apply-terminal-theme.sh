@@ -50,7 +50,7 @@ usage() {
 
 # require_theme <name>: exits with usage when it is not an installed theme.
 require_theme() {
-  terminal_themes | grep -qxF -- "$1" && return 0
+  terminal_theme_exists "$1" && return 0
   echo "!! terminal: unknown theme '$1'" >&2
   usage
   exit "$EXIT_USAGE"

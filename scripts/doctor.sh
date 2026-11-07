@@ -349,6 +349,39 @@ check_terminal_theme() {
     done
 }
 
+# Live art fails quietly by design: fish discards the painter's output and keeps
+# showing the old picture, so a broken generator or a missing Pillow shows up
+# only here. paint.log summary lines are "<ISO time> <theme> <request> failed:
+# <reason>" (scripts/terminal-art/paint.py); one at or after the current
+# generation's paint means the art on screen is not the art the theme wants.
+check_live_art() {
+    local live theme log failure="" failed_at painted_at=0 expires=""
+    live=$(terminal_live_art "$FASTFETCH_LINK") || return 0
+    theme=${live##*/}
+    log="${live%/*}/paint.log"
+    if ! python3 -c 'import PIL' >/dev/null 2>&1; then
+        warn "terminal: live art for $theme needs python3 with Pillow (python-pillow; run dcli sync)"
+        return
+    fi
+    [ -f "$live/kind" ] && painted_at=$(stat -c %Y "$live/kind")
+    [ -r "$log" ] && failure=$(grep -E "^[^ ]+ $theme (still|next) failed: " "$log" | tail -n1)
+    if [ -n "$failure" ]; then
+        failed_at=$(date -d "${failure%% *}" +%s 2>/dev/null || echo 0)
+        if [ "$failed_at" -ge "$painted_at" ]; then
+            warn "terminal: live art for $theme failed: ${failure#*failed: } (${log/#$HOME/\~})"
+            return
+        fi
+    fi
+    [ -r "$live/expires" ] && IFS= read -r expires <"$live/expires"
+    if [ ! -f "$live/logo.png" ]; then
+        warn "terminal: live art for $theme is not painted yet (run paint-terminal-art.sh --still)"
+    elif ! [[ "$expires" =~ ^[0-9]+$ ]] || [ "$expires" -le "$(date +%s)" ]; then
+        info "terminal: live art for $theme has expired; the next terminal repaints it"
+    else
+        ok "terminal: live art for $theme is current"
+    fi
+}
+
 check_dcli_sync
 check_quickshell_provider
 check_hypr_errors
@@ -361,6 +394,7 @@ check_stray_backups
 check_grub
 check_sddm
 check_terminal_theme
+check_live_art
 
 # ── Summary ──────────────────────────────────────────────────────────────────
 echo

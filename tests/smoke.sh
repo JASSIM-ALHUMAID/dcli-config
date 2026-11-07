@@ -790,11 +790,12 @@ else
 fi
 
 # A live palette must reach the rendered prompt, and --refresh must follow it.
-xenon_palette() { # <primary hex>
-    mkdir -p "$t_home/.cache/xenon"
+xenon_palette() { # <primary hex> [home, default $t_home]
+    local home="${2:-$t_home}"
+    mkdir -p "$home/.cache/xenon"
     jq -n --arg p "$1" '{colors: ({background:"#101010",surface:"#101010",surface_container:"#202020",
         surface_variant:"#303030",on_surface:"#eeeeee",primary:$p,on_primary:"#000000",secondary:"#aaaaaa",
-        tertiary:"#bbbbbb",error:"#ff0000",outline:"#777777"} | map_values({dark: .}))}' >"$t_home/.cache/xenon/colors.json"
+        tertiary:"#bbbbbb",error:"#ff0000",outline:"#777777"} | map_values({dark: .}))}' >"$home/.cache/xenon/colors.json"
 }
 printf 'xenon\n' >"$t_home/.config/hypr/shells/active.conf"
 printf 'user prompt\n' >"$t_home/.config/starship.toml"
@@ -1031,6 +1032,150 @@ if HOME="$t_home" "$REPO_DIR/scripts/preview-terminal-themes.sh" --variant theme
     ok "theme: preview renders a theme without retargeting live links"
 else
     bad "theme: preview --variant theme:<name> failed, moved a live link, or accepted an unknown theme"
+fi
+
+# ── terminal-art: the live-art painter ───────────────────────────────────────
+# paint.py's policy, lock, generations and log are unit-tested with fake theme
+# modules. Here, end to end: paint-terminal-art.sh resolves live-art -> theme ->
+# live dir -> the palette the greeting was rendered with, against a fixture art
+# dir (the real paint.py + artlib.py beside a probe theme, via TERMINAL_ART_DIR);
+# its no-op and usage paths; and fish_greeting's still-then-next flow.
+if python3 -c 'import PIL' >/dev/null 2>&1; then
+    if t_unit=$(cd "$REPO_DIR" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts/terminal-art \
+        python3 -m unittest discover -s tests/terminal-art -p 'test_*.py' 2>&1); then
+        ok "terminal-art: python unit tests pass"
+    else
+        bad "terminal-art: python unit tests failed: $(tail -n 8 <<<"$t_unit" | tr '\n' ' ')"
+    fi
+else
+    ok "terminal-art: python unit tests pass (skipped: python3/Pillow missing)"
+fi
+
+t_art_home="$fixture_home/art-home"
+t_art_state="$fixture_home/art-state"
+t_art_dir="$fixture_home/art"
+t_art_dot="$fixture_home/art-dotfiles"
+t_art_live="$t_art_state/live/probe"
+mkdir -p "$t_art_home/.config/fastfetch" "$t_art_home/.config/hypr/shells" "$t_art_dir/themes" \
+    "$t_art_dot/_themes/probe/fastfetch" "$t_art_home/.config/dcli/scripts"
+printf 'xenon\n' >"$t_art_home/.config/hypr/shells/active.conf"
+t_paint() { # <args>: the painter against the fixture home, state and art dir; prints its exit code
+    HOME="$t_art_home" TERMINAL_STATE_DIR="$t_art_state" TERMINAL_DOTFILES_DIR="$t_art_dot" \
+        TERMINAL_ART_DIR="$t_art_dir" "$REPO_DIR/scripts/paint-terminal-art.sh" "$@" >/dev/null 2>&1
+    echo $?
+}
+t_tree() { find "$t_art_home" "$t_art_state" 2>/dev/null | sort; }
+t_tree_before=$(t_tree)
+# transit is a real theme that draws no live art (no themes/transit.py in the repo's art dir).
+t_transit_rc=$(HOME="$t_art_home" TERMINAL_STATE_DIR="$t_art_state" \
+    "$REPO_DIR/scripts/paint-terminal-art.sh" --still --theme transit >/dev/null 2>&1; echo $?)
+if [ "$(t_paint --still)" = 0 ] && [ "$(t_paint --next)" = 0 ] && [ "$t_transit_rc" = 0 ] &&
+    [ ! -e "$t_art_state" ] && [ "$(t_tree)" = "$t_tree_before" ]; then
+    ok "terminal-art: painter is a no-op without a live theme"
+else
+    bad "terminal-art: painter without a live theme failed or created files"
+fi
+if [ "$(t_paint)" = 2 ] && [ "$(t_paint --still --next)" = 2 ] && [ "$(t_paint --still --theme)" = 2 ] &&
+    [ "$(t_paint --next --theme nope)" = 2 ] && [ "$(t_paint --sometimes)" = 2 ] && [ ! -e "$t_art_state" ]; then
+    ok "terminal-art: painter usage errors exit 2 and change nothing"
+else
+    bad "terminal-art: painter accepted a bad command line"
+fi
+
+cp "$REPO_DIR/scripts/terminal-art/paint.py" "$REPO_DIR/scripts/terminal-art/artlib.py" "$t_art_dir/"
+cat >"$t_art_dir/themes/probe.py" <<'PY'
+"""Smoke-test theme: a stand-in logo; refuses to paint a red primary."""
+
+from artlib import PaintContext, Painted
+
+REPAINT_AFTER_GREETING = False
+LIFETIME_S = 600
+
+
+def paint(ctx: PaintContext) -> Painted:
+    if ctx.palette.primary == (255, 0, 0):
+        raise RuntimeError("probe refuses red")
+    (ctx.out_dir / "logo.png").write_bytes(b"\x89PNG probe")
+    return Painted(expires=int(ctx.now.timestamp()) + LIFETIME_S)
+PY
+printf 'format = "probe "\n' >"$t_art_dot/_themes/probe/starship.toml"
+printf '{"logo": {"type": "none"}, "modules": []}\n' >"$t_art_dot/_themes/probe/fastfetch/config.jsonc"
+printf '{{live}}\n' >"$t_art_dot/_themes/probe/fastfetch/live-art"
+art_palette() { xenon_palette "$1" "$t_art_home"; }
+t_art_apply() {
+    HOME="$t_art_home" TERMINAL_STATE_DIR="$t_art_state" TERMINAL_DOTFILES_DIR="$t_art_dot" \
+        "$REPO_DIR/scripts/apply-terminal-theme.sh" "$@" >/dev/null 2>&1
+}
+t_art_rendered="$t_art_state/render/theme/probe/fastfetch"
+art_palette "#12ab34"
+t_art_apply --theme probe xenon
+# The shell recolours after the render: the art must still match the greeting it sits in.
+art_palette "#ff0000"
+if [ "$(readlink -f "$t_art_home/.config/fastfetch")" = "$t_art_rendered" ] &&
+    [ "$(cat "$t_art_rendered/live-art")" = "$t_art_live" ] &&
+    grep -q '"primary":"#12ab34"' "$t_art_rendered.palette" &&
+    [ "$(t_paint --still)" = 0 ] && [ -L "$t_art_live" ] && [ "$(cat "$t_art_live/kind")" = still ] &&
+    grep -q '"primary":"#12ab34"' "$t_art_live/palette" &&
+    [ "$(t_paint --next)" = 0 ] && [ "$(cat "$t_art_live/kind")" = full ]; then
+    ok "terminal-art: painter paints the worn theme in the palette its greeting was rendered with"
+else
+    bad "terminal-art: painter did not paint the worn theme with the recorded palette"
+fi
+t_art_before=$(readlink "$t_art_live" 2>/dev/null || true)
+t_art_apply --refresh
+if grep -q '"primary":"#ff0000"' "$t_art_rendered.palette" && [ "$(t_paint --next)" = 1 ] &&
+    [ "$(readlink "$t_art_live")" = "$t_art_before" ] && [ -f "$t_art_live/logo.png" ] &&
+    grep -q "probe next failed: RuntimeError: probe refuses red" "$t_art_state/live/paint.log" &&
+    [ -z "$(find "$t_art_state/live" -name '*.tmp')" ]; then
+    ok "terminal-art: a failed paint exits 1, keeps the old art and logs why"
+else
+    bad "terminal-art: a failed paint lost the old art, left debris, or was not logged"
+fi
+rm -f "$t_art_rendered.palette"
+art_palette "#0000ff"
+if [ "$(t_paint --next)" = 0 ] && grep -q '"primary":"#0000ff"' "$t_art_live/palette"; then
+    ok "terminal-art: painter falls back to the running shell's palette when no render recorded one"
+else
+    bad "terminal-art: painter did not fall back to the running shell's palette"
+fi
+# The preview paints each shell's still in that shell's palette: glyph's is fine, xenon's red one is refused.
+t_preview_art() { # <shell>: preview the probe theme; prints stderr, returns its status
+    HOME="$t_art_home" TERMINAL_DOTFILES_DIR="$t_art_dot" TERMINAL_ART_DIR="$t_art_dir" \
+        "$REPO_DIR/scripts/preview-terminal-themes.sh" --variant theme:probe "$1" 2>&1 >/dev/null
+}
+art_palette "#ff0000"
+if t_preview_art glyph >/dev/null && ! t_preview_red=$(t_preview_art xenon) &&
+    grep -q "live art failed to paint for xenon" <<<"$t_preview_red"; then
+    ok "theme: preview paints a live-art theme's still in each shell's palette"
+else
+    bad "theme: preview did not paint live art per shell: ${t_preview_red:-}"
+fi
+art_palette "#0000ff"
+if command -v fish >/dev/null 2>&1; then
+    if fish -n "$REPO_DIR/dotfiles/fish/functions/fish_greeting.fish" 2>/dev/null; then
+        ok "terminal-art: fish_greeting parses"
+    else
+        bad "terminal-art: fish -n rejects fish_greeting.fish"
+    fi
+    # Only the painter is reachable from the fixture's ~/.config/dcli, so no refresher runs.
+    ln -sfn "$REPO_DIR/scripts/paint-terminal-art.sh" "$t_art_home/.config/dcli/scripts/paint-terminal-art.sh"
+    rm -rf "$t_art_state/live"
+    HOME="$t_art_home" TERMINAL_STATE_DIR="$t_art_state" TERMINAL_ART_DIR="$t_art_dir" fish --no-config -c \
+        "source '$REPO_DIR/dotfiles/fish/functions/fish_greeting.fish'; fish_greeting" >/dev/null 2>&1
+    t_art_still=$(cat "$t_art_live/kind" 2>/dev/null || true)
+    T_ART_POLL_ITERS=50
+    T_ART_POLL_S=0.1
+    for _ in $(seq "$T_ART_POLL_ITERS"); do
+        [ "$(cat "$t_art_live/kind" 2>/dev/null)" = full ] && break
+        sleep "$T_ART_POLL_S"
+    done
+    if [ -n "$t_art_still" ] && [ "$(cat "$t_art_live/kind" 2>/dev/null)" = full ]; then
+        ok "terminal-art: fish_greeting paints a still before fastfetch and the full art after it"
+    else
+        bad "terminal-art: fish_greeting did not paint (still before: '${t_art_still}', after: '$(cat "$t_art_live/kind" 2>/dev/null)')"
+    fi
+else
+    ok "terminal-art: fish_greeting parses (skipped: fish missing)"
 fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────

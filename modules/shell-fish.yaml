@@ -7,6 +7,8 @@ packages:
   - fish-pure-prompt
   - starship
   - zoxide
+  # The greeting's live-art logos: scripts/terminal-art draws them with Pillow.
+  - python-pillow
 
 # ~/.config/fish is dcli's own (dotfiles/fish), no longer a symlink into the
 # caelestia-dots checkout: the greeting must follow whichever shell is active,
