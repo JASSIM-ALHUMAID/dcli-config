@@ -7,15 +7,18 @@ usage (paint-terminal-art.sh resolves every argument; run that, not this):
 Layout of the live dir (state/terminal/live/):
     <theme>             symlink to the current generation (what {{live}} names)
     .<theme>.<ns>/      a generation: logo.png and the theme's text files, plus
-                        expires (epoch s), kind (still|full), palette (JSON)
+                        expires (epoch s), kind (still|full), palette (JSON),
+                        painted_for (the epoch s the art depicts)
     .<theme>.state/     the theme's own persistent state (PaintContext.state_dir)
     <theme>.lock        flock: one paint per theme at a time
     paint.log           failures only, newest last, at most PAINT_LOG_KEEP lines
 
-Policy. Art is current when it exists, is unexpired and was painted with this
-palette. --mode still paints a STILL frame only when the art is not current.
---mode next paints the FULL art unless current art is already full; a theme
-with REPAINT_AFTER_GREETING repaints on every next. A still waits up to
+Policy. Art is current when it exists, is unexpired, was painted with this
+palette and depicts no later moment than now: an earlier --now, or the clock
+stepping back, repaints instead of keeping a picture of hours ahead. --mode
+still paints a STILL frame only when the art is not current. --mode next
+paints the FULL art unless current art is already full; a theme with
+REPAINT_AFTER_GREETING repaints on every next. A still waits up to
 STILL_LOCK_WAIT_S for a running paint (whose art is then usually current); a
 next skips at once, so terminals opening together never queue up paints.
 
@@ -25,7 +28,11 @@ or the new, never a partial one. The previous generation is kept (a reader may
 still have it open); older ones and debris of crashed paints are deleted.
 
 Exit status: 0 painted, up to date or busy; 1 failed (logged, old art kept);
-2 usage. Log entry: "<ISO 8601 time> <theme> <still|next> failed: <Type>: <message>",
+2 usage. Nothing is printed on success, except with --now: then the run says
+what it did ("paint: <theme> <request> for <time>: painted|up-to-date|busy"),
+so a screenshot run that changed nothing is visible.
+
+Log entry: "<ISO 8601 time> <theme> <still|next> failed: <Type>: <message>",
 then the traceback with every line indented two spaces (doctor.sh reads the
 unindented summary lines).
 """
@@ -64,6 +71,7 @@ LOGO_FILE = "logo.png"
 EXPIRES_FILE = "expires"
 KIND_FILE = "kind"
 PALETTE_FILE = "palette"
+PAINTED_FOR_FILE = "painted_for"
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -100,6 +108,7 @@ class Generation:
     kind: Mode
     expires: int
     palette: Palette
+    painted_for: int
 
 
 def read_generation(live: Path) -> Generation | None:
@@ -111,6 +120,7 @@ def read_generation(live: Path) -> Generation | None:
             kind=Mode((live / KIND_FILE).read_text().strip()),
             expires=int((live / EXPIRES_FILE).read_text()),
             palette=Palette.from_json((live / PALETTE_FILE).read_text()),
+            painted_for=int((live / PAINTED_FOR_FILE).read_text()),
         )
     except (OSError, ValueError):
         return None
@@ -120,7 +130,7 @@ def mode_to_paint(
     request: Request, current: Generation | None, palette: Palette, now_s: int, repaint_after_greeting: bool
 ) -> Mode | None:
     """The policy: which mode to paint, or None when the current art will do."""
-    if current is None or current.expires <= now_s or current.palette != palette:
+    if current is None or current.expires <= now_s or current.palette != palette or current.painted_for > now_s:
         return Mode.STILL if request is Request.STILL else Mode.FULL
     if request is Request.STILL:
         return None
@@ -214,6 +224,7 @@ def _paint_generation(
         (staging / EXPIRES_FILE).write_text(f"{painted.expires}\n")
         (staging / KIND_FILE).write_text(f"{mode.value}\n")
         (staging / PALETTE_FILE).write_text(f"{palette.to_json()}\n")
+        (staging / PAINTED_FOR_FILE).write_text(f"{int(now.timestamp())}\n")
         staging.rename(generation)
     except BaseException:
         _discard(staging)
@@ -371,12 +382,13 @@ def _parser() -> argparse.ArgumentParser:
         "--now",
         type=_now_argument,
         metavar="TIME",
-        help="an ISO 8601 time to paint instead of the clock (screenshots, tests); without an offset it is local",
+        help="an ISO 8601 time to paint instead of the clock (screenshots, tests); without an offset it is "
+        "local. Prints what the run did: painted, up-to-date or busy",
     )
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None, themes_dir: Path = THEMES_DIR) -> int:
     args = _parser().parse_args(argv)
     request = Request(args.mode)
     live: Path = args.live.absolute()
@@ -384,10 +396,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     now: datetime = args.now or datetime.now().astimezone()
     lock_wait_s = STILL_LOCK_WAIT_S if request is Request.STILL else NEXT_LOCK_WAIT_S
     try:
-        theme = load_theme(args.theme)
+        theme = load_theme(args.theme, themes_dir)
         palette = Palette.from_json(args.palette)
         stats = SystemStats.read()
-        run(theme, live, request, palette, now, stats, lock_wait_s)
+        outcome = run(theme, live, request, palette, now, stats, lock_wait_s)
     except UsageError as exc:
         print(f"paint: {exc}", file=sys.stderr)
         return EXIT_USAGE
@@ -399,6 +411,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         summary = log_failure(log, args.theme, request, exc)
         print(f"paint: {args.theme} {request.value}: {summary} (details in {log})", file=sys.stderr)
         return EXIT_FAILED
+    if args.now is not None:
+        print(f"paint: {args.theme} {request.value} for {now.isoformat(timespec='seconds')}: {outcome.value}")
     return EXIT_OK
 
 

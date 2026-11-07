@@ -6,7 +6,9 @@ nothing here needs Pillow or touches the real state/terminal/live.
 Run: PYTHONPATH=scripts/terminal-art python3 -m unittest discover -s tests/terminal-art -p 'test_*.py'
 """
 
+import contextlib
 import fcntl
+import io
 import json
 import os
 import re
@@ -22,7 +24,18 @@ from pathlib import Path
 
 import paint
 from artlib import NEVER_EXPIRES, Mode, PaintContext, Painted, Palette, SystemStats
-from paint import PAINT_LOG_KEEP, Outcome, PaintError, Request, UsageError, load_theme, parse_now, run
+from paint import (
+    PAINT_LOG_KEEP,
+    Outcome,
+    PaintError,
+    Request,
+    UsageError,
+    load_theme,
+    log_failure,
+    main,
+    parse_now,
+    run,
+)
 
 PALETTE_JSON = {
     "background": "#111318",
@@ -54,6 +67,14 @@ STATS = SystemStats(
 NOW = datetime(2026, 11, 7, 14, 3, 20).astimezone()
 LIFETIME_S = 600
 GENERATION = re.compile(r"^\.fake\.\d+$")
+OLD_ENTRY_LINES = 5
+PROBE_THEME = (
+    "from artlib import NEVER_EXPIRES, Painted\n"
+    "REPAINT_AFTER_GREETING = True\n"
+    "def paint(ctx):\n"
+    "    (ctx.out_dir / 'logo.png').write_bytes(b'png')\n"
+    "    return Painted(expires=NEVER_EXPIRES)\n"
+)
 
 
 class FakeTheme:
@@ -185,6 +206,19 @@ class PolicyTest(PaintTestCase):
         self.assertIs(self.paint(theme, Request.STILL, palette=PALETTE), Outcome.PAINTED)
         self.assertEqual(theme.contexts[-1].palette, PALETTE)
 
+    def test_art_painted_for_a_later_instant_is_stale(self) -> None:
+        # An earlier --now, or the clock stepping back (an RTC kept in local time), must not
+        # leave a sky from hours ahead on screen until real time catches up with it.
+        theme = FakeTheme()
+        later = NOW + timedelta(hours=3)
+        self.paint(theme, Request.NEXT, at=later)
+        self.assertIs(self.paint(theme, Request.NEXT, at=NOW), Outcome.PAINTED)
+        self.assertEqual(int((self.live / "painted_for").read_text()), int(NOW.timestamp()))
+        self.paint(theme, Request.STILL, at=later)
+        self.assertIs(self.paint(theme, Request.STILL, at=NOW), Outcome.PAINTED)
+        self.assertIs(self.paint(theme, Request.STILL, at=NOW), Outcome.UP_TO_DATE)
+        self.assertEqual([ctx.now for ctx in theme.contexts], [later, NOW, later, NOW])
+
     def test_paint_receives_its_context(self) -> None:
         theme = FakeTheme()
         self.paint(theme, Request.STILL)
@@ -263,17 +297,46 @@ class FailureTest(PaintTestCase):
         self.assertRegex(log.splitlines()[0], rf"^{stamp} fake still failed: RuntimeError: the sky fell$")
         self.assertTrue(all(line.startswith("  ") for line in log.splitlines()[1:]))
 
+    def seed_log(self, entries: int) -> None:
+        """Old entries of OLD_ENTRY_LINES lines each: a summary, then indented frames."""
+        self.live_dir.mkdir(parents=True, exist_ok=True)
+        self.log.write_text(
+            "".join(
+                f"2026-11-01T00:00:00+03:00 fake next failed: RuntimeError: old-{n:03d}\n"
+                + "".join(f"  frame {f} of old-{n:03d}\n" for f in range(OLD_ENTRY_LINES - 1))
+                for n in range(entries)
+            )
+        )
+
+    def assert_whole_entries(self, lines: list[str]) -> None:
+        self.assertFalse(lines[0].startswith(" "), "the log starts with a summary line")
+        for n in {m.group(1) for line in lines if (m := re.search(r"old-(\d{3})", line))}:
+            self.assertEqual(sum(f"old-{n}" in line for line in lines), OLD_ENTRY_LINES, f"entry old-{n} is cut")
+
     def test_log_is_trimmed_to_keep_lines(self) -> None:
-        self.live_dir.mkdir(parents=True)
-        self.log.write_text("".join(f"2026-11-01T00:00:00+03:00 fake next failed: old {n}\n" for n in range(500)))
+        self.seed_log(100)
         with self.assertRaises(PaintError):
             self.paint(FakeTheme(error=ValueError("newest")), Request.NEXT)
         lines = self.log.read_text().splitlines()
         self.assertLessEqual(len(lines), PAINT_LOG_KEEP)
-        self.assertGreater(len(lines), PAINT_LOG_KEEP // 2)
-        self.assertFalse(lines[0].startswith(" "), "the log starts with a whole entry")
-        self.assertNotIn("old 0", lines)
-        self.assertTrue(any("ValueError: newest" in line for line in lines if not line.startswith(" ")))
+        self.assertGreaterEqual(len(lines), PAINT_LOG_KEEP - (OLD_ENTRY_LINES - 1))
+        self.assertFalse(any("old-000" in line for line in lines))
+        self.assert_whole_entries(lines)
+        summaries = [line for line in lines if not line.startswith(" ")]
+        self.assertTrue(summaries[-1].endswith("fake next failed: ValueError: newest"))
+
+    def test_log_trim_drops_the_entry_the_cut_lands_in(self) -> None:
+        # 500 seeded lines + a 2-line entry (an exception never raised has no frames):
+        # the last 200 begin on line 3 of old-060, so its 3 remaining lines go too.
+        self.seed_log(100)
+        log_failure(self.log, "fake", Request.NEXT, ValueError("newest"))
+        lines = self.log.read_text().splitlines()
+        self.assertEqual(len(lines), PAINT_LOG_KEEP - 3)
+        self.assertTrue(lines[0].endswith("old-061"))
+        self.assertFalse(any("old-060" in line for line in lines))
+        self.assert_whole_entries(lines)
+        self.assertTrue(lines[-2].endswith("fake next failed: ValueError: newest"))
+        self.assertEqual(lines[-1], "  ValueError: newest")
 
     def test_theme_that_draws_no_logo_fails(self) -> None:
         with self.assertRaisesRegex(PaintError, "logo.png"):
@@ -308,13 +371,7 @@ class LoadThemeTest(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.themes = Path(tmp.name) / "themes"
         self.themes.mkdir()
-        (self.themes / "probe.py").write_text(
-            "from artlib import NEVER_EXPIRES, Painted\n"
-            "REPAINT_AFTER_GREETING = True\n"
-            "def paint(ctx):\n"
-            "    (ctx.out_dir / 'logo.png').write_bytes(b'png')\n"
-            "    return Painted(expires=NEVER_EXPIRES)\n"
-        )
+        (self.themes / "probe.py").write_text(PROBE_THEME)
         self.addCleanup(sys.modules.pop, "themes.probe", None)
 
     def test_loads_a_theme_module_by_name(self) -> None:
@@ -365,6 +422,28 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("--now", result.stdout)
         self.assertIn("ISO 8601", result.stdout)
+
+    def test_clock_override_prints_the_outcome(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            themes = Path(tmp) / "themes"
+            themes.mkdir()
+            (themes / "probe.py").write_text(PROBE_THEME)
+            self.addCleanup(sys.modules.pop, "themes.probe", None)
+            argv = ["--theme", "probe", "--live", str(Path(tmp) / "live" / "probe"), "--mode", "still"]
+            argv += ["--palette", json.dumps(PALETTE_JSON)]
+
+            def paint_at(*now: str) -> tuple[int, str]:
+                out = io.StringIO()
+                with contextlib.redirect_stdout(out):
+                    status = main([*argv, *now], themes_dir=themes)
+                return status, out.getvalue()
+
+            night = parse_now("2026-11-07T22:00:00").isoformat()
+            painted = (0, f"paint: probe still for {night}: painted\n")
+            self.assertEqual(paint_at("--now", "2026-11-07T22:00:00"), painted)
+            self.assertRegex(paint_at("--now", "2026-11-07T22:00:00")[1], r": up-to-date\n$")
+            self.assertRegex(paint_at("--now", "2026-11-07T06:00:00")[1], r"T06:00:00.*: painted\n$")
+            self.assertEqual(paint_at(), (0, ""), "without --now nothing prints")
 
     def test_parse_now_is_local_and_aware(self) -> None:
         utc = datetime.fromisoformat("2026-11-07T06:00:00+00:00")

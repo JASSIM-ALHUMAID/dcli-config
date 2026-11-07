@@ -20,7 +20,8 @@ Theme module contract (checked by paint.py before every paint):
             Keep anything that must outlive a generation (a sequence number)
             in ``ctx.state_dir``, written with write_text_atomic. Raise on
             failure: paint.py logs it and keeps the previous art.
-    paint.py itself writes ``expires``, ``kind`` and ``palette`` beside them.
+    paint.py itself writes ``expires``, ``kind``, ``palette`` and ``painted_for``
+    beside them; a theme must not use those names.
 
 Pillow is imported only by the theme modules that draw; nothing here needs it.
 """
