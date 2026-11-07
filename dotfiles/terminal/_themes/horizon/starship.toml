@@ -1,0 +1,73 @@
+# horizon — the sky over Riyadh as a prompt: a sunrise-to-sunset bar with the sun
+# at its real position (a moon crossing sunset-to-sunrise at night), then path,
+# git, duration and time. The bar reads {{live}}/sun (three epoch seconds the
+# painter writes: sunrise, sunset, next sunrise) and hides when it is missing,
+# unreadable or stale. Right-hand edges are left open on purpose: a frame whose
+# right side depends on variable-width modules misaligns.
+add_newline = true
+command_timeout = 300
+format = """
+${custom.sun}$directory$git_branch$git_status$fill$cmd_duration$time
+$character"""
+
+[fill]
+symbol = " "
+
+[directory]
+format = "[$path](bold fg:{{text}})[$read_only](fg:{{error}})"
+truncation_length = 3
+truncation_symbol = "…/"
+read_only = " ○"
+
+[git_branch]
+symbol = "◆"
+style = "fg:{{secondary}}"
+format = "[  $symbol $branch]($style)"
+
+[git_status]
+style = "fg:{{tertiary}}"
+format = "[( $all_status$ahead_behind)]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{outline}}"
+format = "[ ╌ $duration ]($style)"
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:{{outline}}"
+format = "[$time]($style)"
+
+[character]
+success_symbol = "[›](bold fg:{{primary}})"
+error_symbol = "[›](bold fg:{{error}})"
+vimcmd_symbol = "[‹](bold fg:{{secondary}})"
+
+[custom.sun]
+description = "Sunrise-to-sunset bar; the sun (or the moon at night) at its real position"
+# DCLI_SUN_NOW is a test seam: it replaces the clock so the bar can be checked at fixed instants.
+# Day: gold elapsed, dim remainder; night: silver-blue. Cells: ╶ + 13 track + ╴ = 15.
+command = '''
+awk 'BEGIN {
+  cells = 13
+  now = ENVIRON["DCLI_SUN_NOW"] + 0; if (now == 0) now = systime()
+  if ((getline line < ARGV[1]) <= 0) exit
+  if (split(line, f, " ") < 3 || f[1] !~ /^[0-9]+$/ || f[2] !~ /^[0-9]+$/ || f[3] !~ /^[0-9]+$/) exit
+  rise = f[1] + 0; set = f[2] + 0; nxt = f[3] + 0
+  if (set <= rise || nxt <= set || now < rise || now >= nxt) exit
+  if (now < set) { day = 1; p = (now - rise) / (set - rise) } else { day = 0; p = (now - set) / (nxt - set) }
+  pos = int(p * (cells - 1) + 0.5)
+  if (day) { lit = "\033[38;2;242;193;78m"; glyph = "☀" } else { lit = "\033[38;2;158;178;222m"; glyph = "☾" }
+  dim = "\033[38;2;{{outline.rgb}}m"; reset = "\033[0m"
+  out = lit "╶"
+  for (i = 0; i < cells; i++) {
+    if (i == pos) out = out "\033[1m" glyph "\033[22m" dim
+    else out = out (i < pos ? "─" : dim "─")
+  }
+  printf "%s%s╴%s  ", out, dim, reset
+}' '{{live}}/sun'
+'''
+when = "test -r '{{live}}/sun'"
+shell = ["sh"]
+format = "$output"

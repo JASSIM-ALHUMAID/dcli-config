@@ -773,8 +773,11 @@ t_render_all=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
         if [ -d "$out" ]; then
             command -v fastfetch >/dev/null 2>&1 || continue
             logo="$out/logo.txt"; [ -f "$out/logo.png" ] && logo="$out/logo.png"
-            [ -f "$logo" ] || { echo "no-logo:$rel"; continue; }
-            [ -z "$(fastfetch -c "$out/config.jsonc" --logo "$logo" --pipe true 2>&1 >/dev/null)" ] || echo "fastfetch:$rel"
+            logo_args=(--logo "$logo")
+            # A live-art theme paints its logo at greeting time: before the first paint fastfetch falls back to the distro logo.
+            [ -f "$out/live-art" ] && logo_args=()
+            [ -f "$logo" ] || [ -f "$out/live-art" ] || { echo "no-logo:$rel"; continue; }
+            [ -z "$(fastfetch -c "$out/config.jsonc" "${logo_args[@]}" --pipe true 2>&1 >/dev/null)" ] || echo "fastfetch:$rel"
         else
             command -v starship >/dev/null 2>&1 || continue
             if grep -q "^\[cmd_duration\]" "$out" && ! grep -q "\$cmd_duration" "$out"; then
@@ -1176,6 +1179,28 @@ if command -v fish >/dev/null 2>&1; then
     fi
 else
     ok "terminal-art: fish_greeting parses (skipped: fish missing)"
+fi
+
+# horizon: the real painter and the real theme, end to end in a fixture home.
+if python3 -c 'import PIL' >/dev/null 2>&1; then
+    t_hz_home="$fixture_home/horizon-home"
+    t_hz_state="$fixture_home/horizon-state"
+    mkdir -p "$t_hz_home/.config/hypr/shells"
+    printf 'xenon\n' >"$t_hz_home/.config/hypr/shells/active.conf"
+    art_palette "#12ab34" "$t_hz_home"
+    t_hz() { HOME="$t_hz_home" TERMINAL_STATE_DIR="$t_hz_state" "$@" >/dev/null 2>&1; }
+    t_hz "$REPO_DIR/scripts/apply-terminal-theme.sh" --use theme:horizon xenon
+    t_hz_live="$t_hz_state/live/horizon"
+    if t_hz "$REPO_DIR/scripts/paint-terminal-art.sh" --still && [ "$(cat "$t_hz_live/kind" 2>/dev/null)" = still ] &&
+        t_hz "$REPO_DIR/scripts/paint-terminal-art.sh" --next && [ -L "$t_hz_live" ] && [ -e "$t_hz_live/logo.png" ] &&
+        [ "$(cat "$t_hz_live/kind")" = full ] && [ "$(wc -w <"$t_hz_live/sun")" = 3 ] &&
+        python3 -c 'import sys; from PIL import Image; im = Image.open(sys.argv[1]); sys.exit(0 if getattr(im, "n_frames", 1) > 1 else 1)' "$t_hz_live/logo.png"; then
+        ok "terminal-art: horizon paints a still and a full sky"
+    else
+        bad "terminal-art: horizon did not paint a still and an animated full sky"
+    fi
+else
+    ok "terminal-art: horizon paints a still and a full sky (skipped: Pillow missing)"
 fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────
