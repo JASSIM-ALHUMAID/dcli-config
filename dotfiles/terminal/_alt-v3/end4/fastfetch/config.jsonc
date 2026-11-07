@@ -1,0 +1,126 @@
+// end4 — oscilloscope readout: channel labels, sine-trace rule. (alt-v3: pixel-art logo, same greeting as alt-v2)
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file-raw",
+    "source": "~/.config/fastfetch/logo.txt",
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": {
+        "elapsed": "◆",
+        "total": "◇"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
+      "color": {
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
+      }
+    },
+    "percent": {
+      "type": [
+        "bar",
+        "num"
+      ],
+      "color": {
+        "green": "38;2;{{primary.rgb}}",
+        "yellow": "38;2;{{tertiary.rgb}}",
+        "red": "38;2;{{error.rgb}}"
+      }
+    }
+  },
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}mILLOGICAL IMPULSE\u001b[0m\u001b[38;2;{{outline.rgb}}m  //  \u001b[0m\u001b[38;2;{{tertiary.rgb}}mLIVE SIGNAL\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{secondary.rgb}}m∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿\u001b[0m"
+    },
+    {
+      "type": "os",
+      "format": "{name} {version}",
+      "key": "CH1 sys   "
+    },
+    {
+      "type": "wm",
+      "format": "{pretty-name}",
+      "key": "CH2 wm    "
+    },
+    {
+      "type": "kernel",
+      "key": "CH3 kernel"
+    },
+    {
+      "type": "shell",
+      "format": "{pretty-name}",
+      "key": "CH4 shell "
+    },
+    {
+      "type": "cpu",
+      "format": "{name}",
+      "key": "CH5 cpu   "
+    },
+    {
+      "type": "memory",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "CH6 mem   "
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "CH7 disk  "
+    },
+    {
+      "type": "packages",
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "CH8 pkg   "
+    },
+    {
+      "type": "uptime",
+      "key": "CH9 up    "
+    },
+    {
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "CH0 load  "
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{primary.rgb}}m●\u001b[0m\u001b[38;2;{{outline.rgb}}m trigger auto · 5 ms/div  \u001b[0m\u001b[38;2;{{tertiary.rgb}}m◉\u001b[0m"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+// dms (Dux) — modular patchbay: each row is a port on a cable. (alt-v3: pixel-art logo, same greeting as alt-v2)
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file-raw",
+    "source": "~/.config/fastfetch/logo.txt",
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "38;2;{{primary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": {
+        "elapsed": "■",
+        "total": "·"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
+      "color": {
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
+      }
+    },
+    "percent": {
+      "type": [
+        "bar",
+        "num"
+      ],
+      "color": {
+        "green": "38;2;{{primary.rgb}}",
+        "yellow": "38;2;{{tertiary.rgb}}",
+        "red": "38;2;{{error.rgb}}"
+      }
+    }
+  },
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}m[ DUX ]\u001b[0m\u001b[38;2;{{outline.rgb}}m  MODULAR // PATCHBAY 01  \u001b[0m\u001b[38;2;{{tertiary.rgb}}m>o\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{outline.rgb}}m──●────●────●────●────●────●────●────●────●───\u001b[0m"
+    },
+    {
+      "type": "os",
+      "format": "{name} {version}",
+      "key": "os    "
+    },
+    {
+      "type": "wm",
+      "format": "{pretty-name}",
+      "key": "wm    "
+    },
+    {
+      "type": "kernel",
+      "key": "kernel"
+    },
+    {
+      "type": "shell",
+      "format": "{pretty-name}",
+      "key": "shell "
+    },
+    {
+      "type": "cpu",
+      "format": "{name}",
+      "key": "cpu   "
+    },
+    {
+      "type": "memory",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "mem   "
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "disk  "
+    },
+    {
+      "type": "packages",
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "pkgs  "
+    },
+    {
+      "type": "uptime",
+      "key": "up    "
+    },
+    {
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "load  "
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{tertiary.rgb}}m>o \u001b[0m\u001b[38;2;{{outline.rgb}}mscope · no signal lost  \u001b[0m\u001b[38;2;{{primary.rgb}}m●\u001b[0m\u001b[38;2;{{secondary.rgb}}m●\u001b[0m\u001b[38;2;{{tertiary.rgb}}m●\u001b[0m"
+    }
+  ]
+}

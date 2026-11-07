@@ -1,0 +1,126 @@
+// ambxst — AxLab boot console: timestamped lines, red OK stamp. (alt-v3: pixel-art logo, same greeting as alt-v2)
+// Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file-raw",
+    "source": "~/.config/fastfetch/logo.txt",
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "color": {
+      "keys": "38;2;{{secondary.rgb}}",
+      "output": "38;2;{{text.rgb}}"
+    },
+    "bar": {
+      "char": {
+        "elapsed": "■",
+        "total": "□"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
+      "color": {
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
+      }
+    },
+    "percent": {
+      "type": [
+        "bar",
+        "num"
+      ],
+      "color": {
+        "green": "38;2;{{primary.rgb}}",
+        "yellow": "38;2;{{tertiary.rgb}}",
+        "red": "38;2;{{error.rgb}}"
+      }
+    }
+  },
+  "modules": [
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}mAxLab\u001b[0m\u001b[38;2;{{outline.rgb}}m // \u001b[0m\u001b[1m\u001b[38;2;{{text.rgb}}mAMBXST BOOT CONSOLE\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;{{outline.rgb}}m──────────────────────────────────────────────\u001b[0m"
+    },
+    {
+      "type": "os",
+      "format": "{name} {version}",
+      "key": "[00.000] boot  "
+    },
+    {
+      "type": "wm",
+      "format": "{pretty-name}",
+      "key": "[00.013] wm    "
+    },
+    {
+      "type": "kernel",
+      "key": "[00.034] kernel"
+    },
+    {
+      "type": "shell",
+      "format": "{pretty-name}",
+      "key": "[00.021] shell "
+    },
+    {
+      "type": "cpu",
+      "format": "{name}",
+      "key": "[00.047] cpu   "
+    },
+    {
+      "type": "memory",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "[00.089] memory"
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "[00.144] disk  "
+    },
+    {
+      "type": "packages",
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "[00.190] pkgs  "
+    },
+    {
+      "type": "uptime",
+      "key": "[00.233] uptime"
+    },
+    {
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "[00.260] load  "
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[48;2;{{primary.rgb}}m\u001b[38;2;{{onPrimary.rgb}}m OK \u001b[0m\u001b[38;2;{{tertiary.rgb}}m all subsystems nominal · built for creation\u001b[0m"
+    }
+  ]
+}

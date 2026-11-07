@@ -1,19 +1,21 @@
-# end4 (alt-v2) — illogical impulse as a live signal: the prompt is an
-# oscilloscope channel, the waveform follows the machine's load average.
+# end4 — an oscilloscope channel; the trace is drawn from the load average.
+# Layout: line 1 = identity · path · git ····· duration · time; line 2 = the prompt
+# character. Right-hand edges are left open on purpose: a frame whose right side
+# depends on variable-width modules misaligns.
 add_newline = true
 command_timeout = 300
 format = """
-$time [CH1](bold fg:{{primary}}) ${custom.wave}[│](fg:{{outline}}) $directory$git_branch$git_status$cmd_duration
-[╰─](fg:{{outline}})$character """
+[ CH1 ](bold fg:{{onPrimary}} bg:{{primary}})[ ](fg:{{primary}})${custom.wave} $directory$git_branch$git_status$fill$cmd_duration$time
+$character"""
 
+[fill]
+symbol = " "
 
 [directory]
-style = "bold fg:{{primary}}"
+format = "[$path](bold fg:{{primary}})[$read_only](fg:{{error}})"
 truncation_length = 3
 truncation_symbol = "…/"
-read_only = " ◌"
-read_only_style = "fg:{{error}}"
-format = "[ $path]($style)[$read_only]($read_only_style)"
+read_only = " ⊘"
 
 [git_branch]
 symbol = "∿"
@@ -24,25 +26,25 @@ format = "[  $symbol $branch]($style)"
 style = "fg:{{tertiary}}"
 format = "[( $all_status$ahead_behind)]($style)"
 
+[cmd_duration]
+min_time = 2000
+style = "fg:{{tertiary}}"
+format = "[ LAT $duration ]($style)"
+
 [time]
 disabled = false
 time_format = "%H:%M"
 style = "fg:{{outline}}"
-format = "[$time ]($style)"
+format = "[$time]($style)"
 
-[cmd_duration]
-min_time = 2000
-style = "fg:{{outline}}"
-format = "[LAT $duration]($style) "
+[character]
+success_symbol = "[●](bold fg:{{primary}}) "
+error_symbol = "[✕](bold fg:{{error}}) "
+vimcmd_symbol = "[◌](bold fg:{{tertiary}}) "
 
 [custom.wave]
-command = '''awk 'BEGIN{ split("▁ ▂ ▃ ▄ ▅ ▆ ▇ █",g," ") } { l=$1; for(i=0;i<14;i++){ v=int((sin(i/2.0+l)+1)*3.5); printf "%s", g[v+1] } }' /proc/loadavg'''
+command = '''awk 'BEGIN{ split("▁ ▂ ▃ ▄ ▅ ▆ ▇ █",g," ") } { l=$1; for(i=0;i<10;i++){ v=int((sin(i/1.6+l)+1)*3.5); printf "%s", g[v+1] } }' /proc/loadavg'''
 when = true
 shell = ["sh"]
 format = "[$output]($style)"
 style = "fg:{{secondary}}"
-
-[character]
-success_symbol = "[●](bold fg:{{primary}})"
-error_symbol = "[✕](bold fg:{{error}})"
-vimcmd_symbol = "[◌](bold fg:{{tertiary}})"

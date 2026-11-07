@@ -1,19 +1,21 @@
-# ambxst (alt-v2) — AxLab boot console. The prompt is the site's `~ » Terminal ▏`
-# line, with an OK block and a red cursor; command time is the boot counter.
+# ambxst — AxLab's console: a red block badge, then a `~ »` shell line.
+# Layout: line 1 = identity · path · git ····· duration · time; line 2 = the prompt
+# character. Right-hand edges are left open on purpose: a frame whose right side
+# depends on variable-width modules misaligns.
 add_newline = true
 command_timeout = 300
 format = """
-[\\[ OK \\]](bold fg:{{primary}})[~ »](bold fg:{{error}}) $directory$git_branch$git_status$cmd_duration
-$time $character"""
+[ AX ](bold fg:{{onPrimary}} bg:{{primary}})[ ~ » ](fg:{{tertiary}})$directory$git_branch$git_status$fill$cmd_duration$time
+[»](bold fg:{{primary}}) $character"""
 
+[fill]
+symbol = " "
 
 [directory]
-style = "bold fg:{{primary}}"
+format = "[$path](bold fg:{{text}})[$read_only](fg:{{error}})"
 truncation_length = 3
 truncation_symbol = "…/"
-read_only = " ▏"
-read_only_style = "fg:{{error}}"
-format = "[$path]($style)[$read_only]($read_only_style)"
+read_only = " ✗"
 
 [git_branch]
 symbol = "⌥"
@@ -24,18 +26,18 @@ format = "[  $symbol $branch]($style)"
 style = "fg:{{tertiary}}"
 format = "[( $all_status$ahead_behind)]($style)"
 
+[cmd_duration]
+min_time = 2000
+style = "fg:{{tertiary}}"
+format = "[ BUILD $duration ]($style)"
+
 [time]
 disabled = false
 time_format = "%H:%M"
 style = "fg:{{outline}}"
-format = "[$time ]($style)"
-
-[cmd_duration]
-min_time = 1000
-style = "fg:{{outline}}"
-format = "[BUILD $duration]($style) "
+format = "[$time]($style)"
 
 [character]
-success_symbol = "[█](bold fg:{{primary}})"
-error_symbol = "[█](bold fg:{{error}})"
-vimcmd_symbol = "[▒](bold fg:{{tertiary}})"
+success_symbol = "[▏](bold fg:{{primary}})"
+error_symbol = "[▏](bold fg:{{error}})"
+vimcmd_symbol = "[▏](bold fg:{{tertiary}})"

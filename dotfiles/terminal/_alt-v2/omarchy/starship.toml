@@ -1,43 +1,43 @@
-# omarchy (alt-v2) — the omakase menu. Chef's choice, dotted leaders, no
-# substitutions; the prompt is the order ticket.
+# omarchy — an order ticket: boxed course tag, chef's mark as the character.
+# Layout: line 1 = identity · path · git ····· duration · time; line 2 = the prompt
+# character. Right-hand edges are left open on purpose: a frame whose right side
+# depends on variable-width modules misaligns.
 add_newline = true
-command_timeout = 200
+command_timeout = 300
 format = """
-[┌─](fg:{{outline}})[ OMAKASE ](bold fg:{{primary}})[ ─](fg:{{outline}})$directory$git_branch$git_status$cmd_duration$fill$time[ ─┐](fg:{{outline}})
-[└─](fg:{{outline}})[ CHEF'S CHOICE ](fg:{{tertiary}})$character """
+[┌─](fg:{{outline}})[ OMAKASE ](bold fg:{{background}} bg:{{primary}})[ ](fg:{{outline}})$directory$git_branch$git_status$fill$cmd_duration$time
+[└─](fg:{{outline}}) $character"""
 
 [fill]
 symbol = " "
 
 [directory]
-style = "bold fg:{{primary}}"
-truncation_length = 2
+format = "[$path](bold fg:{{text}})[$read_only](fg:{{error}})"
+truncation_length = 3
 truncation_symbol = "…/"
-read_only = " ○"
-read_only_style = "fg:{{error}}"
-format = "[ $path]($style)[$read_only]($read_only_style)"
+read_only = " ✗"
 
 [git_branch]
 symbol = "❖"
-style = "fg:{{secondary}}"
-format = "[  $symbol $branch]($style)"
+style = "fg:{{tertiary}}"
+format = "[ ┄ $symbol $branch]($style)"
 
 [git_status]
-style = "fg:{{tertiary}}"
+style = "fg:{{secondary}}"
 format = "[( $all_status$ahead_behind)]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "fg:{{secondary}}"
+format = "[ course $duration ]($style)"
 
 [time]
 disabled = false
 time_format = "%H:%M"
 style = "fg:{{outline}}"
-format = "[$time ]($style)"
-
-[cmd_duration]
-min_time = 2000
-style = "fg:{{outline}}"
-format = "[course $duration]($style) "
+format = "[$time ─┐]($style)"
 
 [character]
 success_symbol = "[◇](bold fg:{{primary}})"
-error_symbol = "[✕](bold fg:{{error}})"
-vimcmd_symbol = "[◈](bold fg:{{tertiary}})"
+error_symbol = "[◆](bold fg:{{error}})"
+vimcmd_symbol = "[▫](bold fg:{{tertiary}})"

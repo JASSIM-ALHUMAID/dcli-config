@@ -1,17 +1,18 @@
-// end4 (alt-v2) — illogical impulse as a live signal. The greeting is an
-// oscilloscope: a load-average trace, eight channels, a trigger that stays auto.
+// end4 — oscilloscope readout: channel labels, sine-trace rule.
 // Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
-    "type": "file",
-    "source": "~/.config/fastfetch/logo.txt",
-    "color": {
-      "1": "38;2;{{primary.rgb}}",
-      "2": "38;2;{{secondary.rgb}}",
-      "3": "38;2;{{tertiary.rgb}}"
-    },
-    "padding": { "top": 1, "left": 1, "right": 3 }
+    "type": "kitty",
+    "preserveAspectRatio": true,
+    "source": "~/.config/fastfetch/logo.png",
+    "width": 28,
+    "height": 14,
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
   },
   "display": {
     "separator": "  ",
@@ -20,19 +21,28 @@
       "output": "38;2;{{text.rgb}}"
     },
     "bar": {
-      "char": { "elapsed": "▰", "total": "▱" },
-      "border": { "left": "", "right": "" },
-      "width": 14,
+      "char": {
+        "elapsed": "◆",
+        "total": "◇"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
       "color": {
         "elapsed": "38;2;{{primary.rgb}}",
-        "total": "38;2;{{surfaceVariant.rgb}}"
+        "total": "38;2;{{outline.rgb}}"
       }
     },
     "percent": {
-      "type": ["bar", "num"],
+      "type": [
+        "bar",
+        "num"
+      ],
       "color": {
         "green": "38;2;{{primary.rgb}}",
-        "yellow": "38;2;{{secondary.rgb}}",
+        "yellow": "38;2;{{tertiary.rgb}}",
         "red": "38;2;{{error.rgb}}"
       }
     }
@@ -40,60 +50,80 @@
   "modules": [
     {
       "type": "custom",
-      "format": "\u001b[1;38;2;{{primary.rgb}}mILLOGICAL IMPULSE\u001b[0m  \u001b[38;2;{{outline.rgb}}m// LIVE SIGNAL\u001b[0m"
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}mILLOGICAL IMPULSE\u001b[0m\u001b[38;2;{{outline.rgb}}m  //  \u001b[0m\u001b[38;2;{{tertiary.rgb}}mLIVE SIGNAL\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{secondary.rgb}}mCH1  ∿∿∿∿∿∿∿∿\u001b[0m  \u001b[38;2;{{outline.rgb}}mtrigger auto · 5 ms/div\u001b[0m"
-    },
-    {
-      "type": "command",
-      "key": "trace ",
-      "text": "awk 'BEGIN{ split(\"▁ ▂ ▃ ▄ ▅ ▆ ▇ █\",g,\" \") } { l=$1; for(i=0;i<34;i++){ v=int((sin(i/2.0+l)+1)*3.5); printf \"%s\", g[v+1] } }' /proc/loadavg"
-    },
-    "break",
-    {
-      "type": "cpu",
-      "key": "CH1  cpu    ",
-      "format": "{name}"
-    },
-    {
-      "type": "memory",
-      "key": "CH2  mem    ",
-      "percent": { "type": ["bar", "num"] }
+      "format": "\u001b[38;2;{{secondary.rgb}}m∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿∿\u001b[0m"
     },
     {
       "type": "os",
-      "key": "CH3  sys    ",
-      "format": "{name} {version}"
+      "format": "{name} {version}",
+      "key": "CH1 sys   "
     },
     {
       "type": "wm",
-      "key": "CH4  wm     ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "CH2 wm    "
+    },
+    {
+      "type": "kernel",
+      "key": "CH3 kernel"
     },
     {
       "type": "shell",
-      "key": "CH5  shl    ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "CH4 shell "
+    },
+    {
+      "type": "cpu",
+      "format": "{name}",
+      "key": "CH5 cpu   "
+    },
+    {
+      "type": "memory",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "CH6 mem   "
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "CH7 disk  "
     },
     {
       "type": "packages",
-      "key": "CH6  pkg    ",
-      "format": "{pacman} pacman · {flatpak-user} flatpak"
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "CH8 pkg   "
     },
     {
       "type": "uptime",
-      "key": "CH7  up     "
+      "key": "CH9 up    "
     },
     {
-      "type": "loadavg",
-      "key": "CH8  load   "
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "CH0 load  "
     },
     "break",
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{primary.rgb}}m●\u001b[0m \u001b[38;2;{{outline.rgb}}mtrigger auto · noise floor −∞ · \u001b[0m\u001b[38;2;{{secondary.rgb}}m◉\u001b[0m"
+      "format": "\u001b[38;2;{{primary.rgb}}m●\u001b[0m\u001b[38;2;{{outline.rgb}}m trigger auto · 5 ms/div  \u001b[0m\u001b[38;2;{{tertiary.rgb}}m◉\u001b[0m"
     }
   ]
 }

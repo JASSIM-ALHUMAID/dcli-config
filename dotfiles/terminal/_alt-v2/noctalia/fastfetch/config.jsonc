@@ -1,35 +1,45 @@
-// noctalia (alt-v2) — the observatory logbook: numbered observation entries,
-// a live moon phase, and the owl at the eyepiece. Quiet by design.
+// noctalia — observatory logbook: numbered log entries under a star rule.
 // Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
-    "type": "file",
-    "source": "~/.config/fastfetch/logo.txt",
-    "color": {
-      "1": "38;2;{{primary.rgb}}",
-      "2": "38;2;{{text.rgb}}",
-      "3": "38;2;{{tertiary.rgb}}"
-    },
-    "padding": { "top": 1, "left": 2, "right": 3 }
+    "type": "kitty",
+    "preserveAspectRatio": true,
+    "source": "~/.config/fastfetch/logo.png",
+    "width": 28,
+    "height": 14,
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
   },
   "display": {
     "separator": "  ",
     "color": {
-      "keys": "38;2;{{tertiary.rgb}}",
+      "keys": "38;2;{{primary.rgb}}",
       "output": "38;2;{{text.rgb}}"
     },
     "bar": {
-      "char": { "elapsed": "●", "total": "○" },
-      "border": { "left": "", "right": "" },
-      "width": 12,
+      "char": {
+        "elapsed": "●",
+        "total": "○"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
       "color": {
-        "elapsed": "38;2;{{tertiary.rgb}}",
-        "total": "38;2;{{surfaceVariant.rgb}}"
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
       }
     },
     "percent": {
-      "type": ["bar", "num"],
+      "type": [
+        "bar",
+        "num"
+      ],
       "color": {
         "green": "38;2;{{primary.rgb}}",
         "yellow": "38;2;{{tertiary.rgb}}",
@@ -40,59 +50,80 @@
   "modules": [
     {
       "type": "custom",
-      "format": "\u001b[1;38;2;{{primary.rgb}}mNOCTALIA OBSERVATORY\u001b[0m  \u001b[38;2;{{outline.rgb}}m·  night watch\u001b[0m"
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}mNOCTALIA OBSERVATORY\u001b[0m\u001b[38;2;{{outline.rgb}}m  ·  night watch\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{tertiary.rgb}}m·  ✦  ·    ☾    ·  ✦  ·\u001b[0m  \u001b[38;2;{{outline.rgb}}mquiet by design\u001b[0m"
-    },
-    {
-      "type": "command",
-      "key": "[ 01 ] moon    ",
-      "text": "awk 'BEGIN { a=int(((systime()-947182440)/86400)%29.530588); if(a<1.85) print \"new moon\"; else if(a<7.38) print \"waxing crescent\"; else if(a<11.07) print \"first quarter\"; else if(a<14.77) print \"waxing gibbous\"; else if(a<18.46) print \"full moon\"; else if(a<22.15) print \"waning gibbous\"; else if(a<25.84) print \"last quarter\"; else print \"waning crescent\" }'"
+      "format": "\u001b[38;2;{{outline.rgb}}m·  ✦  ·  ✦  ·  ✦  ·  ✦  ·  ✦  ·  ✦  ·  ✦  ·  ✦\u001b[0m"
     },
     {
       "type": "os",
-      "key": "[ 02 ] target  ",
-      "format": "{name} {version}"
+      "format": "{name} {version}",
+      "key": "[01] target  "
     },
     {
       "type": "wm",
-      "key": "[ 03 ] mirror  ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "[02] mirror  "
     },
     {
       "type": "kernel",
-      "key": "[ 04 ] sky     "
+      "key": "[03] sky     "
+    },
+    {
+      "type": "shell",
+      "format": "{pretty-name}",
+      "key": "[04] dome    "
     },
     {
       "type": "cpu",
-      "key": "[ 05 ] seeing  ",
-      "format": "{name}"
+      "format": "{name}",
+      "key": "[05] seeing  "
     },
     {
       "type": "memory",
-      "key": "[ 06 ] aperture",
-      "percent": { "type": ["bar", "num"] }
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "[06] aperture"
     },
     {
-      "type": "uptime",
-      "key": "[ 07 ] exposure"
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "[07] horizon "
     },
     {
       "type": "packages",
-      "key": "[ 08 ] stars   ",
-      "format": "{pacman} pacman · {flatpak-user} flatpak"
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "[08] stars   "
     },
     {
-      "type": "custom",
-      "key": "[ 09 ] observer",
-      "format": "{$USER} · on duty"
+      "type": "uptime",
+      "key": "[09] exposure"
+    },
+    {
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "[10] airmass "
     },
     "break",
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{tertiary.rgb}}m  {o,o}\u001b[0m  \u001b[38;2;{{outline.rgb}}mclear skies — the eyepiece is warm\u001b[0m"
+      "format": "\u001b[38;2;{{tertiary.rgb}}m{o,o} \u001b[0m\u001b[38;2;{{outline.rgb}}mclear skies — the eyepiece is warm\u001b[0m"
     }
   ]
 }

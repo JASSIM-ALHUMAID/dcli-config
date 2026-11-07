@@ -75,3 +75,28 @@ layer (`alt-v2`), selectable alongside the current main configs and the existing
 `bash tests/smoke.sh` passes, `apply-terminal-theme.sh --dry-run --alt-v2 <shell>`
 points both links at the alt-v2 render tree for all ten shells, and each rendered
 pair is accepted by fastfetch/starship with the fixture palette.
+
+## Revision — 2026-11-07 (execution pass)
+
+The identities above stand; the execution was redone.
+
+- **Logos are the shells' real brand marks**: `logo.png` (square-padded, from
+  the picker icons; caelestia's black mark is tinted light) shown through
+  fastfetch's `kitty` type, sized to the module line count. Hand-drawn ASCII
+  figures are gone. Review note: a logo drawn while Hyprland is still tiling the
+  new terminal looks torn; wait for the window to settle before judging it.
+- **One skeleton, shell-specific dressing.** Logo (width = 2 × rows, height =
+  module line count), title line, rule, ten aligned rows, footer. Keys are
+  padded in the config, never positioned with cursor escapes.
+- **Safe glyphs only.** `█▒░▰▱` render as tall or thin fragments in the target
+  font; bars use `● ○ ■ □ ◆ ◇ ▪ ▫ ▬ ▭ ━ ╌ ·`.
+- **Prompts have no right-hand frame.** Line 1 is identity · path · git, fill,
+  duration · time; line 2 is the character. Powerline caps (`\ue0b0`–`\ue0b6`)
+  join segments where a shell's identity is a capsule or ramp.
+- Dim text uses `secondary`/`outline` depending on contrast; glyph's `outline`
+  (`#2a2a2a`) is invisible on black, so glyph uses `secondary`.
+- **alt-v3 (pixel edition).** `_alt-v3/<shell>/fastfetch/` keeps the pixel-art
+  logos as their own layer: identical modules to alt-v2, `logo.txt` instead of
+  `logo.png`, prompt inherited from alt-v2. `--alt-v3` / `--use alt-v3`;
+  precedence v3 > v2 > alt. Logos in v2 are 640 px (sharp on a 1920×1200
+  panel at the ~340 px the logo occupies).

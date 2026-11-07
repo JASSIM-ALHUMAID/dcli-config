@@ -1,38 +1,48 @@
-// end4pc (alt-v2) — a shareable preset card from the end4-pC community gallery:
-// title, star count, swatch strip, tags, then the machine it was rendered on.
+// end4pc — preset gallery card: tags, swatch strip, author byline.
 // Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
-    "type": "file",
-    "source": "~/.config/fastfetch/logo.txt",
-    "color": {
-      "1": "38;2;{{tertiary.rgb}}",
-      "2": "38;2;{{primary.rgb}}",
-      "3": "38;2;{{secondary.rgb}}"
-    },
-    "padding": { "top": 1, "left": 1, "right": 3 }
+    "type": "kitty",
+    "preserveAspectRatio": true,
+    "source": "~/.config/fastfetch/logo.png",
+    "width": 28,
+    "height": 14,
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
   },
   "display": {
     "separator": "  ",
     "color": {
-      "keys": "38;2;{{tertiary.rgb}}",
+      "keys": "38;2;{{primary.rgb}}",
       "output": "38;2;{{text.rgb}}"
     },
     "bar": {
-      "char": { "elapsed": "█", "total": "░" },
-      "border": { "left": "", "right": "" },
-      "width": 14,
+      "char": {
+        "elapsed": "■",
+        "total": "▫"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
       "color": {
-        "elapsed": "38;2;{{tertiary.rgb}}",
-        "total": "38;2;{{surfaceVariant.rgb}}"
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
       }
     },
     "percent": {
-      "type": ["bar", "num"],
+      "type": [
+        "bar",
+        "num"
+      ],
       "color": {
-        "green": "38;2;{{tertiary.rgb}}",
-        "yellow": "38;2;{{secondary.rgb}}",
+        "green": "38;2;{{primary.rgb}}",
+        "yellow": "38;2;{{tertiary.rgb}}",
         "red": "38;2;{{error.rgb}}"
       }
     }
@@ -40,67 +50,80 @@
   "modules": [
     {
       "type": "custom",
-      "format": "\u001b[1;38;2;{{tertiary.rgb}}mPRESET GALLERY\u001b[0m  \u001b[38;2;{{outline.rgb}}m· end4-pC · community presets\u001b[0m"
+      "format": "\u001b[1m\u001b[38;2;{{tertiary.rgb}}mPRESET GALLERY\u001b[0m\u001b[38;2;{{outline.rgb}}m  ·  end4-pC  ·  \u001b[0m\u001b[38;2;{{primary.rgb}}m★ 3.7k\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m╭─\u001b[0m \u001b[1;38;2;{{tertiary.rgb}}mpC-001\u001b[0m \u001b[38;2;{{outline.rgb}}m──────────────────────────────\u001b[0m \u001b[38;2;{{primary.rgb}}m★ 3.7k\u001b[0m \u001b[38;2;{{outline.rgb}}m─╮\u001b[0m"
+      "format": "\u001b[38;2;{{outline.rgb}}m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌\u001b[0m"
     },
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m│\u001b[0m \u001b[1m\u001b[38;2;{{text.rgb}}m\"Material 3 Expressive\"\u001b[0m \u001b[38;2;{{outline.rgb}}m· remixed by pctrade\u001b[0m   \u001b[38;2;{{outline.rgb}}m│\u001b[0m"
-    },
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m│\u001b[0m \u001b[38;2;{{primary.rgb}}m███\u001b[38;2;{{secondary.rgb}}m███\u001b[38;2;{{tertiary.rgb}}m███\u001b[38;2;{{error.rgb}}m███\u001b[38;2;{{text.rgb}}m███\u001b[38;2;{{outline.rgb}}m███\u001b[0m  \u001b[38;2;{{outline.rgb}}m#material3 #expressive\u001b[0m     \u001b[38;2;{{outline.rgb}}m│\u001b[0m"
-    },
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m╰────────────────────────────────────────────────╯\u001b[0m"
-    },
-    "break",
     {
       "type": "os",
-      "key": "preset   ",
-      "format": "{name} {version}"
+      "format": "{name} {version}",
+      "key": "preset "
     },
     {
       "type": "wm",
-      "key": "surface  ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "surface"
     },
     {
       "type": "kernel",
-      "key": "base     "
+      "key": "base   "
+    },
+    {
+      "type": "shell",
+      "format": "{pretty-name}",
+      "key": "shell  "
     },
     {
       "type": "cpu",
-      "key": "silicon  ",
-      "format": "{name}"
+      "format": "{name}",
+      "key": "silicon"
     },
     {
       "type": "memory",
-      "key": "palette  ",
-      "percent": { "type": ["bar", "num"] }
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "palette"
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "storage"
     },
     {
       "type": "packages",
-      "key": "plugins  ",
-      "format": "{pacman} pacman · {flatpak-user} flatpak"
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "plugins"
     },
     {
       "type": "uptime",
-      "key": "runtime  "
+      "key": "runtime"
     },
     {
-      "type": "custom",
-      "key": "author   ",
-      "format": "pctrade · verified preset"
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "traffic"
     },
     "break",
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{tertiary.rgb}}m[ DOWNLOAD ]\u001b[0m  \u001b[38;2;{{primary.rgb}}m[ INSTALL ]\u001b[0m  \u001b[38;2;{{outline.rgb}}m· share the whole desktop in one click\u001b[0m"
+      "format": "\u001b[48;2;{{primary.rgb}}m   \u001b[0m \u001b[48;2;{{secondary.rgb}}m   \u001b[0m \u001b[48;2;{{tertiary.rgb}}m   \u001b[0m \u001b[48;2;{{surfaceVariant.rgb}}m   \u001b[0m\u001b[38;2;{{outline.rgb}}m  remixed by pctrade · \u001b[0m\u001b[48;2;{{primary.rgb}}m\u001b[38;2;{{onPrimary.rgb}}m INSTALL \u001b[0m"
     }
   ]
 }

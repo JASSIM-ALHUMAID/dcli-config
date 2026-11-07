@@ -4,7 +4,7 @@
 # ~/.config/starship.toml and ~/.config/fastfetch links are never touched.
 #
 # Usage:
-#   preview-terminal-themes.sh [--variant main|alt|alt-v2] [shell...]
+#   preview-terminal-themes.sh [--variant main|alt|alt-v2|alt-v3] [shell...]
 #   preview-terminal-themes.sh --help
 #
 # Defaults to every registry shell in picker order, wearing alt-v2 with each
@@ -38,12 +38,12 @@ RESET=$'\033[0m'
 
 usage() {
     cat <<EOF
-usage: preview-terminal-themes.sh [--variant main|alt|alt-v2] [shell...]
+usage: preview-terminal-themes.sh [--variant main|alt|alt-v2|alt-v3] [shell...]
 
 Renders each shell's prompt and greeting into a temporary directory and prints
 them for review. No live symlink is changed.
 
-  --variant main|alt|alt-v2   layer to preview (default: alt-v2)
+  --variant main|alt|alt-v2|alt-v3   layer to preview (default: alt-v2)
   --help                      show this text
 
 With no shell names, every registry shell is shown in picker order.
@@ -84,7 +84,7 @@ while [ $# -gt 0 ]; do
 done
 
 case "$variant" in
-    main | alt | alt-v2) ;;
+    main | alt | alt-v2 | alt-v3) ;;
     *)
         echo "preview-terminal-themes: unknown variant: $variant" >&2
         usage >&2
@@ -123,8 +123,11 @@ for shell in "${shells[@]}"; do
         main) src="$TERMINAL_DOTFILES_DIR/$shell" ;;
         alt) src="$TERMINAL_DOTFILES_DIR/_alt/$shell" ;;
         alt-v2) src="$TERMINAL_DOTFILES_DIR/_alt-v2/$shell" ;;
+        alt-v3) src="$TERMINAL_DOTFILES_DIR/_alt-v3/$shell" ;;
     esac
     starship_src="$src/starship.toml"
+    # alt-v3 is a greeting-only layer; its prompt is alt-v2's.
+    [ "$variant" = alt-v3 ] && starship_src="$TERMINAL_DOTFILES_DIR/_alt-v2/$shell/starship.toml"
     fastfetch_src="$src/fastfetch"
 
     if [ ! -e "$starship_src" ] && [ ! -d "$fastfetch_src" ]; then
@@ -178,20 +181,24 @@ for shell in "${shells[@]}"; do
                 ff_args=(-c "$fastfetch_rendered/config.jsonc")
                 if ! grep -qE '"logo"[[:space:]]*:[[:space:]]*(null|\{[[:space:]]*"type"[[:space:]]*:[[:space:]]*"none")' \
                     "$fastfetch_rendered/config.jsonc"; then
-                    if [ -f "$fastfetch_rendered/logo.txt" ]; then
-                        ff_args+=(--logo "$fastfetch_rendered/logo.txt")
+                    logo_file=""
+                    for candidate in logo.png logo.txt; do
+                        [ -f "$fastfetch_rendered/$candidate" ] && { logo_file="$fastfetch_rendered/$candidate"; break; }
+                    done
+                    if [ -n "$logo_file" ]; then
+                        ff_args+=(--logo "$logo_file")
                     else
-                        echo "!! missing logo.txt for $shell ($variant)" >&2
+                        echo "!! missing logo (logo.png or logo.txt) for $shell ($variant)" >&2
                         status=1
                     fi
                 fi
                 printf '%s  fastfetch%s\n\n' "$DIM" "$RESET"
-                fastfetch_out=""
-                if ! fastfetch_out=$(fastfetch "${ff_args[@]}" 2>&1); then
+                # Not captured: an image logo needs the real tty.
+                if ! fastfetch "${ff_args[@]}"; then
                     echo "!! fastfetch failed for $shell ($variant)" >&2
                     status=1
                 fi
-                printf '%s\n\n' "$fastfetch_out"
+                printf '\n'
             else
                 printf '%s  fastfetch not installed%s\n\n' "$DIM" "$RESET"
             fi

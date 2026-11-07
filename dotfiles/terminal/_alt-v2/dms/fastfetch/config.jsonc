@@ -1,37 +1,47 @@
-// dms (alt-v2) — a modular patchbay: every field is a module on a cable, with
-// the Dux duck watching the scope. Dux Modular Shell, plugged in.
+// dms (Dux) — modular patchbay: each row is a port on a cable.
 // Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
-    "type": "file",
-    "source": "~/.config/fastfetch/logo.txt",
-    "color": {
-      "1": "38;2;{{primary.rgb}}",
-      "2": "38;2;{{secondary.rgb}}",
-      "3": "38;2;{{tertiary.rgb}}"
-    },
-    "padding": { "top": 1, "left": 1, "right": 3 }
+    "type": "kitty",
+    "preserveAspectRatio": true,
+    "source": "~/.config/fastfetch/logo.png",
+    "width": 28,
+    "height": 14,
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
   },
   "display": {
-    "separator": " ",
+    "separator": "  ",
     "color": {
       "keys": "38;2;{{primary.rgb}}",
       "output": "38;2;{{text.rgb}}"
     },
     "bar": {
-      "char": { "elapsed": "▰", "total": "▱" },
-      "border": { "left": "", "right": "" },
-      "width": 14,
+      "char": {
+        "elapsed": "■",
+        "total": "·"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
       "color": {
-        "elapsed": "38;2;{{secondary.rgb}}",
-        "total": "38;2;{{surfaceVariant.rgb}}"
+        "elapsed": "38;2;{{primary.rgb}}",
+        "total": "38;2;{{outline.rgb}}"
       }
     },
     "percent": {
-      "type": ["bar", "num"],
+      "type": [
+        "bar",
+        "num"
+      ],
       "color": {
-        "green": "38;2;{{secondary.rgb}}",
+        "green": "38;2;{{primary.rgb}}",
         "yellow": "38;2;{{tertiary.rgb}}",
         "red": "38;2;{{error.rgb}}"
       }
@@ -40,54 +50,80 @@
   "modules": [
     {
       "type": "custom",
-      "format": "\u001b[1;38;2;{{primary.rgb}}mDUX MODULAR\u001b[0m \u001b[38;2;{{outline.rgb}}m// PATCHBAY 01\u001b[0m"
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}m[ DUX ]\u001b[0m\u001b[38;2;{{outline.rgb}}m  MODULAR // PATCHBAY 01  \u001b[0m\u001b[38;2;{{tertiary.rgb}}m>o\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{secondary.rgb}}m∿∿∿∿∿∿  >o  ∿∿∿∿∿∿\u001b[0m  \u001b[38;2;{{outline.rgb}}mduck on the scope\u001b[0m"
+      "format": "\u001b[38;2;{{outline.rgb}}m──●────●────●────●────●────●────●────●────●───\u001b[0m"
     },
     {
       "type": "os",
-      "key": "◜ os ◝────────●   ",
-      "format": "{name} {version}"
+      "format": "{name} {version}",
+      "key": "os    "
     },
     {
       "type": "wm",
-      "key": "◜ wm ◝────────●   ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "wm    "
     },
     {
       "type": "kernel",
-      "key": "◜ sys ◝───────●   "
+      "key": "kernel"
     },
     {
       "type": "shell",
-      "key": "◜ shl ◝───────●   ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "shell "
     },
     {
       "type": "cpu",
-      "key": "◜ cpu ◝───────●   ",
-      "format": "{name}"
+      "format": "{name}",
+      "key": "cpu   "
     },
     {
       "type": "memory",
-      "key": "◜ mem ◝───────●   ",
-      "percent": { "type": ["bar", "num"] }
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "mem   "
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "disk  "
     },
     {
       "type": "packages",
-      "key": "◜ dsp ◝───────●   ",
-      "format": "{pacman} pacman · {flatpak-user} flatpak"
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "pkgs  "
     },
     {
       "type": "uptime",
-      "key": "◜ out ◝───────●   "
+      "key": "up    "
+    },
+    {
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "load  "
     },
     "break",
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{primary.rgb}}m╰─●───────●\u001b[0m  \u001b[38;2;{{secondary.rgb}}m>o\u001b[0m  \u001b[38;2;{{outline.rgb}}mscope · no signal lost\u001b[0m"
+      "format": "\u001b[38;2;{{tertiary.rgb}}m>o \u001b[0m\u001b[38;2;{{outline.rgb}}mscope · no signal lost  \u001b[0m\u001b[38;2;{{primary.rgb}}m●\u001b[0m\u001b[38;2;{{secondary.rgb}}m●\u001b[0m\u001b[38;2;{{tertiary.rgb}}m●\u001b[0m"
     }
   ]
 }

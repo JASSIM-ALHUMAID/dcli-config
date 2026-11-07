@@ -318,17 +318,20 @@ check_sddm() {
 # Prompt and fastfetch follow the active shell (docs/ARCHITECTURE.md). WARN only:
 # a shell whose checkout is not installed simply keeps the previous config.
 check_terminal_theme() {
-    local cur tool link want alt alt2 worn
+    local cur tool link want alt alt2 alt3 worn
     cur=$(current_shell) || return
     for tool in starship fastfetch; do
         if [ "$tool" = starship ]; then link="$STARSHIP_LINK"; else link="$FASTFETCH_LINK"; fi
         worn=$(readlink -m "$link")
         alt=$(TERMINAL_PREFER_ALT=1 terminal_target "$tool" "$cur" 2>/dev/null || true)
         alt2=$(TERMINAL_PREFER_ALT_V2=1 terminal_target "$tool" "$cur" 2>/dev/null || true)
+        alt3=$(TERMINAL_PREFER_ALT_V3=1 terminal_target "$tool" "$cur" 2>/dev/null || true)
         if ! want=$(terminal_target "$tool" "$cur"); then
             warn "terminal: no $tool config found for $cur (checkout not installed?)"
         elif [ -L "$link" ] && [ "$worn" = "$(readlink -m "$want")" ] && [ -e "$link" ]; then
             ok "terminal: $tool follows $cur"
+        elif [ -L "$link" ] && [ -n "$alt3" ] && [ "$worn" = "$(readlink -m "$alt3")" ] && [ -e "$link" ]; then
+            ok "terminal: $tool follows $cur (alternate v3, --alt-v3)"
         elif [ -L "$link" ] && [ -n "$alt2" ] && [ "$worn" = "$(readlink -m "$alt2")" ] && [ -e "$link" ]; then
             ok "terminal: $tool follows $cur (alternate v2, --alt-v2)"
         elif [ -L "$link" ] && [ -n "$alt" ] && [ "$worn" = "$(readlink -m "$alt")" ] && [ -e "$link" ]; then

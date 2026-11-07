@@ -1,34 +1,45 @@
-// omarchy (alt-v2) — the omakase menu: courses with dotted leaders, a
-// CHEF'S CHOICE stamp, and the doctrine as the last line. No substitutions.
+// omarchy — omakase tasting menu: courses with dotted leaders.
 // Rendered with the shell's live palette by scripts/apply-terminal-theme.sh.
 {
   "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
   "logo": {
-    "type": "file",
-    "source": "~/.config/fastfetch/logo.txt",
-    "color": {
-      "1": "38;2;{{primary.rgb}}",
-      "2": "38;2;{{tertiary.rgb}}"
-    },
-    "padding": { "top": 1, "left": 2, "right": 4 }
+    "type": "kitty",
+    "preserveAspectRatio": true,
+    "source": "~/.config/fastfetch/logo.png",
+    "width": 28,
+    "height": 14,
+    "padding": {
+      "top": 0,
+      "left": 2,
+      "right": 3
+    }
   },
   "display": {
-    "separator": " ",
+    "separator": "  ",
     "color": {
-      "keys": "38;2;{{primary.rgb}}",
+      "keys": "38;2;{{text.rgb}}",
       "output": "38;2;{{text.rgb}}"
     },
     "bar": {
-      "char": { "elapsed": "●", "total": "○" },
-      "border": { "left": "", "right": "" },
-      "width": 12,
+      "char": {
+        "elapsed": "●",
+        "total": "·"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 8,
       "color": {
         "elapsed": "38;2;{{primary.rgb}}",
-        "total": "38;2;{{surfaceVariant.rgb}}"
+        "total": "38;2;{{outline.rgb}}"
       }
     },
     "percent": {
-      "type": ["bar", "num"],
+      "type": [
+        "bar",
+        "num"
+      ],
       "color": {
         "green": "38;2;{{primary.rgb}}",
         "yellow": "38;2;{{tertiary.rgb}}",
@@ -39,67 +50,80 @@
   "modules": [
     {
       "type": "custom",
-      "format": "\u001b[1;38;2;{{primary.rgb}}mOMA // OMAKASE\u001b[0m  \u001b[38;2;{{outline.rgb}}m·  chef's choice, one menu\u001b[0m"
+      "format": "\u001b[1m\u001b[38;2;{{primary.rgb}}mOMAKASE\u001b[0m\u001b[38;2;{{outline.rgb}}m  ·  chef's choice, one menu\u001b[0m"
     },
     {
       "type": "custom",
-      "format": "\u001b[38;2;{{error.rgb}}m╭──────────────────╮\u001b[0m"
-    },
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{error.rgb}}m│\u001b[0m  \u001b[1m\u001b[38;2;{{error.rgb}}mCHEF'S CHOICE\u001b[0m   \u001b[38;2;{{error.rgb}}m│\u001b[0m"
-    },
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{error.rgb}}m╰──────────────────╯\u001b[0m  \u001b[38;2;{{outline.rgb}}mten principles · nothing to configure\u001b[0m"
-    },
-    {
-      "type": "custom",
-      "format": "\u001b[38;2;{{outline.rgb}}m──────────────────────────────────────────────────\u001b[0m"
+      "format": "\u001b[38;2;{{outline.rgb}}m──────────────────────────────────────────────\u001b[0m"
     },
     {
       "type": "os",
-      "key": "COURSE 01  hardware ......... ",
-      "format": "{name} {version}"
+      "format": "{name} {version}",
+      "key": "01 hardware "
     },
     {
       "type": "wm",
-      "key": "COURSE 02  service .......... ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "02 service ·"
+    },
+    {
+      "type": "kernel",
+      "key": "03 kernel ··"
     },
     {
       "type": "shell",
-      "key": "COURSE 03  table ............ ",
-      "format": "{pretty-name}"
+      "format": "{pretty-name}",
+      "key": "04 table ···"
     },
     {
       "type": "cpu",
-      "key": "COURSE 04  market ........... ",
-      "format": "{name}"
+      "format": "{name}",
+      "key": "05 market ··"
     },
     {
       "type": "memory",
-      "key": "COURSE 05  palate ........... ",
-      "percent": { "type": ["bar", "num"] }
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "06 palate ··"
+    },
+    {
+      "type": "disk",
+      "folders": "/",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "07 cellar ··"
     },
     {
       "type": "packages",
-      "key": "COURSE 06  cellar ........... ",
-      "format": "{pacman} pacman · {flatpak-user} flatpak"
+      "format": "{pacman} pacman · {flatpak-all} flatpak",
+      "key": "08 pantry ··"
     },
     {
       "type": "uptime",
-      "key": "COURSE 07  tab .............. "
+      "key": "09 tab ·····"
     },
     {
-      "type": "custom",
-      "key": "COURSE 08  doctrine ......... ",
-      "format": "We can fix everything."
+      "type": "cpuusage",
+      "percent": {
+        "type": [
+          "bar",
+          "num"
+        ]
+      },
+      "key": "10 pace ····"
     },
     "break",
     {
       "type": "custom",
-      "format": "\u001b[1;38;2;{{error.rgb}}mNO SUBSTITUTIONS\u001b[0m  \u001b[38;2;{{outline.rgb}}m·  served with an opinion · \u001b[0m\u001b[38;2;{{text.rgb}}m{$USER}\u001b[0m"
+      "format": "\u001b[38;2;{{tertiary.rgb}}m◇ \u001b[0m\u001b[38;2;{{outline.rgb}}mno substitutions · we can fix everything\u001b[0m"
     }
   ]
 }

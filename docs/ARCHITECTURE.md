@@ -243,7 +243,15 @@ sufficient. Work through all of these:
     and AxLab console, Dux's spy duck on a patchbay, noctalia's owl and live moon phase,
     xenon's flame and flight control, ii's oscilloscope, pC's preset card, omarchy's
     omakase menu, glyph's matrix, ryoku's Amaterasu issue, caelestia's aurora tank) — not
-    from its picker blurb. To review a layer without moving either link, run
+    from its picker blurb. The greeting's logo is the shell's real brand mark, a square-padded
+    640 px `logo.png` beside `config.jsonc` (fastfetch `kitty` type, so it also works over ssh);
+    `dotfiles/terminal/_alt-v3/<name>/fastfetch/` is the pixel-art edition: the same
+    greeting with a half-block `logo.txt` (made by `scripts/make-terminal-logo.py`, Pillow,
+    authoring time only), worn with `--alt-v3` / `--use alt-v3` over alt-v2's prompt; smoke
+    fails if the two greetings drift apart;
+    bars use only `● ○ ■ □ ◆ ◇ ▪ ▫ ▬ ▭ ━ ╌ ·`, since `█ ▒ ░ ▰ ▱` render badly. Screenshot
+    a layout only after the window has settled: a tiling WM resizes a fresh terminal, and
+    a logo measured before that tears. To review a layer without moving either link, run
     `scripts/preview-terminal-themes.sh [--variant main|alt|alt-v2] [shell…]`: it renders
     into a throw-away tree and prints each prompt and greeting. A config that references files its checkout
     keeps elsewhere (ryoku's emblem) lists them in `UPSTREAM_FASTFETCH_EXTRAS`; the applier

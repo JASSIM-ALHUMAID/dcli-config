@@ -724,6 +724,25 @@ if [ -z "$terminal_v2_missing" ]; then
 else
     bad "terminal: no alt-v2 source for:$terminal_v2_missing"
 fi
+# alt-v3 is alt-v2 with a pixel logo: same modules, so the two must not drift.
+terminal_v3_drift=""
+for name in "${registry_shells[@]}"; do
+    v2="$REPO_DIR/dotfiles/terminal/_alt-v2/$name/fastfetch"
+    v3="$REPO_DIR/dotfiles/terminal/_alt-v3/$name/fastfetch"
+    if [ ! -f "$v3/config.jsonc" ] || [ ! -f "$v3/logo.txt" ] || [ ! -f "$v2/logo.png" ]; then
+        terminal_v3_drift="$terminal_v3_drift $name(missing)"
+        continue
+    fi
+    if ! diff -q <(grep -v '^//' "$v2/config.jsonc" | jq -S 'del(.logo)') \
+        <(grep -v '^//' "$v3/config.jsonc" | jq -S 'del(.logo)') >/dev/null; then
+        terminal_v3_drift="$terminal_v3_drift $name(drift)"
+    fi
+done
+if [ -z "$terminal_v3_drift" ]; then
+    ok "terminal: every alt-v3 greeting matches alt-v2 apart from its pixel logo"
+else
+    bad "terminal: alt-v3 out of step with alt-v2:$terminal_v3_drift"
+fi
 # fish_greeting treats a caelestia config with `"logo": null` as upstream and
 # prints its own banner first; the alt-v2 cover must not match that probe.
 if grep -q '"logo": null' "$REPO_DIR/dotfiles/terminal/_alt-v2/caelestia/fastfetch/config.jsonc"; then
@@ -741,17 +760,20 @@ t_render_all=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" bash -c '
     . "'"$REPO_DIR"'/scripts/lib/terminal-theme.sh" || exit 1
     for src in "$TERMINAL_DOTFILES_DIR"/*/starship.toml "$TERMINAL_DOTFILES_DIR"/*/fastfetch \
                "$TERMINAL_DOTFILES_DIR"/_alt/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt/*/fastfetch \
-               "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/fastfetch; do
+               "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/starship.toml "$TERMINAL_DOTFILES_DIR"/_alt-v2/*/fastfetch \
+               "$TERMINAL_DOTFILES_DIR"/_alt-v3/*/fastfetch; do
         [ -e "$src" ] || continue
         rel=${src#"$TERMINAL_DOTFILES_DIR"/}
         shell=${rel%%/*}
-        case "$shell" in _alt|_alt-v2) shell=${rel#*/}; shell=${shell%%/*} ;; esac
+        case "$shell" in _alt|_alt-v2|_alt-v3) shell=${rel#*/}; shell=${shell%%/*} ;; esac
         terminal_render "$shell" "$src" 2>/dev/null || { echo "render:$rel"; continue; }
         out=$(terminal_rendered_path "$src")
-        grep -rq "{{" "$out" && echo "unfilled:$rel"
+        grep -rIq "{{" "$out" && echo "unfilled:$rel"
         if [ -d "$out" ]; then
             command -v fastfetch >/dev/null 2>&1 || continue
-            [ -z "$(fastfetch -c "$out/config.jsonc" --logo "$out/logo.txt" --pipe true 2>&1 >/dev/null)" ] || echo "fastfetch:$rel"
+            logo="$out/logo.txt"; [ -f "$out/logo.png" ] && logo="$out/logo.png"
+            [ -f "$logo" ] || { echo "no-logo:$rel"; continue; }
+            [ -z "$(fastfetch -c "$out/config.jsonc" --logo "$logo" --pipe true 2>&1 >/dev/null)" ] || echo "fastfetch:$rel"
         else
             command -v starship >/dev/null 2>&1 || continue
             if grep -q "^\[cmd_duration\]" "$out" && ! grep -q "\$cmd_duration" "$out"; then
@@ -835,6 +857,20 @@ if t_apply --use alt-v2 && [ -e "$t_state/prefer-alt-v2" ] && [ ! -e "$t_state/p
     ok "terminal: --use alt-v2 persists, --use alt supersedes it, --use upstream ends both"
 else
     bad "terminal: --use alt-v2|alt|upstream did not persist or reset"
+fi
+t_alt3=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt-v3 caelestia 2>&1)
+if grep -q "render/alt-v2/caelestia/starship.toml" <<<"$t_alt3" && grep -q "render/alt-v3/caelestia/fastfetch" <<<"$t_alt3"; then
+    ok "terminal: --alt-v3 wears the pixel greeting over alt-v2's prompt"
+else
+    bad "terminal: --alt-v3 did not resolve _alt-v3 fastfetch + _alt-v2 starship: $t_alt3"
+fi
+if t_apply --use alt-v3 && [ -e "$t_state/prefer-alt-v3" ] && [ ! -e "$t_state/prefer-alt-v2" ] &&
+    [ "$(readlink -f "$t_home/.config/fastfetch")" = "$t_state/render/alt-v3/caelestia/fastfetch" ] &&
+    t_apply --use alt-v2 && [ ! -e "$t_state/prefer-alt-v3" ] &&
+    [ "$(readlink -f "$t_home/.config/fastfetch")" = "$t_state/render/alt-v2/caelestia/fastfetch" ]; then
+    ok "terminal: --use alt-v3 persists and alt-v2 supersedes it"
+else
+    bad "terminal: --use alt-v3 did not persist or reset"
 fi
 t_apply --use alt-v2
 t_alt_oneshot=$(HOME="$t_home" TERMINAL_STATE_DIR="$t_state" "$REPO_DIR/scripts/apply-terminal-theme.sh" --dry-run --alt caelestia 2>&1)

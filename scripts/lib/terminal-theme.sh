@@ -16,6 +16,10 @@
 # state/terminal/prefer-alt-v2 (--use alt-v2) puts it first, ahead of _alt. A
 # one-shot --alt still beats a standing alt-v2 choice; with neither one-shot set,
 # a saved alt-v2 flag beats a saved alt flag.
+# dotfiles/terminal/_alt-v3/<shell>/fastfetch/ is the pixel-art edition of alt-v2:
+# the same greeting with a half-block pixel logo (logo.txt) in place of the
+# image. It holds fastfetch only; its prompt is alt-v2's. TERMINAL_PREFER_ALT_V3=1
+# (--alt-v3) or state/terminal/prefer-alt-v3 (--use alt-v3) puts it first.
 #
 # Ours are TEMPLATES, never linked directly: most of these shells are Material
 # You and recolour themselves from the wallpaper, so {{key}} (#rrggbb) and
@@ -63,15 +67,20 @@ TERMINAL_STATE_DIR="${TERMINAL_STATE_DIR:-$(readlink -f "$TERMINAL_LIB_DIR/../..
 TERMINAL_RENDER_DIR="$TERMINAL_STATE_DIR/render"
 TERMINAL_PREFER_ALT_FLAG="$TERMINAL_STATE_DIR/prefer-alt"
 TERMINAL_PREFER_ALT_V2_FLAG="$TERMINAL_STATE_DIR/prefer-alt-v2"
+TERMINAL_PREFER_ALT_V3_FLAG="$TERMINAL_STATE_DIR/prefer-alt-v3"
 
 # A one-shot flag on this invocation beats a saved preference; between saved
-# preferences alt-v2 wins. That keeps `--alt` meaningful even while the standing
-# choice is alt-v2.
+# preferences the newest layer wins. That keeps `--alt` meaningful even while the
+# standing choice is alt-v2.
 terminal_alt_choice() {
-  if [ "${TERMINAL_PREFER_ALT_V2:-0}" = 1 ]; then
+  if [ "${TERMINAL_PREFER_ALT_V3:-0}" = 1 ]; then
+    echo alt-v3
+  elif [ "${TERMINAL_PREFER_ALT_V2:-0}" = 1 ]; then
     echo alt-v2
   elif [ "${TERMINAL_PREFER_ALT:-0}" = 1 ]; then
     echo alt
+  elif [ -e "$TERMINAL_PREFER_ALT_V3_FLAG" ]; then
+    echo alt-v3
   elif [ -e "$TERMINAL_PREFER_ALT_V2_FLAG" ]; then
     echo alt-v2
   elif [ -e "$TERMINAL_PREFER_ALT_FLAG" ]; then
@@ -81,13 +90,18 @@ terminal_alt_choice() {
 
 terminal_prefers_alt() { [ "$(terminal_alt_choice)" = alt ]; }
 terminal_prefers_alt_v2() { [ "$(terminal_alt_choice)" = alt-v2 ]; }
+terminal_prefers_alt_v3() { [ "$(terminal_alt_choice)" = alt-v3 ]; }
 
 # ── Resolver ─────────────────────────────────────────────────────────────────
 # terminal_source <starship|fastfetch> <shell>: prints the path to link and
 # returns 0, or returns 1 when no candidate exists (checkout not installed yet).
 terminal_source() {
-  local tool="$1" shell="$2" ours upstream alt="$TERMINAL_DOTFILES_DIR/_alt/$2" alt2="$TERMINAL_DOTFILES_DIR/_alt-v2/$2"
-  if terminal_prefers_alt_v2; then
+  local tool="$1" shell="$2" ours upstream alt="$TERMINAL_DOTFILES_DIR/_alt/$2" alt2="$TERMINAL_DOTFILES_DIR/_alt-v2/$2" alt3="$TERMINAL_DOTFILES_DIR/_alt-v3/$2"
+  # alt-v3 owns the greeting only; its prompt is alt-v2's.
+  if terminal_prefers_alt_v3; then
+    [ "$tool" = fastfetch ] && [ -f "$alt3/fastfetch/config.jsonc" ] && { echo "$alt3/fastfetch"; return 0; }
+  fi
+  if terminal_prefers_alt_v2 || terminal_prefers_alt_v3; then
     [ "$tool" = starship ] && [ -f "$alt2/starship.toml" ] && { echo "$alt2/starship.toml"; return 0; }
     [ "$tool" = fastfetch ] && [ -f "$alt2/fastfetch/config.jsonc" ] && { echo "$alt2/fastfetch"; return 0; }
   fi
@@ -143,12 +157,13 @@ terminal_compose_fastfetch() {
 
 # ── Templates ────────────────────────────────────────────────────────────────
 # A source under dotfiles/terminal/ is a template; its rendered twin keeps the
-# variant (main | alt | alt-v2) in the path, so --refresh can tell which one is worn.
+# variant (main | alt | alt-v2 | alt-v3) in the path, so --refresh can tell which one is worn.
 terminal_is_template() { case "$1" in "$TERMINAL_DOTFILES_DIR"/*) return 0 ;; *) return 1 ;; esac; }
 
 terminal_rendered_path() { # <template path> -> its rendered twin
   local rel="${1#"$TERMINAL_DOTFILES_DIR"/}" variant=main
   case "$rel" in
+    _alt-v3/*) variant="alt-v3"; rel="${rel#_alt-v3/}" ;;
     _alt-v2/*) variant="alt-v2"; rel="${rel#_alt-v2/}" ;;
     _alt/*) variant=alt; rel="${rel#_alt/}" ;;
   esac
@@ -184,12 +199,13 @@ terminal_render() {
   rm -rf "$tmp"
   if [ -d "$src" ]; then
     cp -r "$src" "$tmp" || return 1
-    for f in "$tmp"/*; do [ -f "$f" ] && sed -i "${sed_args[@]}" "$f"; done
+    # logo.png rides along untouched; only text is templated.
+    for f in "$tmp"/*; do [ -f "$f" ] && grep -qI . "$f" && sed -i "${sed_args[@]}" "$f"; done
   else
     sed "${sed_args[@]}" "$src" >"$tmp" || return 1
   fi
-  if grep -rqE '\{\{[a-zA-Z.]+\}\}' "$tmp"; then
-    echo "!! $shell: unknown palette token in ${src#"$TERMINAL_DOTFILES_DIR"/}: $(grep -rhoE '\{\{[a-zA-Z.]+\}\}' "$tmp" | sort -u | tr '\n' ' ')" >&2
+  if grep -rIqE '\{\{[a-zA-Z.]+\}\}' "$tmp"; then
+    echo "!! $shell: unknown palette token in ${src#"$TERMINAL_DOTFILES_DIR"/}: $(grep -rIhoE '\{\{[a-zA-Z.]+\}\}' "$tmp" | sort -u | tr '\n' ' ')" >&2
     rm -rf "$tmp"
     return 1
   fi
