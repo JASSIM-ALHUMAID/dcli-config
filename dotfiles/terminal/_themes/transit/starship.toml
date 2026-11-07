@@ -1,0 +1,70 @@
+# transit — the system as a metro map: the working directory is the line you
+# ride (its last four stations), the git branch a transfer, a failed command a
+# service disruption. Fixed line colours; this theme ignores the shell palette
+# (the same set as fastfetch/config.jsonc: session #9B5DE5 is this line).
+# Layout: line 1 = stations · transfer ····· disruption · delay · time; line 2 =
+# the prompt character. Right-hand edges are left open on purpose: a frame whose
+# right side depends on variable-width modules misaligns.
+add_newline = true
+command_timeout = 300
+format = """
+${custom.stations}$git_branch$fill$status$cmd_duration$time
+$character"""
+
+[fill]
+symbol = " "
+
+[git_branch]
+symbol = "⇄ "
+style = "fg:#2F7DE1"
+format = "[   $symbol$branch]($style)"
+
+[status]
+disabled = false
+style = "fg:#E8453C"
+format = "[⚠ disruption · exit $status]($style)   "
+
+[cmd_duration]
+min_time = 2000
+style = "fg:#F2A93B"
+format = "[delayed $duration]($style)   "
+
+[time]
+disabled = false
+time_format = "%H:%M"
+style = "fg:#8A90A0"
+format = "[$time]($style)"
+
+[character]
+success_symbol = "[›](bold fg:#2FAE66)"
+error_symbol = "[›](bold fg:#E8453C)"
+vimcmd_symbol = "[‹](bold fg:#9B5DE5)"
+
+[custom.stations]
+description = "The working directory as metro stations: the last four, ~ for home"
+# ENVIRON, not -v: an awk -v assignment expands backslashes in directory names.
+# BEGIN only: starship feeds this command to sh on stdin, and a main rule would
+# read the rest of it. The colours are inline because one module draws three.
+command = '''
+awk 'BEGIN {
+  shown = 4
+  line = "\033[38;2;155;93;229m"; name = "\033[38;2;138;144;160m"
+  here = "\033[1;38;2;230;230;230m"; reset = "\033[0m"
+  pwd = ENVIRON["PWD"]; home = ENVIRON["HOME"]; sub(/\/+$/, "", home)
+  n = 1
+  if (home != "" && (pwd == home || index(pwd, home "/") == 1)) {
+    stop[1] = "~"; rest = substr(pwd, length(home) + 2)
+  } else {
+    stop[1] = "/"; rest = substr(pwd, 2)
+  }
+  parts = split(rest, part, "/")
+  for (i = 1; i <= parts; i++) if (part[i] != "") stop[++n] = part[i]
+  first = (n > shown) ? n - shown + 1 : 1
+  out = (first > 1) ? line "┄ " : ""
+  for (i = first; i < n; i++) out = out line "◯ " name stop[i] " " line "━━ "
+  printf "%s%s◉ %s%s%s", out, line, here, stop[n], reset
+}'
+'''
+when = true
+shell = ["sh"]
+format = "$output"

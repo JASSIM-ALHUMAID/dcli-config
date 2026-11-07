@@ -916,6 +916,13 @@ if HOME="$t_home" "$REPO_DIR/scripts/preview-terminal-themes.sh" --variant alt-v
 else
     bad "terminal: preview-terminal-themes.sh failed or moved a live link"
 fi
+# The transit prompt's station command over deep, spaced, unicode, root and
+# HOME-edge paths. It runs the command through sh and awk, so starship is not needed.
+if t_stations=$(bash "$REPO_DIR/tests/terminal-art/test_transit_stations.sh" 2>&1); then
+    ok "terminal: transit stations render every path shape"
+else
+    bad "terminal: $t_stations"
+fi
 
 # ── verdict ──────────────────────────────────────────────────────────────────
 if [ "$failures" -eq 0 ]; then

@@ -1,0 +1,146 @@
+// transit — the system as a metro map: the boot line runs firmware → terminal,
+// branch lines leave it for the hardware, and a service-status board closes it.
+// Fixed line colours, no palette tokens: it reads the same under every shell.
+// Lines: boot 232;69;60 · compute 47;125;225 · memory 47;174;102 · storage
+// 242;169;59 · session 155;93;229. Track 91;97;112, text 230;230;230, dim
+// 138;144;160 (shared with starship.toml and logo.txt).
+// bar.color.elapsed is "" (no colour code), so each bar takes its module's
+// outputColor, its line colour: fastfetch ignores a module-level percent.color.
+// brightColor is off: fastfetch would otherwise bold every key and logo row.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "~/.config/fastfetch/logo.txt",
+    "padding": {
+      "top": 3,
+      "left": 2,
+      "right": 4
+    }
+  },
+  "display": {
+    "separator": "  ",
+    "brightColor": false,
+    "size": {
+      "ndigits": 1
+    },
+    "color": {
+      "keys": "38;2;138;144;160",
+      "output": "38;2;230;230;230"
+    },
+    "bar": {
+      "char": {
+        "elapsed": "━",
+        "total": "━"
+      },
+      "border": {
+        "left": "",
+        "right": ""
+      },
+      "width": 10,
+      "color": {
+        "elapsed": "",
+        "total": "38;2;91;97;112"
+      }
+    }
+  },
+  "modules": [
+    {
+      "type": "title",
+      "format": "\u001b[1m\u001b[38;2;230;230;230m{host-name} metro\u001b[0m\u001b[38;2;138;144;160m  ·  network map\u001b[0m"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;232;69;60m━━━━━━━━━\u001b[38;2;47;125;225m━━━━━━━━━\u001b[38;2;47;174;102m━━━━━━━━━\u001b[38;2;242;169;59m━━━━━━━━━\u001b[38;2;155;93;229m━━━━━━━━━\u001b[0m"
+    },
+    {
+      "type": "bios",
+      "key": "\u001b[38;2;232;69;60m●━━━\u001b[38;2;138;144;160m firmware  ",
+      "format": "{type} · {vendor} {version}"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;232;69;60m┃\u001b[0m"
+    },
+    {
+      "type": "kernel",
+      "key": "\u001b[38;2;232;69;60m●━━━\u001b[38;2;138;144;160m kernel    ",
+      "format": "{sysname} {release}"
+    },
+    {
+      "type": "cpu",
+      "key": "\u001b[38;2;232;69;60m┣\u001b[38;2;47;125;225m━━◆\u001b[38;2;138;144;160m cpu       ",
+      "format": "{name} · {cores-logical} threads"
+    },
+    {
+      "type": "memory",
+      "key": "\u001b[38;2;232;69;60m┣\u001b[38;2;47;174;102m━━◆\u001b[38;2;138;144;160m memory    ",
+      "outputColor": "38;2;47;174;102",
+      "percent": {
+        "type": [
+          "bar"
+        ]
+      },
+      "format": "{percentage-bar}\u001b[38;2;230;230;230m  {used} / {total}"
+    },
+    {
+      "type": "disk",
+      "key": "\u001b[38;2;232;69;60m┣\u001b[38;2;242;169;59m━━◆\u001b[38;2;138;144;160m storage   ",
+      "folders": "/",
+      "outputColor": "38;2;242;169;59",
+      "percent": {
+        "type": [
+          "bar"
+        ]
+      },
+      "format": "{size-percentage-bar}\u001b[38;2;230;230;230m  {size-used} / {size-total}"
+    },
+    {
+      "type": "initsystem",
+      "key": "\u001b[38;2;232;69;60m●━━━\u001b[38;2;138;144;160m init      ",
+      "format": "{name} {version}"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;232;69;60m┃\u001b[0m"
+    },
+    {
+      "type": "wm",
+      "key": "\u001b[38;2;232;69;60m●━━━\u001b[38;2;138;144;160m compositor",
+      "format": "{pretty-name} {version}"
+    },
+    {
+      "type": "gpu",
+      "key": "\u001b[38;2;232;69;60m┣\u001b[38;2;47;125;225m━━◆\u001b[38;2;138;144;160m gpu       "
+    },
+    {
+      "type": "shell",
+      "key": "\u001b[38;2;232;69;60m●━━━\u001b[38;2;138;144;160m shell     ",
+      "format": "{pretty-name} {version}"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;232;69;60m┃\u001b[0m"
+    },
+    {
+      "type": "terminal",
+      "key": "\u001b[38;2;232;69;60m●━━━\u001b[38;2;138;144;160m terminal  ",
+      "format": "{pretty-name}\u001b[1m\u001b[38;2;155;93;229m  ◉ you are here\u001b[0m"
+    },
+    "break",
+    {
+      "type": "custom",
+      "format": "\u001b[38;2;138;144;160mservice status \u001b[38;2;91;97;112m╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌\u001b[0m"
+    },
+    {
+      "type": "uptime",
+      "key": "\u001b[38;2;91;97;112m▪\u001b[38;2;138;144;160m in service   ",
+      "format": "{formatted}"
+    },
+    {
+      "type": "packages",
+      "key": "\u001b[38;2;91;97;112m▪\u001b[38;2;138;144;160m rolling stock",
+      "format": "{all} packages"
+    }
+  ]
+}
