@@ -1024,7 +1024,7 @@ render_shell() {
     started=$SECONDS
     STYLE=${STYLE_OF[$shell]:-$DEFAULT_STYLE}
     THEME_SHELL=$shell
-    wallpaper=$(shell_wallpaper "$shell")
+    wallpaper=$(target_wallpaper grub "$shell")
 
     prepare_wallpaper "$wallpaper" "$shell" || {
         fail "$shell: wallpaper preparation failed"
@@ -1086,12 +1086,14 @@ contact_sheet() {
         mv "$STAGE_DIR/contact-sheet.png.tmp.png" "$STAGE_DIR/contact-sheet.png"
 }
 
-# What a shell's theme was last drawn from: its wallpaper (path, mtime, size),
+# What a shell's theme was last drawn from: its wallpaper (path, mtime, size —
+# the fixed image when grub-wallpaper sets one, so changing that setting or the
+# image itself reads as stale),
 # this renderer's own mtime, and the newest of the registry and the logos —
 # every theme's dock draws all of them, so a swapped logo re-renders everything.
 wallpaper_signature() {
     local wallpaper
-    wallpaper=$(shell_wallpaper "$1")
+    wallpaper=$(target_wallpaper grub "$1")
     printf '%s|%s|%s|%s\n' "${wallpaper:-gradient}" \
         "$([ -z "$wallpaper" ] || stat -c '%Y %s' -- "$wallpaper" 2>/dev/null)" \
         "$(stat -c %Y -- "${BASH_SOURCE[0]}")" \

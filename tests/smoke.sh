@@ -475,6 +475,37 @@ else
     bad "wallpaper: no WALLPAPER_SOURCES record for:$missing_records (GRUB would draw a gradient)"
 fi
 
+# Per-target override (lib/wallpaper.sh target_wallpaper): follow by default, one
+# fixed image for every shell, and a vanished or malformed image follows again.
+bw_state="$grub_fx/bw-state"
+mkdir -p "$bw_state/dcli"
+bw_of() { # <target> <shell>
+    SHELL_WALLPAPER_HOME="$wp_home" XDG_STATE_HOME="$bw_state" bash -c \
+        '. "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; target_wallpaper "$1" "$2"' _ "$1" "$2" 2>"$bw_state/stderr"
+}
+bw_follow_ok=0 bw_fixed_ok=0 bw_gone_ok=0 bw_relative_ok=0 bw_isolated_ok=0
+[ "$(bw_of grub dms)" = "$wp_home/pics/b.png" ] && bw_follow_ok=1
+printf '%s\n' "$wp_home/pics/c.png" >"$bw_state/dcli/grub-wallpaper"
+[ "$(bw_of grub dms)" = "$wp_home/pics/c.png" ] && [ "$(bw_of grub caelestia)" = "$wp_home/pics/c.png" ] && bw_fixed_ok=1
+[ "$(bw_of sddm dms)" = "$wp_home/pics/b.png" ] && bw_isolated_ok=1
+printf '%s\n' "$wp_home/pics/deleted.png" >"$bw_state/dcli/grub-wallpaper"
+[ "$(bw_of grub dms)" = "$wp_home/pics/b.png" ] && grep -q 'not a readable file' "$bw_state/stderr" && bw_gone_ok=1
+printf 'pics/c.png\n' >"$bw_state/dcli/grub-wallpaper"
+[ "$(bw_of grub dms)" = "$wp_home/pics/b.png" ] && bw_relative_ok=1
+if [ "$bw_follow_ok$bw_fixed_ok$bw_isolated_ok$bw_gone_ok$bw_relative_ok" = 11111 ]; then
+    ok "wallpaper: target_wallpaper follows by default, applies one fixed image to every shell per target, and falls back when it is gone or relative"
+else
+    bad "wallpaper: target_wallpaper wrong (follow=$bw_follow_ok fixed=$bw_fixed_ok isolated=$bw_isolated_ok gone=$bw_gone_ok relative=$bw_relative_ok)"
+fi
+setter="$REPO_DIR/scripts/set-boot-wallpaper.sh"
+if ! XDG_STATE_HOME="$bw_state" "$setter" bogus follow >/dev/null 2>&1 &&
+    ! XDG_STATE_HOME="$bw_state" "$setter" grub "$wp_home/pics/nope.png" >/dev/null 2>&1 &&
+    [ "$(XDG_STATE_HOME="$bw_state" "$setter" grub --status)" = "grub: pics/c.png" ]; then
+    ok "wallpaper: set-boot-wallpaper.sh rejects an unknown target and a missing image without touching the setting"
+else
+    bad "wallpaper: set-boot-wallpaper.sh accepted bad input or changed the setting"
+fi
+
 # Installer + shared status helper in a fixture root (no systemctl, no sync, no
 # grub-mkconfig under DCLI_INSTALL_ROOT).
 inst_root="$grub_fx/root"
@@ -502,9 +533,10 @@ else
 fi
 units="$inst_root/user-units"
 if grep -qx "ExecStart=$REPO_DIR/scripts/render-grub-theme.sh --changed all" "$units/dcli-grub-render.service" &&
-    [ "$(grep -c '^PathChanged=' "$units/dcli-grub-render.path")" = "$(DCLI_INSTALL_ROOT="$inst_root" bash -c '. "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; wallpaper_state_files' | wc -l)" ] &&
+    [ "$(grep -c '^PathChanged=' "$units/dcli-grub-render.path")" = "$(($(DCLI_INSTALL_ROOT="$inst_root" bash -c '. "'"$REPO_DIR"'/scripts/lib/wallpaper.sh"; wallpaper_state_files' | wc -l) + 1))" ] &&
+    grep -qx "PathChanged=${XDG_STATE_HOME:-$HOME/.local/state}/dcli/grub-wallpaper" "$units/dcli-grub-render.path" &&
     ! grep -q '@[A-Z_]*@' "$units"/dcli-grub-render.*; then
-    ok "grub: installer writes the user render units, one PathChanged per wallpaper state file"
+    ok "grub: installer writes the user render units, one PathChanged per wallpaper state file plus the grub-wallpaper setting"
 else
     bad "grub: user render units missing, unsubstituted or not watching every wallpaper state file"
 fi
@@ -619,6 +651,25 @@ if command -v magick >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     else
         bad "sddm: renderer did not stage every shell"
     fi
+    # One fixed image behind every shell, then back to each shell's own.
+    sddm_state="$sddm_fx/home/.local/state"
+    magick -size 64x64 xc:'#ff0000' "$sddm_fx/fixed.png"
+    is_red() { [ "$(magick "$1" -format '%[fx:(u.r>0.9&&u.g<0.1)?1:0]' info:)" = 1 ]; }
+    sddm_render_changed() {
+        HOME="$sddm_fx/home" XDG_STATE_HOME="$sddm_state" SHELL_WALLPAPER_HOME="$sddm_fx/home" \
+            DCLI_SDDM_STAGE="$sddm_fx/stage" "$REPO_DIR/scripts/render-sddm-theme.sh" --active glyph --changed all >/dev/null 2>&1
+    }
+    printf '%s\n' "$sddm_fx/fixed.png" >"$sddm_state/dcli/sddm-wallpaper"
+    sddm_render_changed
+    fixed_hit=0
+    is_red "$sddm_fx/stage/ambxst/background.jpg" && is_red "$sddm_fx/stage/xenon/background.jpg" && fixed_hit=1
+    printf 'follow\n' >"$sddm_state/dcli/sddm-wallpaper"
+    sddm_render_changed
+    if [ "$fixed_hit" = 1 ] && ! is_red "$sddm_fx/stage/ambxst/background.jpg"; then
+        ok "sddm: a fixed image becomes every shell's background and 'follow' restores the shell's own on the next --changed render"
+    else
+        bad "sddm: fixed-image render wrong (fixed=$fixed_hit)"
+    fi
     if grep -q '^primary=#d71921' "$sddm_fx/stage/glyph/theme.conf.user"; then
         ok "sddm: glyph keeps its fixed palette"
     else
@@ -662,10 +713,14 @@ if command -v magick >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
         [ -f "$inst_root/usr/share/sddm/themes/dcli-omarchy/entry.png" ] &&
         [ -f "$inst_root/usr/share/sddm/themes/dcli-xenon/components/Palette.qml" ] &&
         [ -f "$inst_root/usr/share/sddm/themes/dcli-caelestia/components/Greeting.qml" ] &&
+        grep -qx "ExecStart=$REPO_DIR/scripts/render-sddm-theme.sh --changed all" "$inst_root/user-units/dcli-sddm-render.service" &&
+        grep -qx "PathChanged=${XDG_STATE_HOME:-$HOME/.local/state}/dcli/sddm-wallpaper" "$inst_root/user-units/dcli-sddm-render.path" &&
+        ! grep -q '@[A-Z_]*@' "$inst_root"/user-units/dcli-sddm-render.* &&
         grep -qxF "PathChanged=$(readlink -m "$REPO_DIR/state/sddm-theme")/.stamp" "$inst_root/etc/systemd/system/dcli-sddm-theme.path" &&
         DCLI_INSTALL_ROOT="$inst_root" "$REPO_DIR/scripts/uninstall-sddm-theme.sh" >/dev/null 2>&1 &&
-        [ ! -e "$inst_root/usr/share/sddm/themes/dcli-xenon" ]; then
-        ok "sddm: installer lays down one theme per shell + units; uninstaller removes them"
+        [ ! -e "$inst_root/usr/share/sddm/themes/dcli-xenon" ] &&
+        [ ! -e "$inst_root/user-units/dcli-sddm-render.path" ]; then
+        ok "sddm: installer lays down one theme per shell + root and user units; uninstaller removes them"
     else
         bad "sddm: install/uninstall into a fixture root failed"
     fi

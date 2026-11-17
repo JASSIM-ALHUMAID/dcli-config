@@ -1,0 +1,14 @@
+# Template — scripts/install-sddm-theme.sh substitutes @RENDERER@ and installs
+# the result as ~/.config/systemd/user/dcli-sddm-render.service.
+#
+# Re-stages the SDDM data of every shell whose inputs changed. --changed makes
+# the common trigger (a state file rewritten for some other setting) a cheap
+# no-op; a real render rewrites .stamp, which the root-side
+# dcli-sddm-theme.path turns into an install.
+[Unit]
+Description=Re-render dcli SDDM themes after a wallpaper change
+
+[Service]
+Type=oneshot
+ExecStart=@RENDERER@ --changed all
+Nice=10

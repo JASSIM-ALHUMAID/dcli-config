@@ -14,6 +14,7 @@
 #   /usr/share/sddm/themes/dcli-<shell>/              one theme per registry shell
 #   /etc/systemd/system/dcli-sddm-theme.{path,service}  units, user + staging baked in
 #   /etc/sddm.conf.d/zz-dcli-theme.conf               written by the sync: Current=
+#   ~/.config/systemd/user/dcli-sddm-render.{path,service}  re-render on a wallpaper change
 # Reverse it with scripts/uninstall-sddm-theme.sh.
 #
 # DCLI_INSTALL_ROOT=<dir> redirects every system file to <dir> and drops sudo,
@@ -26,6 +27,8 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 . "$SCRIPT_DIR/lib/shell-common.sh" || exit 1
 # shellcheck source=lib/sddm-common.sh disable=SC1091
 . "$SCRIPT_DIR/lib/sddm-common.sh" || exit 1
+# shellcheck source=lib/wallpaper.sh disable=SC1091
+. "$SCRIPT_DIR/lib/wallpaper.sh" || exit 1
 
 # ── Constants ────────────────────────────────────────────────────────────────
 RENDERER="$SCRIPT_DIR/render-sddm-theme.sh"
@@ -33,7 +36,7 @@ RENDERER="$SCRIPT_DIR/render-sddm-theme.sh"
 UNIT_VALUE_RE='^[A-Za-z0-9._/@+-]+$'
 USER_RE='^[a-z_][a-z0-9_-]*$'
 JOURNAL_TAIL_LINES=25
-STEP_COUNT=6
+STEP_COUNT=7
 STEP=0
 
 if [ -n "$SDDM_ROOT" ]; then
@@ -56,7 +59,7 @@ real_only() { [ -n "$SDDM_ROOT" ] || "$@"; }
 REAL_USER=$(id -un)
 [[ "$REAL_USER" =~ $USER_RE ]] || die "unexpected user name: $REAL_USER"
 [[ "$SDDM_STAGING_DIR" =~ $UNIT_VALUE_RE ]] || die "staging path has characters unsafe for a unit file: $SDDM_STAGING_DIR"
-for f in dcli-sddm-sync "$SDDM_PATH_UNIT" "$SDDM_SERVICE_UNIT"; do
+for f in dcli-sddm-sync "$SDDM_PATH_UNIT" "$SDDM_SERVICE_UNIT" "$SDDM_RENDER_PATH_UNIT" "$SDDM_RENDER_SERVICE_UNIT"; do
     [ -f "$SDDM_SRC_DIR/$f" ] || die "missing $SDDM_SRC_DIR/$f"
 done
 [ -f "$SDDM_BASE_SRC/Main.qml" ] || die "missing $SDDM_BASE_SRC/Main.qml"
@@ -142,6 +145,24 @@ fi
 # ── 6. Follow switches ───────────────────────────────────────────────────────
 step "Enabling $SDDM_PATH_UNIT (refreshes on every render)"
 real_only sudo systemctl enable --now "$SDDM_PATH_UNIT"
+
+# ── 7. Follow wallpaper changes (user units) ─────────────────────────────────
+# Systemd watches each shell's own wallpaper state file and the sddm-wallpaper
+# setting; the renderer's --changed check keeps unrelated writes free.
+step "Enabling $SDDM_RENDER_PATH_UNIT (re-renders on a wallpaper change)"
+mkdir -p "$SDDM_USER_UNIT_DIR" || die "cannot create $SDDM_USER_UNIT_DIR"
+sed "s|@RENDERER@|$RENDERER|g" "$SDDM_SRC_DIR/$SDDM_RENDER_SERVICE_UNIT" \
+    >"$SDDM_USER_UNIT_DIR/$SDDM_RENDER_SERVICE_UNIT" || die "cannot write $SDDM_RENDER_SERVICE_UNIT"
+watched=$({ wallpaper_state_files; boot_wallpaper_file sddm; } | while IFS= read -r file; do
+    [[ "$file" =~ $UNIT_VALUE_RE ]] && echo "PathChanged=$file"
+done)
+[ -n "$watched" ] || die "no wallpaper state files to watch (scripts/lib/wallpaper.sh)"
+awk -v lines="$watched" '$0 == "@PATH_CHANGED@" { print lines; next } { print }' \
+    "$SDDM_SRC_DIR/$SDDM_RENDER_PATH_UNIT" >"$SDDM_USER_UNIT_DIR/$SDDM_RENDER_PATH_UNIT" ||
+    die "cannot write $SDDM_RENDER_PATH_UNIT"
+log "watching $(grep -c . <<<"$watched") wallpaper state files"
+real_only systemctl --user daemon-reload
+real_only systemctl --user enable --now "$SDDM_RENDER_PATH_UNIT"
 
 printf '\n:: Done — SDDM now follows the shell. Pick another look with:\n   %s/switch-sddm-theme.sh   (undo: %s)\n' \
     "$SCRIPT_DIR" "$SDDM_UNINSTALL_COMMAND"

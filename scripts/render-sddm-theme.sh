@@ -14,7 +14,9 @@
 #
 # STAGING CONTRACT (state/sddm-theme/, read by the root side)
 #   <shell>/theme.conf.user  key=value palette + look, written over theme.conf
-#   <shell>/background.jpg   the shell's wallpaper, 1920x1080-ish JPEG
+#   <shell>/background.jpg   the shell's wallpaper — or the one fixed image
+#                            from ~/.local/state/dcli/sddm-wallpaper — as a
+#                            1920x1080-ish JPEG
 #   <shell>/avatar.png       optional, from ~/.face(.icon)
 #   <shell>/.complete        written last
 #   active                   one line: the shell whose theme SDDM wears
@@ -128,12 +130,15 @@ stage_avatar() { # <out.png>
     rm -f "$1"
 }
 
-# signature <shell> <wallpaper>: cheap fingerprint of every input.
+# signature <shell> <shell wallpaper> <background>: cheap fingerprint of every
+# input. The shell's own wallpaper still counts: it can drive the palette even
+# when a fixed background replaces it on screen.
 signature() {
-    local shell="$1" wall="$2" rec file home
+    local shell="$1" wall="$2" background="$3" rec file home
     home=$(wallpaper_home)
     {
-        stat -c '%n %Y %s' "$0" "$wall" "$home/.face" "$home/.face.icon" "$home/$CAELESTIA_CONF" 2>/dev/null
+        echo "background=$background"
+        stat -c '%n %Y %s' "$0" "$wall" "$background" "$home/.face" "$home/.face.icon" "$home/$CAELESTIA_CONF" 2>/dev/null
         for rec in "${PALETTE_SOURCES[@]}"; do
             [ "${rec%%|*}" = "$shell" ] || continue
             file=${rec#*|}
@@ -143,11 +148,12 @@ signature() {
 }
 
 render_shell() {
-    local shell="$1" wall palette tmp final sig
+    local shell="$1" wall background palette tmp final sig
     wall=$(shell_wallpaper "$shell")
+    background=$(target_wallpaper sddm "$shell")
     final="$STAGE_DIR/$shell"
     if [ "$CHANGED_ONLY" = 1 ]; then
-        sig=$(signature "$shell" "$wall")
+        sig=$(signature "$shell" "$wall" "$background")
         [ "$(cat "$SIGNATURE_DIR/$shell" 2>/dev/null)" = "$sig" ] && [ -f "$final/.complete" ] && return 1
     fi
     tmp="$STAGE_DIR/$shell.tmp"
@@ -156,12 +162,12 @@ render_shell() {
     palette=$(palette_for "$shell" "$wall")
     if [ "$(look_field "$shell" 1 || true)" = locklike ] && write_caelestia_conf "$tmp/theme.conf.user"; then :
     else write_conf "$shell" "$palette" "$tmp/theme.conf.user"; fi
-    stage_background "$wall" "$palette" "$tmp/background.jpg" || { warn "$shell: background render failed"; rm -rf "${tmp:?}"; return 2; }
+    stage_background "$background" "$palette" "$tmp/background.jpg" || { warn "$shell: background render failed"; rm -rf "${tmp:?}"; return 2; }
     stage_avatar "$tmp/avatar.png"
     : >"$tmp/.complete"
     rm -rf "${final:?}"
     mv -T "$tmp" "$final" || { warn "$shell: could not move into place"; return 2; }
-    mkdir -p "$SIGNATURE_DIR" && echo "${sig:-$(signature "$shell" "$wall")}" >"$SIGNATURE_DIR/$shell"
+    mkdir -p "$SIGNATURE_DIR" && echo "${sig:-$(signature "$shell" "$wall" "$background")}" >"$SIGNATURE_DIR/$shell"
     log "rendered $shell"
     return 0
 }

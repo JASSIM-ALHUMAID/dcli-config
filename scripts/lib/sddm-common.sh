@@ -25,6 +25,14 @@ SDDM_CONF_FILE="$SDDM_CONF_DIR/zz-dcli-theme.conf"
 SDDM_THEME_PREFIX=dcli-
 SDDM_PATH_UNIT=dcli-sddm-theme.path
 SDDM_SERVICE_UNIT=dcli-sddm-theme.service
+# User-scope pair: re-render on a wallpaper change (the root pair installs).
+SDDM_RENDER_PATH_UNIT=dcli-sddm-render.path
+SDDM_RENDER_SERVICE_UNIT=dcli-sddm-render.service
+if [ -n "$SDDM_ROOT" ]; then
+    SDDM_USER_UNIT_DIR="$SDDM_ROOT/user-units"
+else
+    SDDM_USER_UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+fi
 SDDM_MODE_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/dcli/sddm-theme"
 SDDM_MODE_AUTO=auto
 SDDM_MODULE_FILE="$SDDM_REPO_DIR/modules/sddm-theme.yaml"
@@ -60,6 +68,13 @@ sddm_integration_problems() {
     fi
     if ! grep -qF -- "--staging $SDDM_STAGING_DIR" "$SDDM_UNIT_DIR/$SDDM_SERVICE_UNIT" 2>/dev/null; then
         echo "$SDDM_SERVICE_UNIT missing or pointing at another staging dir"
+    fi
+    if ! grep -qF -- "ExecStart=$SDDM_REPO_DIR/scripts/render-sddm-theme.sh --changed all" \
+        "$SDDM_USER_UNIT_DIR/$SDDM_RENDER_SERVICE_UNIT" 2>/dev/null; then
+        echo "user unit $SDDM_RENDER_SERVICE_UNIT missing or pointing at another renderer"
+    fi
+    if ! grep -q '^PathChanged=' "$SDDM_USER_UNIT_DIR/$SDDM_RENDER_PATH_UNIT" 2>/dev/null; then
+        echo "user unit $SDDM_RENDER_PATH_UNIT missing (wallpaper changes would not re-render)"
     fi
     local name
     for name in "${KNOWN[@]}"; do

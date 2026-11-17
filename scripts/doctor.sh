@@ -305,6 +305,12 @@ check_sddm() {
     else
         warn "sddm: $SDDM_PATH_UNIT is '${state:-absent}', want enabled"
     fi
+    state=$(systemctl --user is-enabled "$SDDM_RENDER_PATH_UNIT" 2>/dev/null)
+    if [ "$state" = enabled ]; then
+        ok "sddm: $SDDM_RENDER_PATH_UNIT (user) enabled — wallpaper changes re-render"
+    else
+        warn "sddm: $SDDM_RENDER_PATH_UNIT (user) is '${state:-absent}', want enabled"
+    fi
     current=$(sed -n 's/^Current=//p' "$SDDM_CONF_FILE" 2>/dev/null | head -n1)
     want=$(cat "$SDDM_STAGING_DIR/active" 2>/dev/null)
     if [ -n "$want" ] && [ "$current" = "$SDDM_THEME_PREFIX$want" ]; then

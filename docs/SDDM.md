@@ -72,6 +72,13 @@ The choice lives in `~/.local/state/dcli/sddm-theme` (`auto` when absent).
 the terminal prompt/fastfetch layer). Wallpaper comes from `lib/wallpaper.sh`, the same
 table GRUB uses; the avatar from `~/.face` / `~/.face.icon`.
 
+**One fixed background instead.** `scripts/set-boot-wallpaper.sh sddm <image>`
+puts one image behind every shell's greeter; `... sddm follow` goes back. The
+setting is one line in `~/.local/state/dcli/sddm-wallpaper` (`follow` or an
+absolute path; absent = follow) and is independent of GRUB's. Only the
+background changes: each shell keeps its own palette, still derived from that
+shell's own wallpaper. A fixed image that has vanished warns and follows.
+
 Adding a shell: a registry record, a `LOOK_TABLE` row, a `PALETTE_SOURCES` row in
 `lib/palette.sh` if it writes colours, optionally `sddm/themes/<shell>/` for a bespoke theme, then
 re-run the installer.
@@ -98,6 +105,7 @@ Same as GRUB (docs/GRUB.md): nothing from the repo runs as root at runtime.
 
 | Task | How |
 | --- | --- |
+| Fixed or following background | `scripts/set-boot-wallpaper.sh sddm [follow\|<image>\|--status]` |
 | Re-render all | `scripts/render-sddm-theme.sh all` |
 | Skip on a switch | `DCLI_SKIP_SDDM_THEME=1 scripts/switch-shell.sh <shell>` |
 | Render log of the last switch | `~/.local/state/dcli/sddm-theme.log` |
@@ -105,9 +113,14 @@ Same as GRUB (docs/GRUB.md): nothing from the repo runs as root at runtime.
 | Preview a theme without logging out | stage + `sddm-greeter-qt6 --test-mode --theme <dir>` (see `tests/smoke.sh` for a fixture) |
 | Health | `scripts/doctor.sh` (SDDM lines are WARN, never FAIL) |
 
-Unlike GRUB there is no wallpaper path watcher: the data refreshes on every shell
-switch and every selector change. Re-run `render-sddm-theme.sh all` after
-changing a wallpaper if you want the greeter to catch up before the next switch.
+Wallpaper changes are followed like GRUB's: `install-sddm-theme.sh` writes the
+user unit `dcli-sddm-render.path` (one `PathChanged=` per shell wallpaper state
+file from `lib/wallpaper.sh`, plus the `sddm-wallpaper` setting), whose service
+runs `render-sddm-theme.sh --changed all`. `--changed` is a cheap no-op when
+nothing moved; a real change re-stages that shell and rewrites `.stamp`, and the
+root path unit installs it. The data also refreshes on every shell switch and
+selector change. Re-run `scripts/install-sddm-theme.sh` once to add the watcher
+to an existing install (`doctor.sh` warns until you do).
 
 Test knobs (never set in production): `DCLI_SDDM_THEMES_DIR`,
 `DCLI_SDDM_CONF_DIR`, `DCLI_SDDM_READER`, `DCLI_SDDM_ALLOW_NONROOT`,

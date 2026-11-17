@@ -1,0 +1,13 @@
+# Template — scripts/install-sddm-theme.sh replaces the placeholder line below
+# with one PathChanged= per wallpaper state file in scripts/lib/wallpaper.sh plus
+# the sddm-wallpaper setting, and installs the result as
+# ~/.config/systemd/user/dcli-sddm-render.path.
+[Unit]
+Description=Watch every shell's wallpaper state for the dcli SDDM themes
+
+[Path]
+@PATH_CHANGED@
+Unit=dcli-sddm-render.service
+
+[Install]
+WantedBy=default.target

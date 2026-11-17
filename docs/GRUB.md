@@ -69,8 +69,16 @@ It replaced `hyprlock/colors.conf`'s `$background_image`, which only the
 matugen-driven shells rewrite: until 2026-10-31 noctalia, ryoku and glyph booted
 with ambxst's wallpaper and dms with its previous one.
 
+**One fixed image instead.** `scripts/set-boot-wallpaper.sh grub <image>` puts
+that one image behind every shell's theme (each keeps its own layout and logo;
+the accent is derived from the image); `... grub follow` goes back. The setting
+is one line in `~/.local/state/dcli/grub-wallpaper` (`follow` or an absolute
+path; absent = follow), read by `target_wallpaper` in `lib/wallpaper.sh`. If the
+fixed image disappears the renderer warns and follows the shell, so the menu
+never loses its background. The setting is independent of SDDM's.
+
 The same table drives the watcher: `install-grub-theme.sh` writes one
-`PathChanged=` per state file into the user unit `dcli-grub-render.path`, whose
+`PathChanged=` per state file (plus the `grub-wallpaper` setting) into the user unit `dcli-grub-render.path`, whose
 service runs `render-grub-theme.sh --changed all`. `--changed` compares each
 shell's wallpaper path + mtime + size (plus the renderer's mtime and the newest
 registry/logo mtime — every dock draws all logos) with the
@@ -147,6 +155,7 @@ active. Unknown names are ignored.
 
 | Task | How |
 | --- | --- |
+| Fixed or following wallpaper | `scripts/set-boot-wallpaper.sh grub [follow\|<image>\|--status]` |
 | Re-render all | `scripts/render-grub-theme.sh all` (the path unit installs the result) |
 | Skip the render on a switch | `DCLI_SKIP_GRUB_THEME=1 scripts/switch-shell.sh <shell>` |
 | Render log of the last switch | `~/.local/state/dcli/grub-theme.log` |

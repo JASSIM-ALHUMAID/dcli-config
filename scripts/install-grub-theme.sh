@@ -168,13 +168,14 @@ step "Enabling $GRUB_PATH_UNIT (re-installs on every render)"
 real_only sudo systemctl enable --now "$GRUB_PATH_UNIT"
 
 # ── 8. Follow wallpaper changes (user units) ─────────────────────────────────
-# Systemd watches each shell's own wallpaper state file; the renderer's
+# Systemd watches each shell's own wallpaper state file and the grub-wallpaper
+# setting; the renderer's
 # --changed check keeps the frequent unrelated writes free.
 step "Enabling $GRUB_RENDER_PATH_UNIT (re-renders on a wallpaper change)"
 mkdir -p "$GRUB_USER_UNIT_DIR" || die "cannot create $GRUB_USER_UNIT_DIR"
 sed "s|@RENDERER@|$RENDERER|g" "$GRUB_SRC_DIR/$GRUB_RENDER_SERVICE_UNIT" \
     >"$GRUB_USER_UNIT_DIR/$GRUB_RENDER_SERVICE_UNIT" || die "cannot write $GRUB_RENDER_SERVICE_UNIT"
-watched=$(wallpaper_state_files | while IFS= read -r file; do
+watched=$({ wallpaper_state_files; boot_wallpaper_file grub; } | while IFS= read -r file; do
     [[ "$file" =~ $UNIT_VALUE_RE ]] && echo "PathChanged=$file"
 done)
 [ -n "$watched" ] || die "no wallpaper state files to watch (scripts/lib/wallpaper.sh)"

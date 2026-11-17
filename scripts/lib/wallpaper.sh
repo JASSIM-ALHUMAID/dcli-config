@@ -90,3 +90,41 @@ wallpaper_state_files() {
         [ "$kind" = file ] || echo "$home/$path"
     done
 }
+
+# ── Per-target override ──────────────────────────────────────────────────────
+# GRUB and SDDM each remember one setting in ~/.local/state/dcli/<target>-wallpaper:
+# `follow` (the shell's own wallpaper, above) or the absolute path of one image
+# every shell's theme uses instead. A missing file means follow. Written by
+# scripts/set-boot-wallpaper.sh; watched by the render path units.
+BOOT_WALLPAPER_TARGETS=(grub sddm)
+BOOT_WALLPAPER_FOLLOW=follow
+
+# boot_wallpaper_file <grub|sddm>: where the target keeps its setting.
+boot_wallpaper_file() {
+    echo "${XDG_STATE_HOME:-$HOME/.local/state}/dcli/$1-wallpaper"
+}
+
+# boot_wallpaper_setting <target>: `follow` or the saved path. Never fails.
+boot_wallpaper_setting() {
+    local file setting=""
+    file=$(boot_wallpaper_file "$1")
+    [ -r "$file" ] && setting=$(head -n1 "$file" 2>/dev/null)
+    setting=${setting%$'\r'}
+    echo "${setting:-$BOOT_WALLPAPER_FOLLOW}"
+}
+
+# target_wallpaper <target> <shell>: the image <target> draws for <shell>'s
+# theme — the fixed image when one is set and still readable, else the shell's
+# own wallpaper. A fixed image that has vanished warns and follows, so a
+# deleted file never leaves a boot or login screen without a background.
+target_wallpaper() {
+    local target="$1" shell="$2" setting
+    setting=$(boot_wallpaper_setting "$target")
+    if [ "$setting" != "$BOOT_WALLPAPER_FOLLOW" ]; then
+        case "$setting" in
+        /*) [ -f "$setting" ] && [ -r "$setting" ] && { echo "$setting"; return 0; } ;;
+        esac
+        echo "wallpaper: $target fixed image '$setting' is not a readable file — following the shell" >&2
+    fi
+    shell_wallpaper "$shell"
+}

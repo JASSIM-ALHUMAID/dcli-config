@@ -39,6 +39,10 @@ echo "dcli SDDM theme uninstaller — root steps will ask for your sudo password
 real_only sudo -v || die "sudo authentication failed"
 
 step "Stopping and removing the systemd units"
+real_only systemctl --user disable --now "$SDDM_RENDER_PATH_UNIT" 2>/dev/null || true
+real_only systemctl --user stop "$SDDM_RENDER_SERVICE_UNIT" 2>/dev/null || true
+rm -f "$SDDM_USER_UNIT_DIR/$SDDM_RENDER_PATH_UNIT" "$SDDM_USER_UNIT_DIR/$SDDM_RENDER_SERVICE_UNIT"
+real_only systemctl --user daemon-reload
 real_only sudo systemctl disable --now "$SDDM_PATH_UNIT" 2>/dev/null || true
 real_only sudo systemctl stop "$SDDM_SERVICE_UNIT" 2>/dev/null || true
 real_only sudo systemctl reset-failed "$SDDM_SERVICE_UNIT" 2>/dev/null || true
